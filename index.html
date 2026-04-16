@@ -209,7 +209,9 @@
 
   window._firebaseLoaded = true;
   console.log('Firebase conectado ✓');
+</script>
 
+<script>
 function mascaraCep(el){
   let v = el.value.replace(/\D/g,'');
   if(v.length > 5) v = v.slice(0,5)+'-'+v.slice(5,8);
@@ -332,7 +334,10 @@ function gerarCronogramaPDF() {
       <button onclick="window.print()" style="font-family:sans-serif;font-weight:700;padding:10px 28px;background:#1a3c6e;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;">🖨️ Imprimir</button>
       <button onclick="salvarComoPDF()" style="font-family:sans-serif;font-weight:700;padding:10px 28px;background:#059669;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;">💾 Salvar PDF</button>
     </div>
-    <script>
+  </body></html>`);
+  win.document.close();
+  win.focus();
+}
 
 const SERVICOS = [
   {id:'dedetizacao', nome:'Aranhas, Baratas e Formigas', tipo:'DESINSETIZAÇÃO'},
@@ -365,7 +370,7 @@ function carregarEmpresa(){
 window.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('data').value = new Date().toISOString().split('T')[0];
   renderServicos();
-  adicionarProduto();
+  adicionarProdutoPadrao();
   carregarEmpresa();
   // Salva automaticamente ao sair de qualquer campo da empresa
   CAMPOS_EMPRESA.forEach(id => {
@@ -1577,6 +1582,143 @@ function verificarVencimentos() {
 // Auto-open form if URL has ?form=1
 if(window.location.search.includes('form=1')){
   window.addEventListener('load', ()=> setTimeout(abrirFormularioEmbutido, 500));
+}
+
+
+// ── FUNÇÕES FALTANDO ──
+
+function mostrarToast(msg){
+  const t = document.getElementById('toast');
+  if(!t) return;
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2800);
+}
+
+function fmtDataBR(d) {
+  if(!d) return '—';
+  return d.toLocaleDateString('pt-BR');
+}
+
+function addMonths(date, months) {
+  const d = new Date(date);
+  d.setMonth(d.getMonth() + months);
+  return d;
+}
+
+function atualizarCronograma() {
+  const tipo = document.querySelector('input[name="pacote-tipo"]:checked')?.value;
+  const dataStr = document.getElementById('data-primeira-app')?.value;
+  const preview = document.getElementById('cronograma-preview');
+  const tbody = document.getElementById('cronograma-body');
+  if (!tipo || !dataStr) { if(preview) preview.style.display='none'; return; }
+  const base = new Date(dataStr + 'T12:00:00');
+  const linhas = gerarLinhasCronograma(tipo, base);
+  tbody.innerHTML = linhas.map(l => `
+    <tr>
+      <td><b>${l.num}ª</b></td>
+      <td>${fmtDataBR(l.data)}</td>
+      <td>${l.cortesia
+        ? '<span class="cortesia-tag">Cortesia</span>'
+        : '<span class="pago-tag">'+fmtDataBR(l.pgto)+'</span>'}</td>
+    </tr>`).join('');
+  preview.style.display = 'block';
+  window._cronogramaLinhas = linhas;
+}
+
+function gerarLinhasCronograma(tipo, base) {
+  const linhas = [];
+  for (let i = 0; i < 4; i++) {
+    const data = addMonths(base, i * 3);
+    let cortesia = false;
+    if (tipo === 'cortesia-inicio') cortesia = (i === 0);
+    else if (tipo === '4') cortesia = false;
+    else if (tipo === 'cortesia-fim') cortesia = (i === 3);
+    linhas.push({ num: i+1, data, pgto: cortesia ? null : addMonths(data, 1), cortesia });
+  }
+  return linhas;
+}
+
+function gerarCronogramaPDF() {
+  const linhas = window._cronogramaLinhas;
+  if (!linhas || !linhas.length) { alert('Gere o cronograma primeiro.'); return; }
+  const d = coletarDados();
+  const empresa = d.empresa || 'Controle Dedetizadora Ltda';
+  const linhasHTML = linhas.map((l, i) => `
+    <tr style="${i%2===0?'background:#e8f5e9;':''}">
+      <td style="padding:10px;text-align:center;border:1px solid #ccc;font-style:italic;font-size:13pt;">${l.num}º</td>
+      <td style="padding:10px;text-align:center;border:1px solid #ccc;font-style:italic;font-size:13pt;">${fmtDataBR(l.data)}</td>
+      <td style="padding:10px;text-align:center;border:1px solid #ccc;font-style:italic;font-size:13pt;">${l.cortesia ? 'Cortesia' : fmtDataBR(l.pgto)}</td>
+    </tr>`).join('');
+  const win = window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head>
+    <meta charset="UTF-8"><title>Cronograma</title>
+    <style>
+      @page{size:A4 portrait;margin:20mm 25mm;}
+      body{font-family:'Times New Roman',Times,serif;font-size:11pt;color:#000;margin:0;padding:20mm 25mm;}
+      .header-info{text-align:right;font-size:9pt;margin-bottom:4px;}
+      h2{text-align:center;font-size:18pt;color:#4a7c59;letter-spacing:2px;text-transform:uppercase;margin:24px 0 28px;font-style:italic;}
+      table{width:100%;border-collapse:collapse;margin:0 auto 24px;}
+      th{background:#4a7c59;color:#fff;padding:10px;text-align:center;font-style:italic;font-size:13pt;letter-spacing:1px;}
+      .aviso{text-align:center;font-style:italic;font-size:11pt;margin:20px 0;line-height:1.6;}
+      .no-print{text-align:center;margin-top:30px;display:flex;gap:12px;justify-content:center;}
+      @media print{.no-print{display:none;}}
+    </style>
+  </head><body>
+    <div class="header-info">
+      ${d.nome ? '<b>'+d.nome+'</b><br>' : ''}
+      ${d.fone ? 'Telefone: '+d.fone+'<br>' : ''}
+      ${d.endereco ? d.endereco+(d.bairro?', '+d.bairro:'')+(d.cidade?', '+d.cidade:'')+(d.cep?' — CEP '+d.cep:'') : ''}
+    </div>
+    <h2>Cronograma Dedetização</h2>
+    <table>
+      <thead><tr><th>APLICAÇÃO</th><th>DATA</th><th>PAGAMENTO</th></tr></thead>
+      <tbody>${linhasHTML}</tbody>
+    </table>
+    <div class="aviso"><i>O serviço de controle de pragas só tem efeito se<br>realizado nas datas corretas.</i></div>
+    <div class="no-print">
+      <button onclick="window.print()" style="font-family:sans-serif;font-weight:700;padding:10px 28px;background:#1a3c6e;color:#fff;border:none;border-radius:8px;cursor:pointer;">🖨️ Imprimir</button>
+      <button onclick="document.querySelectorAll('.no-print').forEach(e=>e.style.display='none');window.print();document.querySelectorAll('.no-print').forEach(e=>e.style.display='flex');" style="font-family:sans-serif;font-weight:700;padding:10px 28px;background:#059669;color:#fff;border:none;border-radius:8px;cursor:pointer;">💾 Salvar PDF</button>
+    </div>
+  </body></html>\`);
+  win.document.close();
+  win.focus();
+}
+
+function adicionarProdutoPadrao(){
+  adicionarProduto({
+    nome: 'BIFENTOL 200 SC', grupo: 'PIRETROIDE', qtd: '50 Ml',
+    ant: 'ANTI-HISTAMÍNICO E TRATAMENTO SINTOMÁTICO.'
+  });
+  adicionarProduto({
+    nome: 'Maki Bloco', grupo: 'Cumarínico Antídoto: Vitamina K1', qtd: '1',
+    ant: 'VITAMINA K1 E TRATAMENTO SINTOMÁTICO – Altamente tóxico, classe toxicológica: Grau II.'
+  });
+}
+
+function mascaraCep(el){
+  let v = el.value.replace(/\D/g,'');
+  if(v.length > 5) v = v.slice(0,5)+'-'+v.slice(5,8);
+  el.value = v;
+}
+
+function calcularValidade(srvId) {
+  const garantiaEl = document.getElementById('garantia-' + srvId);
+  const validadeEl = document.getElementById('validade-' + srvId);
+  const dataServicoEl = document.getElementById('dataServico');
+  if (!garantiaEl || !validadeEl) return;
+  const dias = parseInt(garantiaEl.value.replace(/[^0-9]/g, ''));
+  if (!dias || isNaN(dias)) return;
+  const baseStr = dataServicoEl?.value || new Date().toISOString().split('T')[0];
+  const base = new Date(baseStr + 'T12:00:00');
+  base.setDate(base.getDate() + dias);
+  validadeEl.value = base.toISOString().split('T')[0];
+}
+
+function recalcularTodasValidades() {
+  ['dedetizacao','desratizacao','cxdagua','descupinizacao','cxgordura'].forEach(id => calcularValidade(id));
+}
+
 </script>
 </head>
 <body>
