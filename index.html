@@ -1,0 +1,2055 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Controle Dedetizadora</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--navy:#0f2d4a;--navy2:#1a3c6e;--blue:#2563eb;--gold:#d97706;--gold-light:#fef3c7;--green:#059669;--green-light:#d1fae5;--bg:#f1f5f9;--card:#ffffff;--border:#e2e8f0;--text:#0f172a;--muted:#64748b;--radius:12px;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+  header{background:var(--navy);padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:64px;position:sticky;top:0;z-index:100;box-shadow:0 2px 20px rgba(0,0,0,.3);}
+  .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:#fff;letter-spacing:-.5px;}
+  .logo span{color:#60a5fa;}
+  .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:8px;padding:4px;}
+  .tab-btn{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;padding:7px 18px;border:none;border-radius:6px;cursor:pointer;background:transparent;color:rgba(255,255,255,.6);transition:all .2s;}
+  .tab-btn.active{background:var(--blue);color:#fff;}
+  .container{max-width:900px;margin:0 auto;padding:28px 20px;}
+  .section{display:none;}.section.active{display:block;}
+  .card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:14px;overflow:hidden;}
+  .card-header{background:var(--navy2);color:#fff;padding:11px 20px;font-family:'Syne',sans-serif;font-weight:700;font-size:12px;letter-spacing:.5px;text-transform:uppercase;}
+  .card-body{padding:18px 20px;}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+  .grid-4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;}
+  .span-2{grid-column:span 2;}.span-3{grid-column:span 3;}.span-4{grid-column:span 4;}
+  label{display:block;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;}
+  input,select,textarea{width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:#fff;transition:border-color .2s;outline:none;}
+  input:focus,select:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.1);}
+  textarea{resize:vertical;min-height:80px;}
+  .check-group{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px;}
+  .check-item{display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;font-weight:500;}
+  .check-item input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--blue);}
+  .srv-header{display:grid;grid-template-columns:26px 1fr 70px 110px 120px 1fr;gap:8px;padding:6px 0 8px;border-bottom:2px solid var(--border);font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;}
+  .servico-row{display:grid;grid-template-columns:26px 1fr 70px 110px 120px 1fr;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);}
+  .servico-row:last-child{border-bottom:none;}
+  .produto-row{background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:13px;margin-bottom:9px;position:relative;}
+  .btn-remove-prod{position:absolute;top:9px;right:10px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;}
+  .btn-remove-prod:hover{color:red;}
+  .pacote-box{background:var(--gold-light);border:1.5px solid #fcd34d;border-radius:10px;padding:14px 18px;}
+  .pacote-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;}
+  .radio-group{display:flex;flex-wrap:wrap;gap:12px;}
+  .radio-item{display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;font-weight:500;}
+  .radio-item input[type=radio]{width:16px;height:16px;accent-color:var(--gold);cursor:pointer;}
+  .btn-row{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;}
+  .btn{font-family:'Syne',sans-serif;font-weight:700;font-size:12px;padding:10px 22px;border-radius:8px;border:none;cursor:pointer;transition:all .15s;letter-spacing:.3px;}
+  .btn-primary{background:var(--navy2);color:#fff;}.btn-primary:hover{background:var(--blue);transform:translateY(-1px);}
+  .btn-success{background:var(--green);color:#fff;}.btn-success:hover{background:#047857;transform:translateY(-1px);}
+  .btn-gold{background:var(--gold);color:#fff;}.btn-gold:hover{background:#b45309;transform:translateY(-1px);}
+  .btn-outline{background:transparent;color:var(--navy2);border:2px solid var(--navy2);}.btn-outline:hover{background:var(--navy2);color:#fff;}
+  .btn-add{background:#eff6ff;color:var(--blue);border:1.5px dashed var(--blue);border-radius:8px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;width:100%;margin-top:6px;transition:all .15s;}.btn-add:hover{background:#dbeafe;}
+  .historico-list{display:flex;flex-direction:column;gap:10px;}
+  .hist-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 18px;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;transition:box-shadow .2s;}
+  .hist-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08);}
+  .hist-nome{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;}
+  .hist-info{font-size:12px;color:var(--muted);margin-top:2px;}
+  .hist-actions{display:flex;gap:7px;}
+  .badge{display:inline-block;padding:2px 9px;border-radius:99px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;}
+  .badge-blue{background:#dbeafe;color:var(--blue);}.badge-green{background:var(--green-light);color:var(--green);}.badge-gold{background:var(--gold-light);color:var(--gold);}
+  .empty{text-align:center;padding:60px 20px;color:var(--muted);}
+  .empty-icon{font-size:48px;margin-bottom:12px;}
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:#fff;border-radius:16px;width:100%;max-width:760px;max-height:93vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.3);}
+  .modal-header{background:var(--navy);color:#fff;padding:16px 22px;border-radius:16px 16px 0 0;display:flex;justify-content:space-between;align-items:center;}
+  .modal-title{font-family:'Syne',sans-serif;font-weight:800;font-size:15px;}
+  .modal-close{background:none;border:none;color:rgba(255,255,255,.7);font-size:22px;cursor:pointer;}
+  .modal-body{padding:22px;}
+
+  /* ═══ CERTIFICADO ═══ */
+  .cert{font-family:'Times New Roman',Times,serif;font-size:10.5pt;color:#000;line-height:1.45;}
+  .cert-top{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:10px;border-bottom:2px solid #000;margin-bottom:14px;}
+  .cert-resp{font-size:9pt;text-align:right;line-height:1.7;}
+  .cert-label-sec{font-weight:700;font-size:10.5pt;margin:10px 0 5px;text-decoration:underline;}
+  .cert-table{width:100%;border-collapse:collapse;font-size:9.5pt;}
+  .cert-table td{border:1px solid #000;padding:3px 7px;}
+  .cert-valid-line{font-size:10pt;margin:3px 0;}
+  .cert-desc-box{border:1px solid #000;padding:8px 10px;margin:8px 0;font-size:9.5pt;}
+  .cert-desc-title{font-weight:700;font-size:10pt;text-align:center;margin-bottom:5px;}
+  .cert-prod-box{border:1px solid #000;font-size:9pt;margin-top:8px;}
+  .cert-prod-title{font-weight:700;font-size:9.5pt;text-align:center;padding:4px;background:#f0f0f0;border-bottom:1px solid #000;}
+  .cert-prod-row{padding:4px 9px;border-bottom:1px solid #ccc;line-height:1.75;}
+  .cert-prod-row:last-child{border-bottom:none;}
+  .cert-sign-area{margin-top:28px;text-align:center;}
+  .cert-sign-line{border-top:1.5px solid #000;display:inline-block;min-width:260px;padding-top:4px;font-size:9pt;text-align:center;}
+  .cert-wrap{position:relative;overflow:hidden;}
+
+  /* ═══ AGENDA ═══ */
+  .agenda-layout{display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start;}
+  /* Calendar */
+  .cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .cal-nav-btn{background:var(--navy2);color:#fff;border:none;border-radius:7px;width:32px;height:32px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .cal-nav-btn:hover{background:var(--blue);}
+  .cal-month{font-family:'Syne',sans-serif;font-weight:800;font-size:16px;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+  .cal-dow{text-align:center;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;padding:4px 0 6px;}
+  .cal-day{min-height:52px;border-radius:8px;border:1.5px solid var(--border);background:#fff;padding:4px 5px;cursor:pointer;transition:all .15s;position:relative;}
+  .cal-day:hover{border-color:var(--blue);background:#eff6ff;}
+  .cal-day.today{border-color:var(--blue);background:#eff6ff;}
+  .cal-day.has-event{border-color:var(--navy2);}
+  .cal-day.selected{border-color:var(--blue);background:#dbeafe;box-shadow:0 0 0 2px rgba(37,99,235,.25);}
+  .cal-day.other-month{opacity:.35;}
+  .cal-day-num{font-size:12px;font-weight:700;color:var(--text);}
+  .cal-day.today .cal-day-num{color:var(--blue);}
+  .cal-dot-row{display:flex;flex-wrap:wrap;gap:2px;margin-top:3px;}
+  .cal-dot{width:7px;height:7px;border-radius:50%;}
+  .dot-agendado{background:var(--blue);}
+  .dot-realizado{background:var(--green);}
+  .dot-cancelado{background:#ef4444;}
+  /* Lista lateral */
+  .agenda-list-header{font-family:'Syne',sans-serif;font-weight:800;font-size:14px;margin-bottom:10px;color:var(--navy2);}
+  .ag-item{background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;border-left:4px solid var(--blue);transition:box-shadow .15s;}
+  .ag-item:hover{box-shadow:0 3px 12px rgba(0,0,0,.08);}
+  .ag-item.realizado{border-left-color:var(--green);}
+  .ag-item.cancelado{border-left-color:#ef4444;opacity:.7;}
+  .ag-nome{font-weight:700;font-size:13px;}
+  .ag-info{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.5;}
+  .ag-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+  .ag-status-btn{font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;border:none;cursor:pointer;}
+  .btn-agendado{background:#dbeafe;color:var(--blue);}
+  .btn-realizado{background:var(--green-light);color:var(--green);}
+  .btn-cancelado{background:#fee2e2;color:#dc2626;}
+  .ag-edit-btn{font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;background:#f1f5f9;color:var(--muted);border:none;cursor:pointer;}
+  .ag-edit-btn:hover{background:var(--border);}
+
+  /* Toast */
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:#1a3c6e;color:#fff;padding:12px 24px;border-radius:99px;font-size:13px;font-weight:600;z-index:9999;transition:transform .3s ease;box-shadow:0 8px 24px rgba(0,0,0,.2);}
+  .toast.show{transform:translateX(-50%) translateY(0);}
+  .sync-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block;margin-right:6px;animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+  /* Cronograma */
+  #tabela-cronograma tr:nth-child(even) td{background:#f8fafc;}
+  #tabela-cronograma td{padding:8px 12px;text-align:center;border-bottom:1px solid var(--border);font-size:13px;}
+  #tabela-cronograma .cortesia-tag{background:var(--green-light);color:var(--green);font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;margin-left:4px;}
+  #tabela-cronograma .pago-tag{background:#dbeafe;color:var(--blue);font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;}
+
+  /* Clientes */
+  .cli-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:10px;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;transition:box-shadow .2s;}
+  .cli-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08);}
+  .cli-nome{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;}
+  .cli-info{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.6;}
+  .cli-actions{display:flex;gap:7px;flex-wrap:wrap;}
+  .alerta-venc{background:#fef3c7;border:1.5px solid #fcd34d;border-radius:10px;padding:12px 16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
+  .alerta-venc.urgente{background:#fee2e2;border-color:#fca5a5;}
+  .alerta-venc-texto{font-size:13px;font-weight:600;}
+  .alerta-venc-data{font-size:11px;color:var(--muted);margin-top:2px;}
+</style>
+
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+  import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCE46vBCXq6-3PL_xe6DJJkWgFdHkFyiGY",
+    authDomain: "controle-dedetizadora.firebaseapp.com",
+    projectId: "controle-dedetizadora",
+    storageBucket: "controle-dedetizadora.firebasestorage.app",
+    messagingSenderId: "103184454927",
+    appId: "1:103184454927:web:0356560927186e19619a7a"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // ── Expose DB functions globally ──
+  window._db = db;
+  window._col = collection;
+  window._doc = doc;
+  window._setDoc = setDoc;
+  window._deleteDoc = deleteDoc;
+  window._onSnapshot = onSnapshot;
+  window._query = query;
+  window._orderBy = orderBy;
+
+  // ── Live listeners — start as soon as Firebase loads ──
+  window.addEventListener('firebaseReady', () => {});
+
+  // Orcamentos listener
+  const qOrc = query(collection(db, 'orcamentos'), orderBy('criadoEm', 'desc'));
+  onSnapshot(qOrc, (snap) => {
+    window.orcamentos = snap.docs.map(d => ({id: d.id, ...d.data()}));
+    if (typeof renderHistorico === 'function') renderHistorico();
+    if (typeof popularSelectOrcamentos === 'function') popularSelectOrcamentos();
+  });
+
+  // Agendamentos listener
+  const qAg = query(collection(db, 'agendamentos'), orderBy('data', 'asc'));
+  onSnapshot(qAg, (snap) => {
+    window.agendamentos = snap.docs.map(d => ({id: d.id, ...d.data()}));
+    if (typeof renderCalendario === 'function') renderCalendario();
+    if (typeof renderAgendaTodos === 'function') renderAgendaTodos();
+    if (window.calDiaSel && typeof selecionarDia === 'function') selecionarDia(window.calDiaSel);
+  });
+
+  // Empresa emissora listener
+  onSnapshot(doc(db, 'config', 'empresa'), (snap) => {
+    if (snap.exists()) {
+      const d = snap.data();
+      window._empresaCache = d;
+      const CAMPOS_EMPRESA = ['empresa','cnpjEmpresa','responsavel','crt','alvaraSanitario','alvaraFunc'];
+      CAMPOS_EMPRESA.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && d[id] && !el.value) el.value = d[id];
+      });
+    }
+  });
+
+  window._firebaseLoaded = true;
+  console.log('Firebase conectado ✓');
+
+function mascaraCep(el){
+  let v = el.value.replace(/\D/g,'');
+  if(v.length > 5) v = v.slice(0,5)+'-'+v.slice(5,8);
+  el.value = v;
+}
+
+function mostrarToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2800);
+}
+
+
+// ══════════════════ CRONOGRAMA ══════════════════
+function addMonths(date, months) {
+  const d = new Date(date);
+  d.setMonth(d.getMonth() + months);
+  return d;
+}
+
+function fmtDataBR(d) {
+  if(!d) return '—';
+  return d.toLocaleDateString('pt-BR');
+}
+
+function atualizarCronograma() {
+  const tipo = document.querySelector('input[name="pacote-tipo"]:checked')?.value;
+  const dataStr = document.getElementById('data-primeira-app')?.value;
+  const preview = document.getElementById('cronograma-preview');
+  const tbody = document.getElementById('cronograma-body');
+  if (!tipo || !dataStr) { preview.style.display='none'; return; }
+
+  const base = new Date(dataStr + 'T12:00:00');
+  const linhas = gerarLinhasCronograma(tipo, base);
+
+  tbody.innerHTML = linhas.map(l => `
+    <tr>
+      <td><b>${l.num}ª</b></td>
+      <td>${fmtDataBR(l.data)}</td>
+      <td>${l.cortesia
+        ? '<span class="cortesia-tag">Cortesia</span>'
+        : '<span class="pago-tag">'+fmtDataBR(l.pgto)+'</span>'}</td>
+    </tr>`).join('');
+  preview.style.display = 'block';
+  // Store for PDF
+  window._cronogramaLinhas = linhas;
+}
+
+function gerarLinhasCronograma(tipo, base) {
+  const linhas = [];
+  // Sempre 4 visitas
+  for (let i = 0; i < 4; i++) {
+    const data = addMonths(base, i * 3);
+    let cortesia = false;
+    if (tipo === 'cortesia-inicio') cortesia = (i === 0);   // 1ª cortesia + 3 pagas
+    else if (tipo === '4')          cortesia = false;        // 4 pagas
+    else if (tipo === 'cortesia-fim') cortesia = (i === 3); // 3 pagas + última cortesia
+    linhas.push({ num: i+1, data, pgto: cortesia ? null : addMonths(data, 1), cortesia });
+  }
+  return linhas;
+}
+
+function gerarCronogramaPDF() {
+  const linhas = window._cronogramaLinhas;
+  if (!linhas || !linhas.length) { alert('Gere o cronograma primeiro.'); return; }
+  const d = coletarDados();
+  const empresa = d.empresa || 'Controle Dedetizadora Ltda';
+
+  const linhasHTML = linhas.map((l, i) => `
+    <tr style="${i%2===0?'background:#e8f5e9;':''}">
+      <td style="padding:10px;text-align:center;border:1px solid #ccc;font-style:italic;font-size:13pt;">${l.num}º</td>
+      <td style="padding:10px;text-align:center;border:1px solid #ccc;font-style:italic;font-size:13pt;">${fmtDataBR(l.data)}</td>
+      <td style="padding:10px;text-align:center;border:1px solid #ccc;font-style:italic;font-size:13pt;">${l.cortesia ? 'Cortesia' : fmtDataBR(l.pgto)}</td>
+    </tr>`).join('');
+
+  const win = window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head>
+    <meta charset="UTF-8"><title>Cronograma Dedetização</title>
+    <style>
+      @page{size:A4 portrait;margin:20mm 25mm;}
+      body{font-family:'Times New Roman',Times,serif;font-size:11pt;color:#000;margin:0;padding:20mm 25mm;}
+      .header-info{text-align:right;font-size:9pt;margin-bottom:4px;}
+      h2{text-align:center;font-size:18pt;color:#4a7c59;letter-spacing:2px;text-transform:uppercase;margin:24px 0 28px;font-style:italic;}
+      table{width:100%;border-collapse:collapse;margin:0 auto 24px;}
+      th{background:#4a7c59;color:#fff;padding:10px;text-align:center;font-style:italic;font-size:13pt;letter-spacing:1px;}
+      .aviso{text-align:center;font-style:italic;font-size:11pt;margin:20px 0;line-height:1.6;}
+      @media print{body{padding:0;} .no-print{display:none;}}
+    
+  /* Clientes */
+  .cli-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:10px;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;transition:box-shadow .2s;}
+  .cli-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08);}
+  .cli-nome{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;}
+  .cli-info{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.6;}
+  .cli-actions{display:flex;gap:7px;flex-wrap:wrap;}
+  .alerta-venc{background:#fef3c7;border:1.5px solid #fcd34d;border-radius:10px;padding:12px 16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
+  .alerta-venc.urgente{background:#fee2e2;border-color:#fca5a5;}
+  .alerta-venc-texto{font-size:13px;font-weight:600;}
+  .alerta-venc-data{font-size:11px;color:var(--muted);margin-top:2px;}
+</style>
+  </head><body>
+    <div class="header-info">
+      ${d.nome ? '<b>'+d.nome+'</b><br>' : ''}
+      ${d.fone ? 'Telefone: '+d.fone+'<br>' : ''}
+      ${d.endereco ? d.endereco+(d.bairro?', '+d.bairro:'')+(d.cidade?', '+d.cidade:'')+(d.cep?' — CEP '+d.cep:'') : ''}
+    </div>
+    <h2>Cronograma Dedetização</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>APLICAÇÃO</th>
+          <th>DATA</th>
+          <th>PAGAMENTO</th>
+        </tr>
+      </thead>
+      <tbody>${linhasHTML}</tbody>
+    </table>
+    <div class="aviso"><i>O serviço de controle de pragas só tem efeito se<br>realizado nas datas corretas.</i></div>
+    <div class="no-print" style="text-align:center;margin-top:30px;display:flex;gap:12px;justify-content:center;">
+      <button onclick="window.print()" style="font-family:sans-serif;font-weight:700;padding:10px 28px;background:#1a3c6e;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;">🖨️ Imprimir</button>
+      <button onclick="salvarComoPDF()" style="font-family:sans-serif;font-weight:700;padding:10px 28px;background:#059669;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;">💾 Salvar PDF</button>
+    </div>
+    <script>
+
+const SERVICOS = [
+  {id:'dedetizacao', nome:'Aranhas, Baratas e Formigas', tipo:'DESINSETIZAÇÃO'},
+  {id:'desratizacao', nome:'Camundongos, Ratazanas e Ratos', tipo:'DESRATIZAÇÃO'},
+  {id:'cxdagua', nome:'Caixa D\'Água', tipo:'LIMPEZA E HIGIENIZAÇÃO DE CAIXA D\'ÁGUA'},
+  {id:'descupinizacao', nome:'Cupins', tipo:'DESCUPINIZAÇÃO'},
+  {id:'cxgordura', nome:'Caixa de Gordura', tipo:'LIMPEZA DE CAIXA DE GORDURA'},
+];
+
+let orcamentos = JSON.parse(localStorage.getItem('orcamentos_v2')||'[]');
+let produtoCount = 0;
+
+const CAMPOS_EMPRESA = ['empresa','cnpjEmpresa','responsavel','crt','alvaraSanitario','alvaraFunc'];
+
+function salvarEmpresa(){
+  const dados = {};
+  CAMPOS_EMPRESA.forEach(id => dados[id] = document.getElementById(id).value);
+  localStorage.setItem('empresa_emissora', JSON.stringify(dados));
+  const status = document.getElementById('empresa-status');
+  if(status){ status.textContent = '✓ Salvo automaticamente'; setTimeout(()=>{ status.textContent=''; }, 2500); }
+}
+
+function carregarEmpresa(){
+  const dados = JSON.parse(localStorage.getItem('empresa_emissora')||'{}');
+  CAMPOS_EMPRESA.forEach(id => {
+    if(dados[id]) document.getElementById(id).value = dados[id];
+  });
+}
+
+window.addEventListener('DOMContentLoaded', ()=>{
+  document.getElementById('data').value = new Date().toISOString().split('T')[0];
+  renderServicos();
+  adicionarProduto();
+  carregarEmpresa();
+  // Salva automaticamente ao sair de qualquer campo da empresa
+  CAMPOS_EMPRESA.forEach(id => {
+    document.getElementById(id).addEventListener('blur', salvarEmpresa);
+  });
+  document.querySelectorAll('input[name="modalidade"]').forEach(r=>
+    r.addEventListener('change',()=>{
+      document.getElementById('contrato-detalhes').style.display =
+        document.getElementById('mod-contrato').checked ? 'block' : 'none';
+    })
+  );
+  renderHistorico();
+});
+
+const TEXTO_CXDAGUA = `HIGIENIZAÇÃO DE CAIXA DE ÁGUA: 1º ESVAZIAR, 2º ESCOVAR SEM PRODUTO, 3º DESINFECÇÃO COM HIPOCLORITO DE SÓDIO E ÁGUA A 2,0% P/P, 4º TRIPLO ENXÁGUE, 5º ENCHER CAIXA E TAMPAR.`;
+
+function toggleCxDagua(checkbox){
+  const campo = document.getElementById('descricaoServicos');
+  const atual = campo.value;
+  if(checkbox.checked){
+    // Adiciona o texto se ainda não estiver presente
+    if(!atual.includes('HIGIENIZAÇÃO DE CAIXA DE ÁGUA')){
+      campo.value = atual ? atual.trimEnd() + '\n\n' + TEXTO_CXDAGUA : TEXTO_CXDAGUA;
+    }
+  } else {
+    // Remove o texto ao desmarcar
+    campo.value = atual
+      .replace('\n\n'+TEXTO_CXDAGUA, '')
+      .replace(TEXTO_CXDAGUA+'\n\n', '')
+      .replace(TEXTO_CXDAGUA, '')
+      .trim();
+  }
+}
+
+function renderServicos(){
+  const lista = document.getElementById('servicos-lista');
+  lista.innerHTML='';
+  SERVICOS.forEach(s=>{
+    const row = document.createElement('div');
+    row.className='servico-row';
+    row.innerHTML=`
+      <input type="checkbox" style="width:17px;height:17px;accent-color:#2563eb;cursor:pointer;" id="srv-${s.id}" ${s.id==='cxdagua'?'onchange="toggleCxDagua(this)"':''}>
+      <div style="font-size:13px;font-weight:500;">${s.nome}</div>
+      <select id="laudo-${s.id}" style="font-size:12px;padding:5px 6px;"><option value="">—</option><option>Sim</option><option>Não</option></select>
+      <input type="text" id="garantia-${s.id}" placeholder="Ex: 30 dias" style="font-size:12px;padding:5px 6px;">
+      <input type="date" id="validade-${s.id}" style="font-size:12px;padding:5px 6px;">
+      <input type="text" id="obs-${s.id}" placeholder="Observação..." style="font-size:12px;padding:5px 6px;">
+    `;
+    lista.appendChild(row);
+  });
+}
+
+function adicionarProduto(){
+  produtoCount++;
+  const id=produtoCount;
+  const div=document.createElement('div');
+  div.className='produto-row';
+  div.id=`prod-${id}`;
+  div.innerHTML=`
+    <button class="btn-remove-prod" onclick="removerProduto(${id})">✕</button>
+    <div style="display:grid;grid-template-columns:1fr 1fr 120px;gap:10px;">
+      <div><label>Nome Comum</label><input id="prod-nome-${id}" placeholder="Ex: BIFENTOL 200 SC"></div>
+      <div><label>Grupo Químico</label><input id="prod-grupo-${id}" placeholder="Ex: PIRETROIDE"></div>
+      <div><label>Qtd. Usada</label><input id="prod-qtd-${id}" placeholder="Ex: 50 ml"></div>
+    </div>
+    <div style="margin-top:8px;">
+      <label>Ant. Tratamento / Observações</label>
+      <input id="prod-ant-${id}" placeholder="Ex: ANTI-HISTAMÍNICO E TRATAMENTO SINTOMÁTICO">
+    </div>
+  `;
+  document.getElementById('produtos-lista').appendChild(div);
+}
+
+function removerProduto(id){
+  const el=document.getElementById(`prod-${id}`);
+  if(el) el.remove();
+}
+
+function coletarProdutos(){
+  const prods=[];
+  document.querySelectorAll('.produto-row').forEach(row=>{
+    const id=row.id.replace('prod-','');
+    const nome=document.getElementById(`prod-nome-${id}`)?.value||'';
+    if(nome.trim()) prods.push({
+      nome, grupo:document.getElementById(`prod-grupo-${id}`)?.value||'',
+      qtd:document.getElementById(`prod-qtd-${id}`)?.value||'',
+      ant:document.getElementById(`prod-ant-${id}`)?.value||'',
+    });
+  });
+  return prods;
+}
+
+function coletarDados(){
+  const pg=[];
+  ['dinheiro','pix','boleto','cheque'].forEach(p=>{
+    if(document.getElementById('pg-'+p).checked) pg.push(p.charAt(0).toUpperCase()+p.slice(1));
+  });
+  const servicos=SERVICOS.filter(s=>document.getElementById('srv-'+s.id).checked).map(s=>({
+    id:s.id, nome:s.nome, tipo:s.tipo,
+    laudo:document.getElementById('laudo-'+s.id).value,
+    garantia:document.getElementById('garantia-'+s.id).value,
+    validade:document.getElementById('validade-'+s.id).value,
+    obsServico:document.getElementById('obs-'+s.id).value,
+  }));
+  const modalidadeEl=document.querySelector('input[name="modalidade"]:checked');
+  const pacoteTipoEl=document.querySelector('input[name="pacote-tipo"]:checked');
+  const statusEl=document.querySelector('input[name="status-contrato"]:checked');
+  return {
+    num:document.getElementById('num').value||'001',
+    data:document.getElementById('data').value,
+    dataServico:document.getElementById('dataServico').value,
+    hora:document.getElementById('hora').value,
+    valor:document.getElementById('valor').value,
+    pagamento:pg,
+    recibo:document.getElementById('recibo').value,
+    notafiscal:document.getElementById('notafiscal').value,
+    empresa:document.getElementById('empresa').value,
+    cnpjEmpresa:document.getElementById('cnpjEmpresa').value,
+    responsavel:document.getElementById('responsavel').value,
+    crt:document.getElementById('crt').value,
+    alvaraSanitario:document.getElementById('alvaraSanitario').value,
+    alvaraFunc:document.getElementById('alvaraFunc').value,
+    nome:document.getElementById('nome').value,
+    endereco:document.getElementById('endereco').value,
+    bairro:document.getElementById('bairro').value,
+    cnpjCliente:document.getElementById('cnpjCliente').value,
+    cidade:document.getElementById('cidade').value,
+    fone:document.getElementById('fone').value,
+    email:document.getElementById('email').value,
+    tipoComercio:document.getElementById('tipoComercio').value,
+    contato:document.getElementById('contato').value,
+    kit:document.getElementById('kit').value,
+    aptos:document.getElementById('aptos').value,
+    servicos, outros:document.getElementById('outros').value,
+    descricaoServicos:document.getElementById('descricaoServicos').value,
+    produtos:coletarProdutos(),
+    modalidade:modalidadeEl?modalidadeEl.value:'',
+    pacoteTipo:pacoteTipoEl?pacoteTipoEl.value:'',
+    statusContrato:statusEl?statusEl.value:'',
+    obs:document.getElementById('obs').value,
+    criadoEm:new Date().toISOString(),
+  };
+}
+
+function salvarOrcamento(){
+  const d=coletarDados();
+  if(!d.nome){alert('Informe o nome do cliente.');return;}
+  const idx=orcamentos.findIndex(o=>o.num===d.num&&o.data===d.data);
+  if(idx>=0) orcamentos[idx]=d; else orcamentos.unshift(d);
+  localStorage.setItem('orcamentos_v2',JSON.stringify(orcamentos));
+  alert('Orçamento salvo!');
+  renderHistorico();
+}
+
+function limparForm(){
+  if(!confirm('Limpar todos os campos?')) return;
+  document.querySelectorAll('#sec-orcamento input:not([type=radio]):not([type=checkbox]),#sec-orcamento select,#sec-orcamento textarea').forEach(el=>{
+    if(!CAMPOS_EMPRESA.includes(el.id)) el.value='';
+  });
+  document.querySelectorAll('#sec-orcamento input[type=checkbox],#sec-orcamento input[type=radio]').forEach(el=>el.checked=false);
+  document.getElementById('contrato-detalhes').style.display='none';
+  document.getElementById('produtos-lista').innerHTML='';
+  produtoCount=0; adicionarProduto();
+  document.getElementById('data').value=new Date().toISOString().split('T')[0];
+}
+
+function showTab(tab){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('sec-'+tab).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b=>{
+    if((tab==='orcamento'&&b.textContent.includes('amento'))||(tab==='historico'&&b.textContent.includes('rico'))||(tab==='agenda'&&b.textContent.includes('genda'))) b.classList.add('active');
+  });
+  if(tab==='historico') renderHistorico();
+  if(tab==='agenda') initAgenda();
+}
+
+function fecharModal(id){document.getElementById(id).classList.remove('open');}
+
+function fmtData(d){
+  if(!d) return '—';
+  const [y,m,dia]=d.split('-'); return `${dia}/${m}/${y}`;
+}
+
+function renderHistorico(){
+  const c=document.getElementById('historico-container');
+  if(!orcamentos.length){
+    c.innerHTML=`<div class="empty"><div class="empty-icon">📋</div><div style="font-size:15px;">Nenhum orçamento salvo ainda.</div></div>`; return;
+  }
+  c.innerHTML=`<div class="historico-list">${orcamentos.map((o,i)=>`
+    <div class="hist-card">
+      <div>
+        <div class="hist-nome">${o.nome||'Sem nome'}</div>
+        <div class="hist-info">Nº ${o.num} · ${fmtData(o.data)} · R$ ${o.valor||'—'} · ${o.servicos.map(s=>s.nome).join(', ')||'—'}</div>
+        <div style="margin-top:5px;">
+          ${o.modalidade==='contrato'?'<span class="badge badge-gold">Contrato</span>':'<span class="badge badge-blue">Avulso</span>'}
+          ${o.statusContrato==='existente'?'<span class="badge badge-green" style="margin-left:4px;">Contrato Ativo</span>':''}
+        </div>
+      </div>
+      <div class="hist-actions">
+        <button class="btn btn-outline" style="padding:6px 12px;font-size:11px;" onclick="verOrcamento(${i})">Ver</button>
+        <button class="btn btn-gold" style="padding:6px 12px;font-size:11px;" onclick="gerarCertHistorico(${i})">Laudo</button>
+        <button class="btn" style="padding:6px 12px;font-size:11px;background:#fee2e2;color:#dc2626;border:none;border-radius:8px;" onclick="excluirOrcamento(${i})">✕</button>
+      </div>
+    </div>`).join('')}</div>`;
+}
+
+function excluirOrcamento(i){
+  if(!confirm('Excluir este orçamento?')) return;
+  orcamentos.splice(i,1);
+  localStorage.setItem('orcamentos_v2',JSON.stringify(orcamentos));
+  renderHistorico();
+}
+
+function verOrcamento(i){
+  const o=orcamentos[i];
+  document.getElementById('ver-content').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px;">
+      <div><b>Nº:</b> ${o.num}</div><div><b>Data:</b> ${fmtData(o.data)}</div>
+      <div><b>Data Serviço:</b> ${fmtData(o.dataServico)}</div><div><b>Hora:</b> ${o.hora||'—'}</div>
+      <div><b>Valor:</b> R$ ${o.valor||'—'}</div><div><b>Pagamento:</b> ${o.pagamento.join(', ')||'—'}</div>
+      <div style="grid-column:span 2"><b>Cliente:</b> ${o.nome}</div>
+      <div style="grid-column:span 2"><b>Endereço:</b> ${o.endereco||'—'}, ${o.bairro||'—'} — ${o.cidade||'—'}</div>
+      <div style="grid-column:span 2"><b>Serviços:</b> ${o.servicos.map(s=>`${s.nome} — válido até ${fmtData(s.validade)}`).join(' | ')||'—'}</div>
+      <div style="grid-column:span 2"><b>Descrição:</b> ${o.descricaoServicos||'—'}</div>
+    </div>
+    <div class="btn-row" style="margin-top:16px;">
+      <button class="btn btn-gold" onclick="gerarCertHistorico(${i});fecharModal('modal-ver')">Gerar Laudo</button>
+    </div>`;
+  document.getElementById('modal-ver').classList.add('open');
+}
+
+function gerarCertHistorico(i){
+  renderCertificado(orcamentos[i]);
+  document.getElementById('modal-cert').classList.add('open');
+}
+
+function abrirCertificado(){
+  const d=coletarDados();
+  if(!d.nome){alert('Informe o nome do cliente antes de gerar o laudo.');return;}
+  renderCertificado(d);
+  document.getElementById('modal-cert').classList.add('open');
+}
+
+function renderCertificado(d){
+  const empresa = d.empresa||'Controle Dedetizadora Ltda';
+
+  const validadeLinhas = d.servicos.length
+    ? d.servicos.map(s=>`<div class="cert-valid-line"><b>${s.nome.toUpperCase()}</b> – ${s.tipo} – <b>${fmtData(s.validade)!=='—'?fmtData(s.validade):s.garantia||'—'}</b></div>`).join('')
+    : '<div style="color:#888;font-size:9pt;">Nenhum serviço selecionado.</div>';
+
+  const prodHTML = d.produtos&&d.produtos.length
+    ? d.produtos.map(p=>`
+        <div class="cert-prod-row">
+          <b>Nome Comum:</b> ${p.nome} &nbsp;&nbsp; <b>Grupo Químico:</b> ${p.grupo||'—'} &nbsp;&nbsp; <b>Qtd. Usada:</b> ${p.qtd||'—'}<br>
+          <b>Ant. Tratamento:</b> ${p.ant||'—'}
+        </div>`).join('')
+    : '<div class="cert-prod-row" style="color:#888;">Nenhum produto cadastrado.</div>';
+
+  const html=`
+  <div class="cert cert-wrap" id="cert-printable">
+    <div class="cert-watermark">${empresa}</div>
+
+    <div class="cert-top">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="cert-logo-box">${empresa.replace(' ','\n')}</div>
+      </div>
+      <div class="cert-resp">
+        <b>${d.responsavel||'Responsável Técnico'}</b><br>
+        ${d.cnpjEmpresa?'CNP: '+d.cnpjEmpresa+'<br>':''}
+        ${d.alvaraSanitario?'Alvará Sanitário: '+d.alvaraSanitario+'<br>':''}
+        ${d.alvaraFunc?'Alvará de Funcionamento: '+d.alvaraFunc:''}
+      </div>
+    </div>
+
+    <div class="cert-label-sec">Empresa Contratante</div>
+    <table class="cert-table">
+      <tr>
+        <td colspan="2"><b>Razão Social:</b> ${d.nome||'—'}${d.tipoComercio?' – '+d.tipoComercio:''}</td>
+      </tr>
+      <tr>
+        <td><b>Endereço:</b> ${d.endereco||'—'}</td>
+        <td style="width:35%"><b>Bairro:</b> ${d.bairro||'—'}</td>
+      </tr>
+      <tr>
+        <td colspan="2"><b>CNPJ:</b> ${d.cnpjCliente||'—'}</td>
+      </tr>
+      <tr>
+        <td><b>Cidade/UF:</b> ${d.cidade||'—'}</td>
+        <td><b>Telefone:</b> ${d.fone||'—'}</td>
+      </tr>
+    </table>
+
+    <div style="margin-top:12px;font-size:10.5pt;"><b>Serviço Realizado no dia: ${fmtData(d.dataServico)}${d.hora?' às '+d.hora:''}</b></div>
+    <div style="margin-top:6px;margin-bottom:4px;font-size:10.5pt;"><b>Certificamos que o serviço é válido até:</b></div>
+    ${validadeLinhas}
+
+    ${d.descricaoServicos?`
+    <div class="cert-desc-box">
+      <div class="cert-desc-title">Descrição dos Serviços:</div>
+      <div style="font-size:9.5pt;">${d.descricaoServicos.replace(/\n/g,'<br>')}</div>
+    </div>`:''}
+
+    ${d.produtos&&d.produtos.length?`
+    <div class="cert-prod-box">
+      <div class="cert-prod-title">Característica(s) do(s) produto(s) aplicado(s)</div>
+      ${prodHTML}
+    </div>`:''}
+
+    <div class="cert-sign-area">
+      <div style="height:40px;"></div>
+      <div class="cert-sign-line">
+        Nome e registro do responsável técnico: ${d.responsavel||'—'}<br>
+        ${d.crt||''}
+      </div>
+    </div>
+
+    <div style="margin-top:12px;border-top:1px solid #ccc;padding-top:6px;font-size:8.5pt;color:#666;display:flex;justify-content:space-between;">
+      <span>Emitido em ${fmtData(d.data)} · Orçamento Nº ${d.num}</span>
+      <span>Pgto: ${d.pagamento.join('/')||'—'} · Recibo: ${d.recibo||'—'} · NF: ${d.notafiscal||'—'} · R$ ${d.valor||'—'}</span>
+    </div>
+  </div>`;
+
+  document.getElementById('cert-content').innerHTML=html;
+}
+
+function imprimirCert(){
+  const conteudo=document.getElementById('cert-printable').outerHTML;
+  const win=window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head>
+    <meta charset="UTF-8"><title>Laudo de Serviço</title>
+    <style>
+      body{font-family:'Times New Roman',Times,serif;font-size:10.5pt;color:#000;padding:15mm 20mm;max-width:210mm;margin:auto;}
+      .cert-top{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:10px;border-bottom:2px solid #000;margin-bottom:14px;}
+      .cert-logo-box{border:2px solid #000;border-radius:3px;width:88px;height:60px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;text-align:center;color:#1a3c6e;line-height:1.3;padding:4px;white-space:pre-line;}
+      .cert-resp{font-size:9pt;text-align:right;line-height:1.7;}
+      .cert-label-sec{font-weight:700;font-size:10.5pt;margin:10px 0 5px;text-decoration:underline;}
+      .cert-table{width:100%;border-collapse:collapse;font-size:9.5pt;}
+      .cert-table td{border:1px solid #000;padding:3px 7px;}
+      .cert-valid-line{font-size:10pt;margin:3px 0;}
+      .cert-desc-box{border:1px solid #000;padding:8px 10px;margin:8px 0;font-size:9.5pt;}
+      .cert-desc-title{font-weight:700;font-size:10pt;text-align:center;margin-bottom:5px;}
+      .cert-prod-box{border:1px solid #000;font-size:9pt;margin-top:8px;}
+      .cert-prod-title{font-weight:700;font-size:9.5pt;text-align:center;padding:4px;background:#f0f0f0;border-bottom:1px solid #000;}
+      .cert-prod-row{padding:4px 9px;border-bottom:1px solid #ccc;line-height:1.75;}
+      .cert-prod-row:last-child{border-bottom:none;}
+      .cert-sign-area{margin-top:28px;text-align:center;}
+      .cert-sign-line{border-top:1.5px solid #000;display:inline-block;min-width:260px;padding-top:4px;font-size:9pt;text-align:center;}
+      .cert-watermark{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-30deg);font-size:50pt;font-weight:800;color:rgba(26,60,110,.05);pointer-events:none;white-space:nowrap;}
+      .cert-wrap{position:relative;}
+    
+  /* ═══ AGENDA ═══ */
+  .agenda-layout{display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start;}
+  /* Calendar */
+  .cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .cal-nav-btn{background:var(--navy2);color:#fff;border:none;border-radius:7px;width:32px;height:32px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .cal-nav-btn:hover{background:var(--blue);}
+  .cal-month{font-family:'Syne',sans-serif;font-weight:800;font-size:16px;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+  .cal-dow{text-align:center;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;padding:4px 0 6px;}
+  .cal-day{min-height:52px;border-radius:8px;border:1.5px solid var(--border);background:#fff;padding:4px 5px;cursor:pointer;transition:all .15s;position:relative;}
+  .cal-day:hover{border-color:var(--blue);background:#eff6ff;}
+  .cal-day.today{border-color:var(--blue);background:#eff6ff;}
+  .cal-day.has-event{border-color:var(--navy2);}
+  .cal-day.selected{border-color:var(--blue);background:#dbeafe;box-shadow:0 0 0 2px rgba(37,99,235,.25);}
+  .cal-day.other-month{opacity:.35;}
+  .cal-day-num{font-size:12px;font-weight:700;color:var(--text);}
+  .cal-day.today .cal-day-num{color:var(--blue);}
+  .cal-dot-row{display:flex;flex-wrap:wrap;gap:2px;margin-top:3px;}
+  .cal-dot{width:7px;height:7px;border-radius:50%;}
+  .dot-agendado{background:var(--blue);}
+  .dot-realizado{background:var(--green);}
+  .dot-cancelado{background:#ef4444;}
+  /* Lista lateral */
+  .agenda-list-header{font-family:'Syne',sans-serif;font-weight:800;font-size:14px;margin-bottom:10px;color:var(--navy2);}
+  .ag-item{background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;border-left:4px solid var(--blue);transition:box-shadow .15s;}
+  .ag-item:hover{box-shadow:0 3px 12px rgba(0,0,0,.08);}
+  .ag-item.realizado{border-left-color:var(--green);}
+  .ag-item.cancelado{border-left-color:#ef4444;opacity:.7;}
+  .ag-nome{font-weight:700;font-size:13px;}
+  .ag-info{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.5;}
+  .ag-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+  .ag-status-btn{font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;border:none;cursor:pointer;}
+  .btn-agendado{background:#dbeafe;color:var(--blue);}
+  .btn-realizado{background:var(--green-light);color:var(--green);}
+  .btn-cancelado{background:#fee2e2;color:#dc2626;}
+  .ag-edit-btn{font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;background:#f1f5f9;color:var(--muted);border:none;cursor:pointer;}
+  .ag-edit-btn:hover{background:var(--border);}
+</style>
+  </head><body>${conteudo}
+<!-- ══ MODAL AGENDAMENTO ══ -->
+<div class="modal-overlay" id="modal-ag">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-ag-titulo">Novo Agendamento</span>
+      <button class="modal-close" onclick="fecharModal('modal-ag')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="span-2" style="grid-column:span 2;">
+          <label>Vincular a Orçamento Salvo (opcional)</label>
+          <select id="ag-orcamento" onchange="preencherDoOrcamento()">
+            <option value="">— Agendamento avulso —</option>
+          </select>
+        </div>
+        <div style="grid-column:span 2;"><label>Nome do Cliente</label><input id="ag-nome" placeholder="Nome completo"></div>
+        <div style="grid-column:span 2;"><label>Endereço</label><input id="ag-endereco" placeholder="Endereço do serviço"></div>
+        <div style="grid-column:span 2;"><label>Serviço a Realizar</label><input id="ag-servico" placeholder="Ex: Dedetização, Desratização..."></div>
+        <div><label>Data</label><input type="date" id="ag-data"></div>
+        <div><label>Hora</label><input type="time" id="ag-hora"></div>
+        <div style="grid-column:span 2;"><label>Responsável / Técnico</label><input id="ag-resp" placeholder="Nome do técnico responsável"></div>
+        <div style="grid-column:span 2;"><label>Observação</label><textarea id="ag-obs" style="min-height:60px;" placeholder="Observações sobre o agendamento..."></textarea></div>
+        <div style="grid-column:span 2;">
+          <label>Status</label>
+          <select id="ag-status">
+            <option value="agendado">Agendado</option>
+            <option value="realizado">Realizado</option>
+            <option value="cancelado">Cancelado</option>
+          </select>
+        </div>
+      </div>
+      <input type="hidden" id="ag-id">
+      <div class="btn-row" style="margin-top:16px;">
+        <button class="btn btn-outline" onclick="fecharModal('modal-ag')">Cancelar</button>
+        <button class="btn btn-primary" onclick="salvarAgendamento()">Salvar Agendamento</button>
+      </div>
+    </div>
+  </div>
+</div>
+</body></html>`);
+  win.document.close();
+  win.focus();
+  setTimeout(()=>{win.print();},700);
+}
+
+// ══════════════════ AGENDA ══════════════════
+let agendamentos = JSON.parse(localStorage.getItem('agendamentos_v1')||'[]');
+let calAno, calMes, calDiaSel;
+
+function initAgenda(){
+  const hoje = new Date();
+  calAno = hoje.getFullYear();
+  calMes = hoje.getMonth();
+  calDiaSel = hoje.toISOString().split('T')[0];
+  renderCalendario();
+  renderAgendaTodos();
+  popularSelectOrcamentos();
+}
+
+function popularSelectOrcamentos(){
+  const sel = document.getElementById('ag-orcamento');
+  if(!sel) return;
+  sel.innerHTML = '<option value="">— Agendamento avulso —</option>';
+  orcamentos.forEach((o,i)=>{
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = `Nº${o.num} – ${o.nome} (${fmtData(o.data)})`;
+    sel.appendChild(opt);
+  });
+}
+
+function preencherDoOrcamento(){
+  const idx = document.getElementById('ag-orcamento').value;
+  if(idx==='') return;
+  const o = orcamentos[parseInt(idx)];
+  document.getElementById('ag-nome').value = o.nome||'';
+  document.getElementById('ag-endereco').value = o.endereco||'';
+  document.getElementById('ag-data').value = o.dataServico||'';
+  document.getElementById('ag-hora').value = o.hora||'';
+  document.getElementById('ag-servico').value = o.servicos.map(s=>s.nome).join(', ')||o.outros||'';
+  const emp = JSON.parse(localStorage.getItem('empresa_emissora')||'{}');
+  document.getElementById('ag-resp').value = emp.responsavel||'';
+}
+
+function mudarMes(dir){
+  calMes += dir;
+  if(calMes > 11){calMes=0; calAno++;}
+  if(calMes < 0){calMes=11; calAno--;}
+  renderCalendario();
+}
+
+function renderCalendario(){
+  const meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  document.getElementById('cal-titulo').textContent = meses[calMes]+' '+calAno;
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+  ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].forEach(d=>{
+    const el=document.createElement('div'); el.className='cal-dow'; el.textContent=d; grid.appendChild(el);
+  });
+  const primeiro = new Date(calAno, calMes, 1);
+  const ultimo = new Date(calAno, calMes+1, 0);
+  const hoje = new Date().toISOString().split('T')[0];
+  // Dias do mês anterior
+  for(let i=0;i<primeiro.getDay();i++){
+    const d = new Date(calAno, calMes, -primeiro.getDay()+i+1);
+    const el=document.createElement('div'); el.className='cal-day other-month';
+    el.innerHTML=`<div class="cal-day-num">${d.getDate()}</div>`;
+    grid.appendChild(el);
+  }
+  // Dias do mês
+  for(let d=1;d<=ultimo.getDate();d++){
+    const dateStr = `${calAno}-${String(calMes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const ags = agendamentos.filter(a=>a.data===dateStr);
+    const el=document.createElement('div');
+    el.className='cal-day'+(dateStr===hoje?' today':'')+(dateStr===calDiaSel?' selected':'')+(ags.length?' has-event':'');
+    const dots = ags.map(a=>`<div class="cal-dot dot-${a.status||'agendado'}"></div>`).join('');
+    el.innerHTML=`<div class="cal-day-num">${d}</div><div class="cal-dot-row">${dots}</div>`;
+    el.onclick=()=>selecionarDia(dateStr);
+    grid.appendChild(el);
+  }
+}
+
+function selecionarDia(dateStr){
+  calDiaSel = dateStr;
+  renderCalendario();
+  const [y,m,d] = dateStr.split('-');
+  document.getElementById('agenda-list-titulo').textContent = `${d}/${m}/${y}`;
+  const ags = agendamentos.filter(a=>a.data===dateStr);
+  const container = document.getElementById('agenda-list-items');
+  if(!ags.length){
+    container.innerHTML=`<div style="text-align:center;padding:24px 10px;color:var(--muted);font-size:13px;">Nenhum agendamento neste dia.<br><br>
+      <button class="btn btn-primary" style="font-size:11px;padding:7px 16px;" onclick="abrirModalAgendamento(null,'${dateStr}')">+ Agendar aqui</button></div>`;
+    return;
+  }
+  container.innerHTML = ags.map(a=>agItemHTML(a, true)).join('');
+}
+
+function agItemHTML(a, compact=false){
+  const statusLabel = {agendado:'Agendado',realizado:'Realizado',cancelado:'Cancelado'}[a.status||'agendado'];
+  const dotCor = {agendado:'var(--blue)',realizado:'var(--green)',cancelado:'#ef4444'}[a.status||'agendado'];
+  return `<div class="ag-item ${a.status||'agendado'}" id="agitem-${a.id}">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+      <div class="ag-nome">${a.nome||'—'}</div>
+      <span style="background:#f1f5f9;color:var(--muted);font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap;margin-left:6px;">${fmtData(a.data)}${a.hora?' '+a.hora:''}</span>
+    </div>
+    <div class="ag-info">
+      ${a.servico?'🔧 '+a.servico+'<br>':''}
+      ${a.endereco?'📍 '+a.endereco+'<br>':''}
+      ${a.resp?'👤 '+a.resp+'<br>':''}
+      ${a.obs?'💬 '+a.obs:''}
+    </div>
+    <div class="ag-actions">
+      <span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;background:#f1f5f9;color:var(--muted);">
+        <span style="width:7px;height:7px;border-radius:50%;background:${dotCor};display:inline-block;"></span>${statusLabel}
+      </span>
+      <button class="ag-status-btn btn-agendado" onclick="alterarStatus('${a.id}','agendado')">Agendado</button>
+      <button class="ag-status-btn btn-realizado" onclick="alterarStatus('${a.id}','realizado')">Realizado</button>
+      <button class="ag-status-btn btn-cancelado" onclick="alterarStatus('${a.id}','cancelado')">Cancelado</button>
+      <button class="ag-edit-btn" onclick="abrirModalAgendamento('${a.id}')">✏️ Editar</button>
+      <button class="ag-edit-btn" style="color:#dc2626;" onclick="excluirAgendamento('${a.id}')">✕</button>
+    </div>
+  </div>`;
+}
+
+function filtrarAgenda(status){
+  const lista = status==='todos' ? agendamentos : agendamentos.filter(a=>(a.status||'agendado')===status);
+  const container = document.getElementById('agenda-todos');
+  if(!lista.length){
+    container.innerHTML=`<div class="empty" style="padding:30px;"><div class="empty-icon" style="font-size:32px;">📅</div><div style="font-size:13px;">Nenhum agendamento encontrado.</div></div>`;
+    return;
+  }
+  // Sort by date
+  const sorted = [...lista].sort((a,b)=>a.data.localeCompare(b.data));
+  container.innerHTML = sorted.map(a=>agItemHTML(a)).join('');
+}
+
+function renderAgendaTodos(){ filtrarAgenda('todos'); }
+
+function abrirModalAgendamento(id, dataPreset=null){
+  popularSelectOrcamentos();
+  document.getElementById('ag-orcamento').value='';
+  ['ag-nome','ag-endereco','ag-servico','ag-hora','ag-obs'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('ag-status').value='agendado';
+  document.getElementById('ag-id').value='';
+  document.getElementById('modal-ag-titulo').textContent='Novo Agendamento';
+  // Preencher responsável da empresa por padrão
+  const emp = JSON.parse(localStorage.getItem('empresa_emissora')||'{}');
+  document.getElementById('ag-resp').value = emp.responsavel||'';
+  if(id){
+    const a = agendamentos.find(x=>x.id===id);
+    if(a){
+      document.getElementById('modal-ag-titulo').textContent='Editar Agendamento';
+      document.getElementById('ag-nome').value=a.nome||'';
+      document.getElementById('ag-endereco').value=a.endereco||'';
+      document.getElementById('ag-servico').value=a.servico||'';
+      document.getElementById('ag-data').value=a.data||'';
+      document.getElementById('ag-hora').value=a.hora||'';
+      document.getElementById('ag-resp').value=a.resp||'';
+      document.getElementById('ag-obs').value=a.obs||'';
+      document.getElementById('ag-status').value=a.status||'agendado';
+      document.getElementById('ag-id').value=a.id;
+    }
+  } else {
+    document.getElementById('ag-data').value = dataPreset || new Date().toISOString().split('T')[0];
+  }
+  document.getElementById('modal-ag').classList.add('open');
+}
+
+function salvarAgendamento(){
+  const nome = document.getElementById('ag-nome').value;
+  if(!nome){alert('Informe o nome do cliente.');return;}
+  const idExist = document.getElementById('ag-id').value;
+  const ag = {
+    id: idExist || Date.now().toString(),
+    nome, endereco:document.getElementById('ag-endereco').value,
+    servico:document.getElementById('ag-servico').value,
+    data:document.getElementById('ag-data').value,
+    hora:document.getElementById('ag-hora').value,
+    resp:document.getElementById('ag-resp').value,
+    obs:document.getElementById('ag-obs').value,
+    status:document.getElementById('ag-status').value,
+  };
+  if(idExist){
+    const idx = agendamentos.findIndex(a=>a.id===idExist);
+    if(idx>=0) agendamentos[idx]=ag;
+  } else {
+    agendamentos.push(ag);
+  }
+  localStorage.setItem('agendamentos_v1',JSON.stringify(agendamentos));
+  fecharModal('modal-ag');
+  renderCalendario();
+  renderAgendaTodos();
+  if(calDiaSel===ag.data) selecionarDia(ag.data);
+}
+
+function alterarStatus(id, status){
+  const idx = agendamentos.findIndex(a=>a.id===id);
+  if(idx>=0){ agendamentos[idx].status=status; localStorage.setItem('agendamentos_v1',JSON.stringify(agendamentos)); }
+  renderCalendario();
+  renderAgendaTodos();
+  if(calDiaSel) selecionarDia(calDiaSel);
+}
+
+function excluirAgendamento(id){
+  if(!confirm('Excluir este agendamento?')) return;
+  agendamentos = agendamentos.filter(a=>a.id!==id);
+  localStorage.setItem('agendamentos_v1',JSON.stringify(agendamentos));
+  renderCalendario();
+  renderAgendaTodos();
+  if(calDiaSel) selecionarDia(calDiaSel);
+}
+
+
+
+// ══ NOVAS FUNCIONALIDADES ══
+
+function _imprimirOrdemServico(ags, dia) {
+  const emp = JSON.parse(localStorage.getItem('empresa_emissora') || '{}');
+  const empresa = emp.empresa || 'Controle Dedetizadora Ltda';
+  const tipoLabel = {servico:'Serviço', retorno:'Retorno', novo:'Cliente Novo'};
+  const dataTitle = dia ? fmtData(dia) : fmtData(ags[0].data);
+
+  const itens = ags.map((a, i) => `
+    <div style="border:1px solid #ccc;border-radius:6px;padding:14px 18px;margin-bottom:14px;page-break-inside:avoid;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;border-bottom:1px solid #eee;padding-bottom:8px;">
+        <div style="font-weight:700;font-size:13pt;">${i+1}. ${a.nome||'—'}</div>
+        <div style="font-size:10pt;color:#555;">${a.hora||'—'} &nbsp;|&nbsp; <b>${tipoLabel[a.tipoVisita||'servico']}</b></div>
+      </div>
+      <table style="width:100%;font-size:10pt;border-collapse:collapse;">
+        <tr>
+          <td style="padding:3px 0;width:140px;color:#555;"><b>Endereço:</b></td>
+          <td>${a.endereco||'—'}${a.bairro?', '+a.bairro:''}${a.cidade?' — '+a.cidade:''}${a.cep?' — CEP '+a.cep:''}</td>
+        </tr>
+        <tr>
+          <td style="padding:3px 0;color:#555;"><b>Serviço:</b></td>
+          <td>${a.servico||'—'}</td>
+        </tr>
+        <tr>
+          <td style="padding:3px 0;color:#555;"><b>Técnico:</b></td>
+          <td>${a.resp||'—'}</td>
+        </tr>
+        ${a.obs ? `<tr><td style="padding:3px 0;color:#555;"><b>Obs:</b></td><td>${a.obs}</td></tr>` : ''}
+      </table>
+    </div>`).join('');
+
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head>
+    <meta charset="UTF-8"><title>Agenda ${dataTitle}</title>
+    <style>
+      body{font-family:'Times New Roman',Times,serif;padding:15mm 20mm;max-width:210mm;margin:auto;color:#000;}
+      h2{text-align:center;font-size:16pt;margin-bottom:4px;}
+      .sub{text-align:center;font-size:10pt;color:#555;margin-bottom:20px;}
+      .resumo{background:#f5f5f5;border-radius:6px;padding:8px 14px;font-size:10pt;margin-bottom:18px;display:flex;gap:20px;}
+      @media print{body{padding:10mm 15mm;}}
+    </style>
+  </head><body>
+    <h2>${empresa}</h2>
+    <div class="sub">Agenda de Serviços — ${dataTitle}</div>
+    <div class="resumo">
+      <span>📋 Total: <b>${ags.length}</b> agendamentos</span>
+      <span>🔧 Serviços: <b>${ags.filter(a=>a.tipoVisita==='servico'||!a.tipoVisita).length}</b></span>
+      <span>🔄 Retornos: <b>${ags.filter(a=>a.tipoVisita==='retorno').length}</b></span>
+      <span>🆕 Clientes novos: <b>${ags.filter(a=>a.tipoVisita==='novo').length}</b></span>
+    </div>
+    ${itens}
+  
+<!-- ══ FORMULÁRIO CLIENTE (EMBUTIDO) ══ -->
+<div id="overlay-formulario" style="display:none;position:fixed;inset:0;background:#f1f5f9;z-index:9999;overflow-y:auto;">
+  <div style="max-width:520px;margin:0 auto;padding:0 0 40px;">
+    <div style="background:#0f2d4a;padding:24px 20px;text-align:center;">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:#fff;" id="form-empresa-nome">Controle Dedetizadora</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.7);margin-top:4px;">Preencha seus dados para atendimento</div>
+    </div>
+    <div style="padding:24px 16px;">
+      <p style="font-size:11px;color:#64748b;margin-bottom:16px;">Campos com <span style="color:#ef4444;">*</span> são obrigatórios.</p>
+      <div id="form-erro" style="background:#fee2e2;color:#dc2626;border-radius:8px;padding:10px 14px;font-size:13px;font-weight:600;margin-bottom:14px;display:none;">Por favor, preencha todos os campos obrigatórios.</div>
+      <div id="form-corpo">
+        <!-- IDENTIFICAÇÃO -->
+        <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:22px;margin-bottom:16px;">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#1a3c6e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px;">Identificação</div>
+          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Nome completo / Razão Social <span style="color:#ef4444;">*</span></label><input id="ff-nome" type="text" placeholder="Seu nome completo ou razão social" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
+          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">CPF / CNPJ <span style="color:#ef4444;">*</span></label><input id="ff-cnpj" type="text" placeholder="000.000.000-00 ou 00.000.000/0001-00" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
+          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Tipo <span style="color:#ef4444;">*</span></label>
+            <select id="ff-tipo" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;">
+              <option value="">— Selecione —</option>
+              <option value="Residência">Residência</option>
+              <option value="Apartamento">Apartamento</option>
+              <option value="Comércio">Comércio / Empresa</option>
+              <option value="Indústria">Indústria</option>
+              <option value="Condomínio">Condomínio</option>
+              <option value="Outro">Outro</option>
+            </select>
+          </div>
+        </div>
+        <!-- ENDEREÇO -->
+        <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:22px;margin-bottom:16px;">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#1a3c6e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px;">Endereço</div>
+          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">CEP <span style="color:#ef4444;">*</span></label><input id="ff-cep" type="text" placeholder="00000-000" maxlength="9" oninput="mascaraCepFF(this);buscarCepFF(this.value)" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
+          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Rua / Avenida <span style="color:#ef4444;">*</span></label><input id="ff-endereco" type="text" placeholder="Rua, número" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
+          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Complemento / Endereço interno do condomínio</label><input id="ff-complemento" type="text" placeholder="Ex: Apto 101, Bloco B..." style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
+          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Bairro <span style="color:#ef4444;">*</span></label><input id="ff-bairro" type="text" placeholder="Bairro" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
+          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Cidade / UF <span style="color:#ef4444;">*</span></label><input id="ff-cidade" type="text" placeholder="Ex: Uberlândia/MG" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
+        </div>
+        <!-- CONTATO -->
+        <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:22px;margin-bottom:16px;">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#1a3c6e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px;">Contato</div>
+          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Telefone / WhatsApp <span style="color:#ef4444;">*</span></label><input id="ff-fone" type="tel" placeholder="(34) 9 0000-0000" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
+          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">E-mail</label><input id="ff-email" type="email" placeholder="seu@email.com" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
+        </div>
+        <button onclick="enviarFormularioEmbutido()" style="width:100%;background:#1a3c6e;color:#fff;border:none;border-radius:10px;padding:15px;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer;">Enviar Dados ✓</button>
+      </div>
+      <!-- SUCESSO -->
+      <div id="form-sucesso" style="display:none;text-align:center;padding:40px 20px;">
+        <div style="font-size:60px;margin-bottom:16px;">✅</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:#059669;margin-bottom:8px;">Dados enviados!</div>
+        <div style="font-size:14px;color:#64748b;line-height:1.6;">Recebemos suas informações com sucesso.<br>Em breve nossa equipe entrará em contato.</div>
+        <button onclick="fecharFormularioEmbutido()" style="margin-top:20px;background:#1a3c6e;color:#fff;border:none;border-radius:8px;padding:10px 24px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body></html>`);
+  win.document.close();
+  win.focus();
+  setTimeout(() => { win.print(); }, 600);
+}
+
+function abrirFormularioEmbutido() {
+  const emp = JSON.parse(localStorage.getItem('empresa_emissora')||'{}');
+  const nomeEmp = document.getElementById('form-empresa-nome');
+  if(nomeEmp && emp.empresa) nomeEmp.textContent = emp.empresa;
+  document.getElementById('overlay-formulario').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+}
+
+function abrirModalCliente(id) {
+  ['cli-nome','cli-endereco','cli-bairro','cli-cep','cli-cidade','cli-fone','cli-email','cli-cnpj','cli-tipo','cli-obs','cli-ultimo-servico','cli-vencimento'].forEach(f => {
+    const el = document.getElementById(f);
+    if (el) el.value = '';
+  });
+  document.getElementById('cli-id').value = '';
+  document.getElementById('modal-cliente-titulo').textContent = 'Novo Cliente';
+  if (id) {
+    const c = clientes.find(x => x.id === id);
+    if (c) {
+      document.getElementById('modal-cliente-titulo').textContent = 'Editar Cliente';
+      document.getElementById('cli-nome').value = c.nome||'';
+      document.getElementById('cli-endereco').value = c.endereco||'';
+      document.getElementById('cli-bairro').value = c.bairro||'';
+      document.getElementById('cli-cep').value = c.cep||'';
+      document.getElementById('cli-cidade').value = c.cidade||'';
+      document.getElementById('cli-fone').value = c.fone||'';
+      document.getElementById('cli-email').value = c.email||'';
+      document.getElementById('cli-cnpj').value = c.cnpj||'';
+      document.getElementById('cli-tipo').value = c.tipo||'';
+      document.getElementById('cli-obs').value = c.obs||'';
+      document.getElementById('cli-ultimo-servico').value = c.ultimoServico||'';
+      document.getElementById('cli-vencimento').value = c.vencimento||'';
+      document.getElementById('cli-id').value = c.id;
+    }
+  }
+  document.getElementById('modal-cliente').classList.add('open');
+}
+
+function abrirWhatsApp() {
+  const msg = encodeURIComponent(window._msgWhatsapp||'');
+  window.open('https://wa.me/?text='+msg, '_blank');
+}
+
+async function buscarCepFF(cep) {
+  const c = cep.replace(/\D/g,'');
+  if (c.length !== 8) return;
+  try {
+    const r = await fetch('https://viacep.com.br/ws/'+c+'/json/');
+    const d = await r.json();
+    if (!d.erro) {
+      document.getElementById('ff-endereco').value = d.logradouro||'';
+      document.getElementById('ff-bairro').value = d.bairro||'';
+      document.getElementById('ff-cidade').value = (d.localidade||'')+'/'+(d.uf||'');
+    }
+  } catch(e) {}
+}
+
+function buscarClienteAgenda(q) {
+  const drop = document.getElementById('ag-cliente-drop');
+  if (!q || q.length < 2) { drop.style.display='none'; return; }
+  const results = clientes.filter(c =>
+    (c.nome||'').toLowerCase().includes(q.toLowerCase()) ||
+    (c.fone||'').includes(q)
+  ).slice(0, 8);
+  if (!results.length) { drop.style.display='none'; return; }
+  drop.innerHTML = results.map(c => `
+    <div onclick="selecionarClienteAgenda('${c.id}')"
+      style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px;"
+      onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='#fff'">
+      <div style="font-weight:700;">${c.nome}</div>
+      <div style="font-size:11px;color:var(--muted);">${c.fone||''} ${c.endereco?'· '+c.endereco:''}</div>
+    </div>`).join('');
+  drop.style.display = 'block';
+}
+
+function calcularValidade(srvId) {
+  const garantiaEl = document.getElementById('garantia-' + srvId);
+  const validadeEl = document.getElementById('validade-' + srvId);
+  const dataServicoEl = document.getElementById('dataServico');
+  if (!garantiaEl || !validadeEl) return;
+
+  const garantiaStr = garantiaEl.value.replace(/[^0-9]/g, '');
+  const dias = parseInt(garantiaStr);
+  if (!dias || isNaN(dias)) return;
+
+  // Usa data do serviço se preenchida, senão usa hoje
+  const baseStr = dataServicoEl?.value || new Date().toISOString().split('T')[0];
+  const base = new Date(baseStr + 'T12:00:00');
+  base.setDate(base.getDate() + dias);
+  validadeEl.value = base.toISOString().split('T')[0];
+}
+
+function copiarLinkFormulario() {
+  const link = document.getElementById('link-formulario').value;
+  navigator.clipboard.writeText(link);
+  mostrarToast('Link copiado! ✓');
+}
+
+function copiarMensagem() {
+  navigator.clipboard.writeText(window._msgWhatsapp||'');
+  mostrarToast('Mensagem copiada! ✓');
+}
+
+async function enviarFormularioEmbutido() {
+  const nome = document.getElementById('ff-nome').value.trim();
+  const cnpj = document.getElementById('ff-cnpj').value.trim();
+  const tipo = document.getElementById('ff-tipo').value;
+  const cep  = document.getElementById('ff-cep').value.trim();
+  const end  = document.getElementById('ff-endereco').value.trim();
+  const bairro = document.getElementById('ff-bairro').value.trim();
+  const cidade = document.getElementById('ff-cidade').value.trim();
+  const fone = document.getElementById('ff-fone').value.trim();
+  const erro = document.getElementById('form-erro');
+  if (!nome||!cnpj||!tipo||!cep||!end||!bairro||!cidade||!fone) {
+    erro.style.display='block'; return;
+  }
+  erro.style.display='none';
+  if(!window._firebaseLoaded){alert('Aguarde, conectando...');return;}
+  try {
+    await window._setDoc(window._doc(window._db,'respostas', Date.now().toString()), {
+      nome, cnpj, tipo, cep, endereco:end,
+      complemento: document.getElementById('ff-complemento').value.trim(),
+      bairro, cidade, fone,
+      email: document.getElementById('ff-email').value.trim(),
+      criadoEm: new Date().toISOString(),
+    });
+    document.getElementById('form-corpo').style.display='none';
+    document.getElementById('form-sucesso').style.display='block';
+  } catch(e){ alert('Erro: '+e.message); }
+}
+
+function enviarFormularioWhatsApp() {
+  const link = document.getElementById('link-formulario').value;
+  const emp = JSON.parse(localStorage.getItem('empresa_emissora')||'{}');
+  const empresa = emp.empresa || 'Controle Dedetizadora';
+  const msg = encodeURIComponent(`Olá! 😊 Aqui é da *${empresa}*.\n\nPara agilizar seu atendimento, preencha seus dados no link abaixo — leva menos de 1 minuto!\n\n🔗 ${link}\n\nObrigado! ✅`);
+  window.open('https://wa.me/?text='+msg, '_blank');
+}
+
+async function excluirCliente(id) {
+  if (!confirm('Excluir este cliente?')) return;
+  try {
+    await window._deleteDoc(window._doc(window._db, 'clientes', id));
+    mostrarToast('Cliente excluído.');
+  } catch(e) { alert('Erro: ' + e.message); }
+}
+
+async function excluirResposta(id) {
+  if (!confirm('Excluir esta resposta?')) return;
+  await window._deleteDoc(window._doc(window._db,'respostas',id));
+  mostrarToast('Resposta excluída.');
+}
+
+function fecharDropCliente() {
+  const drop = document.getElementById('ag-cliente-drop');
+  if (drop) drop.style.display = 'none';
+}
+
+function fecharFormularioEmbutido() {
+  document.getElementById('overlay-formulario').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function filtrarClientes() {
+  const q = document.getElementById('busca-cliente')?.value.toLowerCase() || '';
+  const filtrados = q
+    ? clientes.filter(c =>
+        (c.nome||'').toLowerCase().includes(q) ||
+        (c.fone||'').includes(q) ||
+        (c.endereco||'').toLowerCase().includes(q) ||
+        (c.tipo||'').toLowerCase().includes(q)
+      )
+    : clientes;
+  renderClientes(filtrados);
+}
+
+async function importarResposta(id) {
+  const r = (window._respostas||[]).find(x => x.id === id);
+  if (!r) return;
+  // Importa para cadastro de clientes
+  const nomeNorm = (r.nome||'').trim().toLowerCase();
+  const existe = clientes.find(c => (c.nome||'').trim().toLowerCase() === nomeNorm);
+  if (existe) {
+    if (!confirm('Cliente "'+r.nome+'" já está cadastrado. Atualizar dados?')) return;
+    await window._setDoc(window._doc(window._db,'clientes',existe.id), {...existe,
+      fone: r.fone||existe.fone, email: r.email||existe.email,
+      endereco: r.endereco||existe.endereco, bairro: r.bairro||existe.bairro,
+      cep: r.cep||existe.cep, cidade: r.cidade||existe.cidade,
+      cnpj: r.cnpj||existe.cnpj, complemento: r.complemento||existe.complemento||'',
+    });
+  } else {
+    const cliId = 'cli_' + Date.now().toString();
+    await window._setDoc(window._doc(window._db,'clientes',cliId), {
+      id: cliId, nome: r.nome, fone: r.fone||'', email: r.email||'',
+      endereco: r.endereco||'', bairro: r.bairro||'', cep: r.cep||'',
+      cidade: r.cidade||'', cnpj: r.cnpj||'', complemento: r.complemento||'',
+      tipo: '', obs: '', ultimoServico: '', vencimento: '',
+      atualizadoEm: new Date().toISOString(),
+    });
+  }
+  mostrarToast('Cliente importado para o cadastro! ✓');
+}
+
+function imprimirAgendaDia() {
+  const dia = calDiaSel || new Date().toISOString().split('T')[0];
+  const ags = agendamentos.filter(a => a.data === dia).sort((a,b) => (a.hora||'').localeCompare(b.hora||''));
+  if (!ags.length) { alert('Nenhum agendamento para este dia.'); return; }
+  _imprimirOrdemServico(ags, dia);
+}
+
+function imprimirAgendamento(id) {
+  const a = agendamentos.find(x => x.id === id);
+  if (!a) return;
+  _imprimirOrdemServico([a]);
+}
+
+function initCaptacao() {
+  const emp = JSON.parse(localStorage.getItem('empresa_emissora')||'{}');
+  const empresa = emp.empresa || 'Controle Dedetizadora';
+  const linkBase = window.location.origin + window.location.pathname.replace('index.html','') + 'formulario.html';
+  // Use current domain
+  const link = window.location.href.split('?')[0].split('#')[0]+'?form=1';
+  document.getElementById('link-formulario').value = link;
+
+  const msg = `Olá! 😊 Aqui é da *${empresa}*.
+
+Para realizarmos o seu orçamento, precisamos de algumas informações. Por favor, preencha os dados abaixo:
+
+1️⃣ *Nome completo / Razão Social:*
+2️⃣ *CPF / CNPJ:*
+3️⃣ *Endereço completo* (Rua, número, complemento, endereço interno do condomínio se houver):
+4️⃣ *Bairro:*
+5️⃣ *CEP:*
+6️⃣ *Cidade / UF:*
+7️⃣ *Telefone / WhatsApp:*
+8️⃣ *E-mail:*
+
+_Ou acesse o link abaixo e preencha o formulário diretamente:_
+🔗 ${link}
+
+Obrigado! ✅`;
+
+  document.getElementById('msg-whatsapp').textContent = msg;
+  window._msgWhatsapp = msg;
+  renderRespostas();
+}
+
+function mascaraCepFF(el){
+  let v = el.value.replace(/\D/g,'');
+  if(v.length > 5) v = v.slice(0,5)+'-'+v.slice(5,8);
+  el.value = v;
+}
+
+function recalcularTodasValidades() {
+  const SERVICOS_IDS = ['dedetizacao','desratizacao','cxdagua','descupinizacao','cxgordura'];
+  SERVICOS_IDS.forEach(id => calcularValidade(id));
+}
+
+function renderClientes(lista) {
+  const arr = lista || clientes;
+  const container = document.getElementById('clientes-lista');
+  if (!container) return;
+  if (!arr.length) {
+    container.innerHTML = `<div class="empty"><div class="empty-icon">👥</div><div style="font-size:15px;">Nenhum cliente cadastrado ainda.</div></div>`;
+    return;
+  }
+  const hoje = new Date();
+  container.innerHTML = arr.map(c => {
+    const vencDate = c.vencimento ? new Date(c.vencimento + 'T12:00:00') : null;
+    const dias = vencDate ? Math.ceil((vencDate - hoje) / (1000*60*60*24)) : null;
+    let vencBadge = '';
+    if (dias !== null) {
+      if (dias < 0) vencBadge = `<span class="badge" style="background:#fee2e2;color:#dc2626;">VENCIDO</span>`;
+      else if (dias <= 30) vencBadge = `<span class="badge badge-gold">Vence em ${dias}d</span>`;
+      else vencBadge = `<span class="badge badge-green">Vence ${fmtData(c.vencimento)}</span>`;
+    }
+    return `<div class="cli-card">
+      <div>
+        <div class="cli-nome">${c.nome||'—'} ${vencBadge}</div>
+        <div class="cli-info">
+          ${c.fone ? '📞 '+c.fone+'  ' : ''}
+          ${c.tipo ? '🏢 '+c.tipo+'  ' : ''}
+          ${c.endereco ? '📍 '+c.endereco+(c.bairro?', '+c.bairro:'') : ''}
+        </div>
+      </div>
+      <div class="cli-actions">
+        <button class="btn btn-primary" style="padding:6px 12px;font-size:11px;" onclick="usarClienteNoOrcamento('${c.id}')">📋 Usar</button>
+        <button class="btn btn-outline" style="padding:6px 12px;font-size:11px;" onclick="verHistoricoCliente('${c.id}')">Histórico</button>
+        <button class="btn btn-gold" style="padding:6px 12px;font-size:11px;" onclick="abrirModalCliente('${c.id}')">✏️</button>
+        <button class="btn" style="padding:6px 12px;font-size:11px;background:#fee2e2;color:#dc2626;border:none;border-radius:8px;" onclick="excluirCliente('${c.id}')">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+  verificarVencimentos();
+}
+
+function renderRespostas() {
+  const container = document.getElementById('respostas-lista');
+  if (!container) return;
+  const lista = window._respostas || [];
+  if (!lista.length) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">📬</div><div style="font-size:14px;">Nenhuma resposta ainda.<br><span style="font-size:12px;">Quando o cliente preencher o formulário, aparece aqui.</span></div></div>';
+    return;
+  }
+  container.innerHTML = lista.map(r => `
+    <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:10px;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;">
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;">${r.nome||'—'}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:3px;">
+          📞 ${r.fone||'—'} · 📍 ${r.endereco||'—'}${r.bairro?', '+r.bairro:''} · CEP ${r.cep||'—'}
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;">Recebido em: ${new Date(r.criadoEm).toLocaleString('pt-BR')}</div>
+      </div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap;">
+        <button class="btn btn-primary" style="padding:6px 12px;font-size:11px;" onclick="importarResposta('${r.id}')">✅ Importar</button>
+        <button class="btn" style="padding:6px 12px;font-size:11px;background:#fee2e2;color:#dc2626;border:none;border-radius:8px;" onclick="excluirResposta('${r.id}')">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+async function salvarCliente() {
+  const nome = document.getElementById('cli-nome').value;
+  if (!nome) { alert('Informe o nome do cliente.'); return; }
+  if (!window._firebaseLoaded) { alert('Aguarde, conectando...'); return; }
+  const idExist = document.getElementById('cli-id').value;
+  const cli = {
+    nome,
+    endereco: document.getElementById('cli-endereco').value,
+    bairro: document.getElementById('cli-bairro').value,
+    cep: document.getElementById('cli-cep').value,
+    cidade: document.getElementById('cli-cidade').value,
+    fone: document.getElementById('cli-fone').value,
+    email: document.getElementById('cli-email').value,
+    cnpj: document.getElementById('cli-cnpj').value,
+    tipo: document.getElementById('cli-tipo').value,
+    obs: document.getElementById('cli-obs').value,
+    ultimoServico: document.getElementById('cli-ultimo-servico').value,
+    vencimento: document.getElementById('cli-vencimento').value,
+    atualizadoEm: new Date().toISOString(),
+  };
+  const id = idExist || Date.now().toString();
+  try {
+    await window._setDoc(window._doc(window._db, 'clientes', id), {...cli, id});
+    fecharModal('modal-cliente');
+    mostrarToast('Cliente salvo! ✓');
+  } catch(e) { alert('Erro: ' + e.message); }
+}
+
+function selecionarClienteAgenda(id) {
+  const c = clientes.find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('ag-nome').value = c.nome||'';
+  document.getElementById('ag-endereco').value = c.endereco||'';
+  document.getElementById('ag-bairro').value = c.bairro||'';
+  document.getElementById('ag-cep').value = c.cep||'';
+  document.getElementById('ag-cidade').value = c.cidade||'';
+  fecharDropCliente();
+}
+
+function usarClienteNoOrcamento(id) {
+  const c = clientes.find(x => x.id === id);
+  if (!c) return;
+  showTab('orcamento');
+  setTimeout(() => {
+    document.getElementById('nome').value = c.nome||'';
+    document.getElementById('endereco').value = c.endereco||'';
+    document.getElementById('bairro').value = c.bairro||'';
+    document.getElementById('cep').value = c.cep||'';
+    document.getElementById('cidade').value = c.cidade||'';
+    document.getElementById('fone').value = c.fone||'';
+    document.getElementById('email').value = c.email||'';
+    document.getElementById('cnpjCliente').value = c.cnpj||'';
+    document.getElementById('tipoComercio').value = c.tipo||'';
+    mostrarToast('Dados do cliente preenchidos! ✓');
+    window.scrollTo({top: 0, behavior: 'smooth'});
+  }, 200);
+}
+
+function verHistoricoCliente(id) {
+  const c = clientes.find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('modal-hist-cliente-titulo').textContent = 'Histórico — ' + c.nome;
+  const orcsCli = orcamentos.filter(o =>
+    o.nome && c.nome && o.nome.toLowerCase().includes(c.nome.toLowerCase().split(' ')[0])
+  );
+  const vencStr = c.vencimento ? fmtData(c.vencimento) : '—';
+  const hoje = new Date();
+  const vencDate = c.vencimento ? new Date(c.vencimento) : null;
+  const diasVenc = vencDate ? Math.ceil((vencDate - hoje) / (1000*60*60*24)) : null;
+  let alertaVenc = '';
+  if (diasVenc !== null) {
+    if (diasVenc < 0) alertaVenc = `<div style="background:#fee2e2;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;font-weight:600;color:#dc2626;">⚠️ Serviço VENCIDO há ${Math.abs(diasVenc)} dias!</div>`;
+    else if (diasVenc <= 30) alertaVenc = `<div style="background:#fef3c7;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;font-weight:600;color:#d97706;">⏰ Serviço vence em ${diasVenc} dias (${vencStr})</div>`;
+    else alertaVenc = `<div style="background:var(--green-light);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;font-weight:600;color:var(--green);">✅ Próximo vencimento: ${vencStr}</div>`;
+  }
+  const orcsHTML = orcsCli.length
+    ? orcsCli.map(o => `
+        <div style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:8px;font-size:13px;">
+          <div style="font-weight:700;">Nº ${o.num} — ${fmtData(o.data)}</div>
+          <div style="color:var(--muted);margin-top:3px;">${o.servicos.map(s=>s.nome).join(', ')||'—'} · R$ ${o.valor||'—'}</div>
+        </div>`).join('')
+    : '<div style="color:var(--muted);font-size:13px;padding:10px 0;">Nenhum orçamento encontrado para este cliente.</div>';
+  document.getElementById('modal-hist-cliente-body').innerHTML = `
+    ${alertaVenc}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px;margin-bottom:16px;">
+      <div><b>Telefone:</b> ${c.fone||'—'}</div>
+      <div><b>E-mail:</b> ${c.email||'—'}</div>
+      <div><b>Endereço:</b> ${c.endereco||'—'}, ${c.bairro||'—'}</div>
+      <div><b>Cidade:</b> ${c.cidade||'—'}</div>
+      <div><b>Último Serviço:</b> ${fmtData(c.ultimoServico)}</div>
+      <div><b>Próx. Vencimento:</b> ${vencStr}</div>
+      ${c.obs ? `<div style="grid-column:span 2"><b>Obs:</b> ${c.obs}</div>` : ''}
+    </div>
+    <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;margin-bottom:10px;">Orçamentos</div>
+    ${orcsHTML}
+    <div class="btn-row" style="margin-top:16px;">
+      <button class="btn btn-primary" onclick="usarClienteNoOrcamento('${id}');fecharModal('modal-hist-cliente')">Usar em Novo Orçamento</button>
+    </div>
+  `;
+  document.getElementById('modal-hist-cliente').classList.add('open');
+}
+
+function verificarVencimentos() {
+  const container = document.getElementById('alertas-vencimento');
+  if (!container) return;
+  const hoje = new Date();
+  const urgentes = clientes.filter(c => {
+    if (!c.vencimento) return false;
+    const dias = Math.ceil((new Date(c.vencimento + 'T12:00:00') - hoje) / (1000*60*60*24));
+    return dias <= 30;
+  }).sort((a,b) => a.vencimento.localeCompare(b.vencimento));
+  if (!urgentes.length) { container.innerHTML = ''; return; }
+  container.innerHTML = `
+    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:14px;margin-bottom:10px;color:#d97706;">⏰ Atenção — Serviços a vencer</div>
+    ${urgentes.map(c => {
+      const dias = Math.ceil((new Date(c.vencimento + 'T12:00:00') - hoje) / (1000*60*60*24));
+      const urgente = dias < 0;
+      return `<div class="alerta-venc ${urgente?'urgente':''}">
+        <div>
+          <div class="alerta-venc-texto">${urgente?'⚠️':'⏰'} ${c.nome}</div>
+          <div class="alerta-venc-data">${urgente ? 'Vencido há '+Math.abs(dias)+' dias' : 'Vence em '+dias+' dias — '+fmtData(c.vencimento)}</div>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-primary" style="padding:5px 12px;font-size:11px;" onclick="usarClienteNoOrcamento('${c.id}')">Agendar</button>
+          <button class="btn btn-outline" style="padding:5px 12px;font-size:11px;" onclick="verHistoricoCliente('${c.id}')">Ver</button>
+        </div>
+      </div>`;
+    }).join('')}
+    <div style="margin-bottom:16px;"></div>
+  `;
+}
+// Auto-open form if URL has ?form=1
+if(window.location.search.includes('form=1')){
+  window.addEventListener('load', ()=> setTimeout(abrirFormularioEmbutido, 500));
+</script>
+</head>
+<body>
+
+<header>
+  <div class="logo">Controle <span>Dedetizadora</span> <span id="sync-indicator" style="font-size:10px;font-weight:400;opacity:.7;margin-left:8px;"><span class="sync-dot"></span>Online</span></div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('orcamento')">Orçamento</button>
+    <button class="tab-btn" onclick="showTab('historico')">Histórico</button>
+    <button class="tab-btn" onclick="showTab('agenda')">📅 Agenda</button>
+    <button class="tab-btn" onclick="showTab('clientes')">👥 Clientes</button>
+    <button class="tab-btn" onclick="showTab('captacao')">📲 Captação</button>
+  </div>
+</header>
+
+<div class="container">
+
+<!-- ══ ORÇAMENTO ══ -->
+<section class="section active" id="sec-orcamento">
+
+  <div class="card">
+    <div class="card-header">Identificação do Orçamento</div>
+    <div class="card-body">
+      <div class="grid-4">
+        <div><label>Nº Orçamento</label><input id="num" placeholder="001"></div>
+        <div><label>Data (emissão)</label><input type="date" id="data"></div>
+        <div><label>Data do Serviço</label><input type="date" id="dataServico" onchange="recalcularTodasValidades()"></div>
+        <div><label>Hora</label><input type="time" id="hora"></div>
+      </div>
+      <div class="grid-3" style="margin-top:12px;">
+        <div><label>Valor (R$)</label><input id="valor" placeholder="0,00"></div>
+        <div><label>Recibo</label><select id="recibo"><option value="">—</option><option>Sim</option><option>Não</option></select></div>
+        <div><label>Nota Fiscal</label><select id="notafiscal"><option value="">—</option><option>Sim</option><option>Não</option></select></div>
+      </div>
+      <div style="margin-top:13px;">
+        <label>Forma de Pagamento</label>
+        <div class="check-group">
+          <label class="check-item"><input type="checkbox" id="pg-dinheiro"> Dinheiro</label>
+          <label class="check-item"><input type="checkbox" id="pg-pix"> Pix</label>
+          <label class="check-item"><input type="checkbox" id="pg-boleto"> Boleto</label>
+          <label class="check-item"><input type="checkbox" id="pg-cheque"> Cheque</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+      <span>Dados da Empresa Emissora</span>
+      <span id="empresa-status" style="font-size:11px;font-weight:400;opacity:.8;"></span>
+    </div>
+    <div class="card-body">
+      <div class="grid-2">
+        <div><label>Nome da Empresa</label><input id="empresa" placeholder="Ex: DDtizadora Industrial"></div>
+        <div><label>CNPJ da Empresa</label><input id="cnpjEmpresa" placeholder="00.000.000/0001-00"></div>
+        <div><label>Responsável Técnico</label><input id="responsavel" placeholder="Nome completo"></div>
+        <div><label>CRQ / Registro Técnico</label><input id="crt" placeholder="Ex: CRQ II/MG 02421977"></div>
+        <div><label>Alvará Sanitário</label><input id="alvaraSanitario" placeholder="Ex: 63/2021"></div>
+        <div><label>Alvará de Funcionamento</label><input id="alvaraFunc" placeholder="Ex: 1/2.251.3.7677"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Empresa Contratante (Cliente)</div>
+    <div class="card-body">
+      <div class="grid-2">
+        <div class="span-2"><label>Razão Social / Nome</label><input id="nome" placeholder="Nome completo ou razão social"></div>
+        <div><label>Endereço</label><input id="endereco" placeholder="Rua, número..."></div>
+        <div><label>Bairro</label><input id="bairro" placeholder="Bairro"></div>
+        <div><label>CEP</label><input id="cep" placeholder="00000-000" maxlength="9" oninput="mascaraCep(this)"></div>
+        <div><label>CNPJ / CPF</label><input id="cnpjCliente" placeholder="00.000.000/0001-00"></div>
+        <div><label>Cidade / UF</label><input id="cidade" placeholder="Uberlândia/MG"></div>
+        <div><label>Telefone</label><input id="fone" placeholder="(34) 9 0000-0000"></div>
+        <div><label>E-mail</label><input id="email" placeholder="email@exemplo.com"></div>
+        <div><label>Tipo de Comércio</label><input id="tipoComercio" placeholder="Ex: Restaurante, Residência..."></div>
+        <div><label>Contato no Local</label><input id="contato" placeholder="Nome do responsável no local"></div>
+        <div><label>Kit</label><input id="kit" placeholder="Ex: Kit 1, Kit Completo..."></div>
+        <div><label>Apartamentos</label><input id="aptos" placeholder="Nº ou descrição"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Serviços Solicitados</div>
+    <div class="card-body">
+      <div class="srv-header">
+        <div></div><div>Serviço / Praga</div><div>Laudo</div><div>Garantia</div><div>Válido até</div><div>Observação</div>
+      </div>
+      <div id="servicos-lista"></div>
+      <div style="margin-top:14px;"><label>Outros Serviços</label><input id="outros" placeholder="Descreva outros serviços..."></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Descrição dos Serviços Realizados</div>
+    <div class="card-body">
+      <textarea id="descricaoServicos" placeholder="Descreva detalhadamente: métodos, quantidades, caixas higienizadas, produtos, procedimentos..."></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Características dos Produtos Aplicados</div>
+    <div class="card-body">
+      <div id="produtos-lista"></div>
+      <button class="btn-add" onclick="adicionarProduto()">+ Adicionar Produto</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Tipo de Serviço / Contrato</div>
+    <div class="card-body">
+      <div class="pacote-box">
+        <div class="pacote-title">Modalidade</div>
+        <div class="radio-group">
+          <label class="radio-item"><input type="radio" name="modalidade" value="avulso" id="mod-avulso"> Serviço Avulso</label>
+          <label class="radio-item"><input type="radio" name="modalidade" value="contrato" id="mod-contrato"> Pacote de Contrato</label>
+        </div>
+        <div id="contrato-detalhes" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid #fcd34d;">
+          <div class="pacote-title">Modalidade do Pacote</div>
+          <div class="radio-group">
+            <label class="radio-item"><input type="radio" name="pacote-tipo" value="cortesia-inicio" onchange="atualizarCronograma()"> 1ª cortesia + 3 pagas (4 visitas)</label>
+            <label class="radio-item"><input type="radio" name="pacote-tipo" value="4" onchange="atualizarCronograma()"> 4 aplicações pagas</label>
+            <label class="radio-item"><input type="radio" name="pacote-tipo" value="cortesia-fim" onchange="atualizarCronograma()"> 3 pagas + última cortesia (4 visitas)</label>
+          </div>
+          <div style="margin-top:14px;">
+            <label>Data da 1ª Aplicação</label>
+            <input type="date" id="data-primeira-app" oninput="atualizarCronograma()" style="max-width:200px;">
+          </div>
+          <div id="cronograma-preview" style="margin-top:14px;display:none;">
+            <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:#d97706;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Cronograma Gerado</div>
+            <table style="width:100%;border-collapse:collapse;font-size:13px;" id="tabela-cronograma">
+              <thead>
+                <tr style="background:#1a3c6e;color:#fff;">
+                  <th style="padding:8px 12px;text-align:center;font-family:'Syne',sans-serif;font-size:11px;">Aplicação</th>
+                  <th style="padding:8px 12px;text-align:center;font-family:'Syne',sans-serif;font-size:11px;">Data</th>
+                  <th style="padding:8px 12px;text-align:center;font-family:'Syne',sans-serif;font-size:11px;">Pagamento</th>
+                </tr>
+              </thead>
+              <tbody id="cronograma-body"></tbody>
+            </table>
+            <div style="margin-top:10px;display:flex;gap:8px;justify-content:flex-end;">
+              <button class="btn btn-gold" style="font-size:11px;padding:7px 16px;" onclick="gerarCronogramaPDF()">🖨️ Imprimir / 💾 PDF</button>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid #fcd34d;">
+          <div class="pacote-title">Status do Contrato</div>
+          <div class="radio-group">
+            <label class="radio-item"><input type="radio" name="status-contrato" value="proposta"> Proposta de Contrato</label>
+            <label class="radio-item"><input type="radio" name="status-contrato" value="existente"> Já Tem Contrato</label>
+            <label class="radio-item"><input type="radio" name="status-contrato" value="novo"> Novo Cliente</label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Observações</div>
+    <div class="card-body"><textarea id="obs" placeholder="Observações gerais..."></textarea></div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-outline" onclick="limparForm()">Limpar</button>
+    <button class="btn btn-gold" onclick="abrirCertificado()">📄 Gerar Laudo / Certificado</button>
+    <button class="btn btn-primary" onclick="salvarOrcamento()">💾 Salvar Orçamento</button>
+  </div>
+</section>
+
+<!-- ══ HISTÓRICO ══ -->
+<section class="section" id="sec-historico">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;">Histórico de Orçamentos</div>
+    <button class="btn btn-primary" onclick="showTab('orcamento')">+ Novo Orçamento</button>
+  </div>
+  <div id="historico-container"></div>
+</section>
+
+<!-- ══ AGENDA ══ -->
+<section class="section" id="sec-agenda">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;">Agenda de Serviços</div>
+    <button class="btn btn-outline" style="font-size:12px;" onclick="imprimirAgendaDia()">🖨️ Imprimir Agenda do Dia</button>
+    <button class="btn btn-primary" onclick="abrirModalAgendamento(null)">+ Novo Agendamento</button>
+  </div>
+  <div class="agenda-layout">
+    <!-- Calendário -->
+    <div class="card">
+      <div class="card-body">
+        <div class="cal-nav">
+          <button class="cal-nav-btn" onclick="mudarMes(-1)">&#8249;</button>
+          <span class="cal-month" id="cal-titulo"></span>
+          <button class="cal-nav-btn" onclick="mudarMes(1)">&#8250;</button>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+      </div>
+    </div>
+    <!-- Lista do dia selecionado -->
+    <div>
+      <div class="agenda-list-header" id="agenda-list-titulo">Selecione um dia</div>
+      <div id="agenda-list-items">
+        <div class="empty" style="padding:30px 10px;"><div class="empty-icon" style="font-size:32px;">📅</div><div style="font-size:13px;">Clique em um dia para ver os agendamentos</div></div>
+      </div>
+    </div>
+  </div>
+  <!-- Lista completa -->
+  <div style="margin-top:20px;">
+    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px;margin-bottom:12px;">Todos os Agendamentos</div>
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+      <button class="btn" style="padding:6px 14px;font-size:11px;background:#dbeafe;color:var(--blue);border:none;" onclick="filtrarAgenda('todos')">Todos</button>
+      <button class="btn" style="padding:6px 14px;font-size:11px;background:#dbeafe;color:var(--blue);border:none;" onclick="filtrarAgenda('agendado')">Agendados</button>
+      <button class="btn" style="padding:6px 14px;font-size:11px;background:var(--green-light);color:var(--green);border:none;" onclick="filtrarAgenda('realizado')">Realizados</button>
+      <button class="btn" style="padding:6px 14px;font-size:11px;background:#fee2e2;color:#dc2626;border:none;" onclick="filtrarAgenda('cancelado')">Cancelados</button>
+    </div>
+    <div id="agenda-todos"></div>
+  </div>
+</section>
+
+</div>
+
+
+<!-- ══ CLIENTES ══ -->
+<section class="section" id="sec-clientes">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
+    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;">Cadastro de Clientes</div>
+    <button class="btn btn-primary" onclick="abrirModalCliente(null)">+ Novo Cliente</button>
+  </div>
+
+  <!-- Alertas de vencimento -->
+  <div id="alertas-vencimento"></div>
+
+  <!-- Busca -->
+  <div class="card" style="margin-bottom:14px;">
+    <div class="card-body" style="padding:14px 20px;">
+      <input id="busca-cliente" type="text" placeholder="🔍 Buscar por nome, telefone, endereço..." oninput="filtrarClientes()" style="font-size:14px;">
+    </div>
+  </div>
+
+  <div id="clientes-lista"></div>
+</section>
+
+
+<!-- ══ CAPTAÇÃO ══ -->
+<section class="section" id="sec-captacao">
+  <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;margin-bottom:6px;">Captação de Clientes</div>
+  <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">Envie pelo WhatsApp ou compartilhe o link do formulário — os dados chegam direto no cadastro.</div>
+
+  <!-- LINK DO FORMULÁRIO -->
+  <div class="card">
+    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+      <span>📋 Formulário Online para o Cliente</span>
+    </div>
+    <div class="card-body">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">Compartilhe esse link — o cliente preenche no celular e os dados chegam direto no cadastro.</p>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <input id="link-formulario" readonly style="flex:1;background:#f8fafc;font-size:12px;" value="Gerando link...">
+        <button class="btn btn-primary" style="white-space:nowrap;" onclick="copiarLinkFormulario()">📋 Copiar Link</button>
+        <button class="btn btn-success" style="white-space:nowrap;" onclick="enviarFormularioWhatsApp()">📲 Enviar WhatsApp</button>
+        <button class="btn btn-outline" style="white-space:nowrap;" onclick="abrirFormularioEmbutido()">👁️ Pré-visualizar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MENSAGEM WHATSAPP -->
+  <div class="card">
+    <div class="card-header">📲 Mensagem Pronta para WhatsApp</div>
+    <div class="card-body">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">Copie e mande para o cliente — ele responde com os dados que você precisa.</p>
+      <div style="background:#e7fde8;border-radius:12px;padding:16px 18px;font-size:13px;line-height:1.8;white-space:pre-wrap;border:1px solid #b2f2bb;" id="msg-whatsapp"></div>
+      <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="copiarMensagem()">📋 Copiar Mensagem</button>
+        <button class="btn btn-success" onclick="abrirWhatsApp()">📲 Abrir WhatsApp</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESPOSTAS RECEBIDAS -->
+  <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px;margin-bottom:12px;margin-top:8px;">Respostas Recebidas pelo Formulário</div>
+  <div id="respostas-lista">
+    <div class="empty"><div class="empty-icon">📬</div><div style="font-size:14px;">Nenhuma resposta ainda.<br><span style="font-size:12px;">Quando o cliente preencher o formulário, aparece aqui.</span></div></div>
+  </div>
+</section>
+
+<!-- ══ MODAL CERTIFICADO ══ -->
+<div class="modal-overlay" id="modal-cert">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Laudo / Certificado de Serviço</span>
+      <button class="modal-close" onclick="fecharModal('modal-cert')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="cert-content"></div>
+      <div class="btn-row" style="margin-top:16px;">
+        <button class="btn btn-outline" onclick="fecharModal('modal-cert')">Fechar</button>
+        <button class="btn btn-outline" onclick="imprimirCert('imprimir')">🖨️ Imprimir</button>
+        <button class="btn btn-success" onclick="imprimirCert('pdf')">💾 Salvar PDF</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL VER ══ -->
+<div class="modal-overlay" id="modal-ver">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Detalhes do Orçamento</span>
+      <button class="modal-close" onclick="fecharModal('modal-ver')">✕</button>
+    </div>
+    <div class="modal-body" id="ver-content"></div>
+  </div>
+</div>
+
+
+
+<!-- ══ MODAL AGENDAMENTO ══ -->
+<div class="modal-overlay" id="modal-ag">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-ag-titulo">Novo Agendamento</span>
+      <button class="modal-close" onclick="fecharModal('modal-ag')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div style="grid-column:span 2;">
+          <label>Vincular a Orçamento Salvo (opcional)</label>
+          <select id="ag-orcamento" onchange="preencherDoOrcamento()">
+            <option value="">— Agendamento avulso —</option>
+          </select>
+        </div>
+        <div style="grid-column:span 2;">
+          <label>Nome do Cliente</label>
+          <div style="position:relative;">
+            <input id="ag-nome" placeholder="Digite para buscar cliente cadastrado..." autocomplete="off"
+              oninput="buscarClienteAgenda(this.value)" onblur="setTimeout(()=>fecharDropCliente(),200)">
+            <div id="ag-cliente-drop" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--blue);border-radius:8px;z-index:500;max-height:180px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.12);"></div>
+          </div>
+        </div>
+        <div style="grid-column:span 2;"><label>Endereço</label><input id="ag-endereco" placeholder="Rua, número..."></div>
+        <div><label>Bairro</label><input id="ag-bairro" placeholder="Bairro"></div>
+        <div><label>CEP</label><input id="ag-cep" placeholder="00000-000" maxlength="9" oninput="mascaraCep(this)"></div>
+        <div style="grid-column:span 2;"><label>Cidade / UF</label><input id="ag-cidade" placeholder="Uberlândia/MG"></div>
+        <div style="grid-column:span 2;"><label>Serviço a Realizar</label><input id="ag-servico" placeholder="Ex: Dedetização, Desratização..."></div>
+        <div style="grid-column:span 2;">
+          <label>Tipo de Visita</label>
+          <select id="ag-tipo-visita">
+            <option value="servico">Serviço</option>
+            <option value="retorno">Retorno</option>
+            <option value="novo">Cliente Novo</option>
+          </select>
+        </div>
+        <div><label>Data</label><input type="date" id="ag-data"></div>
+        <div><label>Hora</label><input type="time" id="ag-hora"></div>
+        <div style="grid-column:span 2;"><label>Técnico Responsável</label><input id="ag-resp" placeholder="Nome do técnico que vai executar"></div>
+        <div style="grid-column:span 2;"><label>Observação</label><textarea id="ag-obs" style="min-height:60px;" placeholder="Observações sobre o agendamento..."></textarea></div>
+        <div style="grid-column:span 2;">
+          <label>Status</label>
+          <select id="ag-status">
+            <option value="agendado">Agendado</option>
+            <option value="realizado">Realizado</option>
+            <option value="cancelado">Cancelado</option>
+          </select>
+        </div>
+      </div>
+      <input type="hidden" id="ag-id">
+      <div class="btn-row" style="margin-top:16px;">
+        <button class="btn btn-outline" onclick="fecharModal('modal-ag')">Cancelar</button>
+        <button class="btn btn-primary" onclick="salvarAgendamento()">Salvar Agendamento</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ══ MODAL CLIENTE ══ -->
+<div class="modal-overlay" id="modal-cliente">
+  <div class="modal" style="max-width:620px;">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-cliente-titulo">Novo Cliente</span>
+      <button class="modal-close" onclick="fecharModal('modal-cliente')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="grid-2">
+        <div class="span-2"><label>Nome / Razão Social</label><input id="cli-nome" placeholder="Nome completo ou razão social"></div>
+        <div class="span-2"><label>Endereço</label><input id="cli-endereco" placeholder="Rua, número..."></div>
+        <div><label>Bairro</label><input id="cli-bairro" placeholder="Bairro"></div>
+        <div><label>CEP</label><input id="cli-cep" placeholder="00000-000" maxlength="9" oninput="mascaraCep(this)"></div>
+        <div><label>Cidade / UF</label><input id="cli-cidade" placeholder="Uberlândia/MG"></div>
+        <div><label>Telefone / WhatsApp</label><input id="cli-fone" placeholder="(34) 9 0000-0000"></div>
+        <div><label>E-mail</label><input id="cli-email" placeholder="email@exemplo.com"></div>
+        <div><label>CNPJ / CPF</label><input id="cli-cnpj" placeholder="000.000.000-00"></div>
+        <div><label>Tipo de Comércio</label><input id="cli-tipo" placeholder="Ex: Residência, Restaurante..."></div>
+        <div class="span-2"><label>Observações</label><textarea id="cli-obs" style="min-height:60px;" placeholder="Observações sobre o cliente..."></textarea></div>
+        <div><label>Último Serviço Realizado</label><input type="date" id="cli-ultimo-servico"></div>
+        <div><label>Próximo Vencimento</label><input type="date" id="cli-vencimento"></div>
+      </div>
+      <input type="hidden" id="cli-id">
+      <div class="btn-row" style="margin-top:16px;">
+        <button class="btn btn-outline" onclick="fecharModal('modal-cliente')">Cancelar</button>
+        <button class="btn btn-primary" onclick="salvarCliente()">Salvar Cliente</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL HISTÓRICO CLIENTE ══ -->
+<div class="modal-overlay" id="modal-hist-cliente">
+  <div class="modal" style="max-width:680px;">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-hist-cliente-titulo">Histórico do Cliente</span>
+      <button class="modal-close" onclick="fecharModal('modal-hist-cliente')">✕</button>
+    </div>
+    <div class="modal-body" id="modal-hist-cliente-body"></div>
+  </div>
+</div>
+
+
+<!-- ══ FORMULÁRIO CLIENTE (EMBUTIDO) ══ -->
+<div id="overlay-formulario" style="display:none;position:fixed;inset:0;background:#f1f5f9;z-index:9999;overflow-y:auto;">
+  <div style="max-width:520px;margin:0 auto;padding:0 0 40px;">
+    <div style="background:#0f2d4a;padding:24px 20px;text-align:center;">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:#fff;" id="form-empresa-nome">Controle Dedetizadora</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.7);margin-top:4px;">Preencha seus dados para atendimento</div>
+    </div>
+    <div style="padding:24px 16px;">
+      <p style="font-size:11px;color:#64748b;margin-bottom:16px;">Campos com <span style="color:#ef4444;">*</span> são obrigatórios.</p>
+      <div id="form-erro" style="background:#fee2e2;color:#dc2626;border-radius:8px;padding:10px 14px;font-size:13px;font-weight:600;margin-bottom:14px;display:none;">Por favor, preencha todos os campos obrigatórios.</div>
+      <div id="form-corpo">
+        <!-- IDENTIFICAÇÃO -->
+        <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:22px;margin-bottom:16px;">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#1a3c6e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px;">Identificação</div>
+          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Nome completo / Razão Social <span style="color:#ef4444;">*</span></label><input id="ff-nome" type="text" placeholder="Seu nome completo ou razão social" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
+          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">CPF / CNPJ <span style="color:#ef4444;">*</span></label><input id="ff-cnpj" type="text" placeholder="000.000.000-00 ou 00.000.000/0001-00" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
+          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Tipo <span style="color:#ef4444;">*</span></label>
+            <select id="ff-tipo" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;">
+              <option value="">— Selecione —</option>
+              <option value="Residência">Residência</option>
+              <option value="Apartamento">Apartamento</option>
+              <option value="Comércio">Comércio / Empresa</option>
+              <option value="Indústria">Indústria</option>
+              <option value="Condomínio">Condomínio</option>
+              <option value="Outro">Outro</option>
+            </select>
+          </div>
+        </div>
+        <!-- ENDEREÇO -->
+        <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:22px;margin-bottom:16px;">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#1a3c6e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px;">Endereço</div>
+          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">CEP <span style="color:#ef4444;">*</span></label><input id="ff-cep" type="text" placeholder="00000-000" maxlength="9" oninput="mascaraCepFF(this);buscarCepFF(this.value)" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
+          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Rua / Avenida <span style="color:#ef4444;">*</span></label><input id="ff-endereco" type="text" placeholder="Rua, número" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
+          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Complemento / Endereço interno do condomínio</label><input id="ff-complemento" type="text" placeholder="Ex: Apto 101, Bloco B..." style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
+          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Bairro <span style="color:#ef4444;">*</span></label><input id="ff-bairro" type="text" placeholder="Bairro" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
+          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Cidade / UF <span style="color:#ef4444;">*</span></label><input id="ff-cidade" type="text" placeholder="Ex: Uberlândia/MG" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
+        </div>
+        <!-- CONTATO -->
+        <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:22px;margin-bottom:16px;">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#1a3c6e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px;">Contato</div>
+          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Telefone / WhatsApp <span style="color:#ef4444;">*</span></label><input id="ff-fone" type="tel" placeholder="(34) 9 0000-0000" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
+          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">E-mail</label><input id="ff-email" type="email" placeholder="seu@email.com" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
+        </div>
+        <button onclick="enviarFormularioEmbutido()" style="width:100%;background:#1a3c6e;color:#fff;border:none;border-radius:10px;padding:15px;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer;">Enviar Dados ✓</button>
+      </div>
+      <!-- SUCESSO -->
+      <div id="form-sucesso" style="display:none;text-align:center;padding:40px 20px;">
+        <div style="font-size:60px;margin-bottom:16px;">✅</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:#059669;margin-bottom:8px;">Dados enviados!</div>
+        <div style="font-size:14px;color:#64748b;line-height:1.6;">Recebemos suas informações com sucesso.<br>Em breve nossa equipe entrará em contato.</div>
+        <button onclick="fecharFormularioEmbutido()" style="margin-top:20px;background:#1a3c6e;color:#fff;border:none;border-radius:8px;padding:10px 24px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
