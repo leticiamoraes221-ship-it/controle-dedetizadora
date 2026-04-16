@@ -217,11 +217,11 @@
 <header>
   <div class="logo">Controle <span>Dedetizadora</span> <span id="sync-indicator" style="font-size:10px;font-weight:400;opacity:.7;margin-left:8px;"><span class="sync-dot"></span>Online</span></div>
   <div class="tabs">
-    <button class="tab-btn active" onclick="showTab('orcamento')">Orçamento</button>
-    <button class="tab-btn" onclick="showTab('historico')">Histórico</button>
-    <button class="tab-btn" onclick="showTab('agenda')">📅 Agenda</button>
-    <button class="tab-btn" onclick="showTab('clientes')">👥 Clientes</button>
-    <button class="tab-btn" onclick="showTab('captacao')">📲 Captação</button>
+    <button class="tab-btn active" onclick="if(typeof showTab==='function')showTab('orcamento');else setTimeout(()=>showTab('orcamento'),100)">Orçamento</button>
+    <button class="tab-btn" onclick="if(typeof showTab==='function')showTab('historico');else setTimeout(()=>showTab('historico'),100)">Histórico</button>
+    <button class="tab-btn" onclick="if(typeof showTab==='function')showTab('agenda');else setTimeout(()=>showTab('agenda'),100)">📅 Agenda</button>
+    <button class="tab-btn" onclick="if(typeof showTab==='function')showTab('clientes');else setTimeout(()=>showTab('clientes'),100)">👥 Clientes</button>
+    <button class="tab-btn" onclick="if(typeof showTab==='function')showTab('captacao');else setTimeout(()=>showTab('captacao'),100)">📲 Captação</button>
   </div>
 </header>
 
@@ -384,7 +384,7 @@
 <section class="section" id="sec-historico">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
     <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;">Histórico de Orçamentos</div>
-    <button class="btn btn-primary" onclick="showTab('orcamento')">+ Novo Orçamento</button>
+    <button class="btn btn-primary" onclick="if(typeof showTab==='function')showTab('orcamento');else setTimeout(()=>showTab('orcamento'),100)">+ Novo Orçamento</button>
   </div>
   <div id="historico-container"></div>
 </section>
@@ -685,7 +685,7 @@
 </div>
 
 
-<script>
+<script defer>
 function mascaraCep(el){
   let v = el.value.replace(/\D/g,'');
   if(v.length > 5) v = v.slice(0,5)+'-'+v.slice(5,8);
