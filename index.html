@@ -211,6 +211,480 @@
   console.log('Firebase conectado ✓');
 </script>
 
+</head>
+<body>
+
+<header>
+  <div class="logo">Controle <span>Dedetizadora</span> <span id="sync-indicator" style="font-size:10px;font-weight:400;opacity:.7;margin-left:8px;"><span class="sync-dot"></span>Online</span></div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('orcamento')">Orçamento</button>
+    <button class="tab-btn" onclick="showTab('historico')">Histórico</button>
+    <button class="tab-btn" onclick="showTab('agenda')">📅 Agenda</button>
+    <button class="tab-btn" onclick="showTab('clientes')">👥 Clientes</button>
+    <button class="tab-btn" onclick="showTab('captacao')">📲 Captação</button>
+  </div>
+</header>
+
+<div class="container">
+
+<!-- ══ ORÇAMENTO ══ -->
+<section class="section active" id="sec-orcamento">
+
+  <div class="card">
+    <div class="card-header">Identificação do Orçamento</div>
+    <div class="card-body">
+      <div class="grid-4">
+        <div><label>Nº Orçamento</label><input id="num" placeholder="001"></div>
+        <div><label>Data (emissão)</label><input type="date" id="data"></div>
+        <div><label>Data do Serviço</label><input type="date" id="dataServico" onchange="recalcularTodasValidades()"></div>
+        <div><label>Hora</label><input type="time" id="hora"></div>
+      </div>
+      <div class="grid-3" style="margin-top:12px;">
+        <div><label>Valor (R$)</label><input id="valor" placeholder="0,00"></div>
+        <div><label>Recibo</label><select id="recibo"><option value="">—</option><option>Sim</option><option>Não</option></select></div>
+        <div><label>Nota Fiscal</label><select id="notafiscal"><option value="">—</option><option>Sim</option><option>Não</option></select></div>
+      </div>
+      <div style="margin-top:13px;">
+        <label>Forma de Pagamento</label>
+        <div class="check-group">
+          <label class="check-item"><input type="checkbox" id="pg-dinheiro"> Dinheiro</label>
+          <label class="check-item"><input type="checkbox" id="pg-pix"> Pix</label>
+          <label class="check-item"><input type="checkbox" id="pg-boleto"> Boleto</label>
+          <label class="check-item"><input type="checkbox" id="pg-cheque"> Cheque</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+      <span>Dados da Empresa Emissora</span>
+      <span id="empresa-status" style="font-size:11px;font-weight:400;opacity:.8;"></span>
+    </div>
+    <div class="card-body">
+      <div class="grid-2">
+        <div><label>Nome da Empresa</label><input id="empresa" placeholder="Ex: DDtizadora Industrial"></div>
+        <div><label>CNPJ da Empresa</label><input id="cnpjEmpresa" placeholder="00.000.000/0001-00"></div>
+        <div><label>Responsável Técnico</label><input id="responsavel" placeholder="Nome completo"></div>
+        <div><label>CRQ / Registro Técnico</label><input id="crt" placeholder="Ex: CRQ II/MG 02421977"></div>
+        <div><label>Alvará Sanitário</label><input id="alvaraSanitario" placeholder="Ex: 63/2021"></div>
+        <div><label>Alvará de Funcionamento</label><input id="alvaraFunc" placeholder="Ex: 1/2.251.3.7677"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Empresa Contratante (Cliente)</div>
+    <div class="card-body">
+      <div class="grid-2">
+        <div class="span-2"><label>Razão Social / Nome</label><input id="nome" placeholder="Nome completo ou razão social"></div>
+        <div><label>Endereço</label><input id="endereco" placeholder="Rua, número..."></div>
+        <div><label>Bairro</label><input id="bairro" placeholder="Bairro"></div>
+        <div><label>CEP</label><input id="cep" placeholder="00000-000" maxlength="9" oninput="mascaraCep(this)"></div>
+        <div><label>CNPJ / CPF</label><input id="cnpjCliente" placeholder="00.000.000/0001-00"></div>
+        <div><label>Cidade / UF</label><input id="cidade" placeholder="Uberlândia/MG"></div>
+        <div><label>Telefone</label><input id="fone" placeholder="(34) 9 0000-0000"></div>
+        <div><label>E-mail</label><input id="email" placeholder="email@exemplo.com"></div>
+        <div><label>Tipo de Comércio</label><input id="tipoComercio" placeholder="Ex: Restaurante, Residência..."></div>
+        <div><label>Contato no Local</label><input id="contato" placeholder="Nome do responsável no local"></div>
+        <div><label>Kit</label><input id="kit" placeholder="Ex: Kit 1, Kit Completo..."></div>
+        <div><label>Apartamentos</label><input id="aptos" placeholder="Nº ou descrição"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Serviços Solicitados</div>
+    <div class="card-body">
+      <div class="srv-header">
+        <div></div><div>Serviço / Praga</div><div>Laudo</div><div>Garantia</div><div>Válido até</div><div>Observação</div>
+      </div>
+      <div id="servicos-lista"></div>
+      <div style="margin-top:14px;"><label>Outros Serviços</label><input id="outros" placeholder="Descreva outros serviços..."></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Descrição dos Serviços Realizados</div>
+    <div class="card-body">
+      <textarea id="descricaoServicos" placeholder="Descreva detalhadamente: métodos, quantidades, caixas higienizadas, produtos, procedimentos..."></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Características dos Produtos Aplicados</div>
+    <div class="card-body">
+      <div id="produtos-lista"></div>
+      <button class="btn-add" onclick="adicionarProduto()">+ Adicionar Produto</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Tipo de Serviço / Contrato</div>
+    <div class="card-body">
+      <div class="pacote-box">
+        <div class="pacote-title">Modalidade</div>
+        <div class="radio-group">
+          <label class="radio-item"><input type="radio" name="modalidade" value="avulso" id="mod-avulso"> Serviço Avulso</label>
+          <label class="radio-item"><input type="radio" name="modalidade" value="contrato" id="mod-contrato"> Pacote de Contrato</label>
+        </div>
+        <div id="contrato-detalhes" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid #fcd34d;">
+          <div class="pacote-title">Modalidade do Pacote</div>
+          <div class="radio-group">
+            <label class="radio-item"><input type="radio" name="pacote-tipo" value="cortesia-inicio" onchange="atualizarCronograma()"> 1ª cortesia + 3 pagas (4 visitas)</label>
+            <label class="radio-item"><input type="radio" name="pacote-tipo" value="4" onchange="atualizarCronograma()"> 4 aplicações pagas</label>
+            <label class="radio-item"><input type="radio" name="pacote-tipo" value="cortesia-fim" onchange="atualizarCronograma()"> 3 pagas + última cortesia (4 visitas)</label>
+          </div>
+          <div style="margin-top:14px;">
+            <label>Data da 1ª Aplicação</label>
+            <input type="date" id="data-primeira-app" oninput="atualizarCronograma()" style="max-width:200px;">
+          </div>
+          <div id="cronograma-preview" style="margin-top:14px;display:none;">
+            <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:#d97706;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Cronograma Gerado</div>
+            <table style="width:100%;border-collapse:collapse;font-size:13px;" id="tabela-cronograma">
+              <thead>
+                <tr style="background:#1a3c6e;color:#fff;">
+                  <th style="padding:8px 12px;text-align:center;font-family:'Syne',sans-serif;font-size:11px;">Aplicação</th>
+                  <th style="padding:8px 12px;text-align:center;font-family:'Syne',sans-serif;font-size:11px;">Data</th>
+                  <th style="padding:8px 12px;text-align:center;font-family:'Syne',sans-serif;font-size:11px;">Pagamento</th>
+                </tr>
+              </thead>
+              <tbody id="cronograma-body"></tbody>
+            </table>
+            <div style="margin-top:10px;display:flex;gap:8px;justify-content:flex-end;">
+              <button class="btn btn-gold" style="font-size:11px;padding:7px 16px;" onclick="gerarCronogramaPDF()">🖨️ Imprimir / 💾 PDF</button>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid #fcd34d;">
+          <div class="pacote-title">Status do Contrato</div>
+          <div class="radio-group">
+            <label class="radio-item"><input type="radio" name="status-contrato" value="proposta"> Proposta de Contrato</label>
+            <label class="radio-item"><input type="radio" name="status-contrato" value="existente"> Já Tem Contrato</label>
+            <label class="radio-item"><input type="radio" name="status-contrato" value="novo"> Novo Cliente</label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Observações</div>
+    <div class="card-body"><textarea id="obs" placeholder="Observações gerais..."></textarea></div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-outline" onclick="limparForm()">Limpar</button>
+    <button class="btn btn-gold" onclick="abrirCertificado()">📄 Gerar Laudo / Certificado</button>
+    <button class="btn btn-primary" onclick="salvarOrcamento()">💾 Salvar Orçamento</button>
+  </div>
+</section>
+
+<!-- ══ HISTÓRICO ══ -->
+<section class="section" id="sec-historico">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;">Histórico de Orçamentos</div>
+    <button class="btn btn-primary" onclick="showTab('orcamento')">+ Novo Orçamento</button>
+  </div>
+  <div id="historico-container"></div>
+</section>
+
+<!-- ══ AGENDA ══ -->
+<section class="section" id="sec-agenda">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;">Agenda de Serviços</div>
+    <button class="btn btn-outline" style="font-size:12px;" onclick="imprimirAgendaDia()">🖨️ Imprimir Agenda do Dia</button>
+    <button class="btn btn-primary" onclick="abrirModalAgendamento(null)">+ Novo Agendamento</button>
+  </div>
+  <div class="agenda-layout">
+    <!-- Calendário -->
+    <div class="card">
+      <div class="card-body">
+        <div class="cal-nav">
+          <button class="cal-nav-btn" onclick="mudarMes(-1)">&#8249;</button>
+          <span class="cal-month" id="cal-titulo"></span>
+          <button class="cal-nav-btn" onclick="mudarMes(1)">&#8250;</button>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+      </div>
+    </div>
+    <!-- Lista do dia selecionado -->
+    <div>
+      <div class="agenda-list-header" id="agenda-list-titulo">Selecione um dia</div>
+      <div id="agenda-list-items">
+        <div class="empty" style="padding:30px 10px;"><div class="empty-icon" style="font-size:32px;">📅</div><div style="font-size:13px;">Clique em um dia para ver os agendamentos</div></div>
+      </div>
+    </div>
+  </div>
+  <!-- Lista completa -->
+  <div style="margin-top:20px;">
+    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px;margin-bottom:12px;">Todos os Agendamentos</div>
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+      <button class="btn" style="padding:6px 14px;font-size:11px;background:#dbeafe;color:var(--blue);border:none;" onclick="filtrarAgenda('todos')">Todos</button>
+      <button class="btn" style="padding:6px 14px;font-size:11px;background:#dbeafe;color:var(--blue);border:none;" onclick="filtrarAgenda('agendado')">Agendados</button>
+      <button class="btn" style="padding:6px 14px;font-size:11px;background:var(--green-light);color:var(--green);border:none;" onclick="filtrarAgenda('realizado')">Realizados</button>
+      <button class="btn" style="padding:6px 14px;font-size:11px;background:#fee2e2;color:#dc2626;border:none;" onclick="filtrarAgenda('cancelado')">Cancelados</button>
+    </div>
+    <div id="agenda-todos"></div>
+  </div>
+</section>
+
+</div>
+
+
+<!-- ══ CLIENTES ══ -->
+<section class="section" id="sec-clientes">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
+    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;">Cadastro de Clientes</div>
+    <button class="btn btn-primary" onclick="abrirModalCliente(null)">+ Novo Cliente</button>
+  </div>
+
+  <!-- Alertas de vencimento -->
+  <div id="alertas-vencimento"></div>
+
+  <!-- Busca -->
+  <div class="card" style="margin-bottom:14px;">
+    <div class="card-body" style="padding:14px 20px;">
+      <input id="busca-cliente" type="text" placeholder="🔍 Buscar por nome, telefone, endereço..." oninput="filtrarClientes()" style="font-size:14px;">
+    </div>
+  </div>
+
+  <div id="clientes-lista"></div>
+</section>
+
+
+<!-- ══ CAPTAÇÃO ══ -->
+<section class="section" id="sec-captacao">
+  <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;margin-bottom:6px;">Captação de Clientes</div>
+  <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">Envie pelo WhatsApp ou compartilhe o link do formulário — os dados chegam direto no cadastro.</div>
+
+  <!-- LINK DO FORMULÁRIO -->
+  <div class="card">
+    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+      <span>📋 Formulário Online para o Cliente</span>
+    </div>
+    <div class="card-body">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">Compartilhe esse link — o cliente preenche no celular e os dados chegam direto no cadastro.</p>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <input id="link-formulario" readonly style="flex:1;background:#f8fafc;font-size:12px;" value="Gerando link...">
+        <button class="btn btn-primary" style="white-space:nowrap;" onclick="copiarLinkFormulario()">📋 Copiar Link</button>
+        <button class="btn btn-success" style="white-space:nowrap;" onclick="enviarFormularioWhatsApp()">📲 Enviar WhatsApp</button>
+        <button class="btn btn-outline" style="white-space:nowrap;" onclick="abrirFormularioEmbutido()">👁️ Pré-visualizar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MENSAGEM WHATSAPP -->
+  <div class="card">
+    <div class="card-header">📲 Mensagem Pronta para WhatsApp</div>
+    <div class="card-body">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">Copie e mande para o cliente — ele responde com os dados que você precisa.</p>
+      <div style="background:#e7fde8;border-radius:12px;padding:16px 18px;font-size:13px;line-height:1.8;white-space:pre-wrap;border:1px solid #b2f2bb;" id="msg-whatsapp"></div>
+      <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="copiarMensagem()">📋 Copiar Mensagem</button>
+        <button class="btn btn-success" onclick="abrirWhatsApp()">📲 Abrir WhatsApp</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESPOSTAS RECEBIDAS -->
+  <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px;margin-bottom:12px;margin-top:8px;">Respostas Recebidas pelo Formulário</div>
+  <div id="respostas-lista">
+    <div class="empty"><div class="empty-icon">📬</div><div style="font-size:14px;">Nenhuma resposta ainda.<br><span style="font-size:12px;">Quando o cliente preencher o formulário, aparece aqui.</span></div></div>
+  </div>
+</section>
+
+<!-- ══ MODAL CERTIFICADO ══ -->
+<div class="modal-overlay" id="modal-cert">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Laudo / Certificado de Serviço</span>
+      <button class="modal-close" onclick="fecharModal('modal-cert')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="cert-content"></div>
+      <div class="btn-row" style="margin-top:16px;">
+        <button class="btn btn-outline" onclick="fecharModal('modal-cert')">Fechar</button>
+        <button class="btn btn-outline" onclick="imprimirCert('imprimir')">🖨️ Imprimir</button>
+        <button class="btn btn-success" onclick="imprimirCert('pdf')">💾 Salvar PDF</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL VER ══ -->
+<div class="modal-overlay" id="modal-ver">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Detalhes do Orçamento</span>
+      <button class="modal-close" onclick="fecharModal('modal-ver')">✕</button>
+    </div>
+    <div class="modal-body" id="ver-content"></div>
+  </div>
+</div>
+
+
+
+<!-- ══ MODAL AGENDAMENTO ══ -->
+<div class="modal-overlay" id="modal-ag">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-ag-titulo">Novo Agendamento</span>
+      <button class="modal-close" onclick="fecharModal('modal-ag')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div style="grid-column:span 2;">
+          <label>Vincular a Orçamento Salvo (opcional)</label>
+          <select id="ag-orcamento" onchange="preencherDoOrcamento()">
+            <option value="">— Agendamento avulso —</option>
+          </select>
+        </div>
+        <div style="grid-column:span 2;">
+          <label>Nome do Cliente</label>
+          <div style="position:relative;">
+            <input id="ag-nome" placeholder="Digite para buscar cliente cadastrado..." autocomplete="off"
+              oninput="buscarClienteAgenda(this.value)" onblur="setTimeout(()=>fecharDropCliente(),200)">
+            <div id="ag-cliente-drop" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--blue);border-radius:8px;z-index:500;max-height:180px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.12);"></div>
+          </div>
+        </div>
+        <div style="grid-column:span 2;"><label>Endereço</label><input id="ag-endereco" placeholder="Rua, número..."></div>
+        <div><label>Bairro</label><input id="ag-bairro" placeholder="Bairro"></div>
+        <div><label>CEP</label><input id="ag-cep" placeholder="00000-000" maxlength="9" oninput="mascaraCep(this)"></div>
+        <div style="grid-column:span 2;"><label>Cidade / UF</label><input id="ag-cidade" placeholder="Uberlândia/MG"></div>
+        <div style="grid-column:span 2;"><label>Serviço a Realizar</label><input id="ag-servico" placeholder="Ex: Dedetização, Desratização..."></div>
+        <div style="grid-column:span 2;">
+          <label>Tipo de Visita</label>
+          <select id="ag-tipo-visita">
+            <option value="servico">Serviço</option>
+            <option value="retorno">Retorno</option>
+            <option value="novo">Cliente Novo</option>
+          </select>
+        </div>
+        <div><label>Data</label><input type="date" id="ag-data"></div>
+        <div><label>Hora</label><input type="time" id="ag-hora"></div>
+        <div style="grid-column:span 2;"><label>Técnico Responsável</label><input id="ag-resp" placeholder="Nome do técnico que vai executar"></div>
+        <div style="grid-column:span 2;"><label>Observação</label><textarea id="ag-obs" style="min-height:60px;" placeholder="Observações sobre o agendamento..."></textarea></div>
+        <div style="grid-column:span 2;">
+          <label>Status</label>
+          <select id="ag-status">
+            <option value="agendado">Agendado</option>
+            <option value="realizado">Realizado</option>
+            <option value="cancelado">Cancelado</option>
+          </select>
+        </div>
+      </div>
+      <input type="hidden" id="ag-id">
+      <div class="btn-row" style="margin-top:16px;">
+        <button class="btn btn-outline" onclick="fecharModal('modal-ag')">Cancelar</button>
+        <button class="btn btn-primary" onclick="salvarAgendamento()">Salvar Agendamento</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ══ MODAL CLIENTE ══ -->
+<div class="modal-overlay" id="modal-cliente">
+  <div class="modal" style="max-width:620px;">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-cliente-titulo">Novo Cliente</span>
+      <button class="modal-close" onclick="fecharModal('modal-cliente')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="grid-2">
+        <div class="span-2"><label>Nome / Razão Social</label><input id="cli-nome" placeholder="Nome completo ou razão social"></div>
+        <div class="span-2"><label>Endereço</label><input id="cli-endereco" placeholder="Rua, número..."></div>
+        <div><label>Bairro</label><input id="cli-bairro" placeholder="Bairro"></div>
+        <div><label>CEP</label><input id="cli-cep" placeholder="00000-000" maxlength="9" oninput="mascaraCep(this)"></div>
+        <div><label>Cidade / UF</label><input id="cli-cidade" placeholder="Uberlândia/MG"></div>
+        <div><label>Telefone / WhatsApp</label><input id="cli-fone" placeholder="(34) 9 0000-0000"></div>
+        <div><label>E-mail</label><input id="cli-email" placeholder="email@exemplo.com"></div>
+        <div><label>CNPJ / CPF</label><input id="cli-cnpj" placeholder="000.000.000-00"></div>
+        <div><label>Tipo de Comércio</label><input id="cli-tipo" placeholder="Ex: Residência, Restaurante..."></div>
+        <div class="span-2"><label>Observações</label><textarea id="cli-obs" style="min-height:60px;" placeholder="Observações sobre o cliente..."></textarea></div>
+        <div><label>Último Serviço Realizado</label><input type="date" id="cli-ultimo-servico"></div>
+        <div><label>Próximo Vencimento</label><input type="date" id="cli-vencimento"></div>
+      </div>
+      <input type="hidden" id="cli-id">
+      <div class="btn-row" style="margin-top:16px;">
+        <button class="btn btn-outline" onclick="fecharModal('modal-cliente')">Cancelar</button>
+        <button class="btn btn-primary" onclick="salvarCliente()">Salvar Cliente</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL HISTÓRICO CLIENTE ══ -->
+<div class="modal-overlay" id="modal-hist-cliente">
+  <div class="modal" style="max-width:680px;">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-hist-cliente-titulo">Histórico do Cliente</span>
+      <button class="modal-close" onclick="fecharModal('modal-hist-cliente')">✕</button>
+    </div>
+    <div class="modal-body" id="modal-hist-cliente-body"></div>
+  </div>
+</div>
+
+
+<!-- ══ FORMULÁRIO CLIENTE (EMBUTIDO) ══ -->
+<div id="overlay-formulario" style="display:none;position:fixed;inset:0;background:#f1f5f9;z-index:9999;overflow-y:auto;">
+  <div style="max-width:520px;margin:0 auto;padding:0 0 40px;">
+    <div style="background:#0f2d4a;padding:24px 20px;text-align:center;">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:#fff;" id="form-empresa-nome">Controle Dedetizadora</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.7);margin-top:4px;">Preencha seus dados para atendimento</div>
+    </div>
+    <div style="padding:24px 16px;">
+      <p style="font-size:11px;color:#64748b;margin-bottom:16px;">Campos com <span style="color:#ef4444;">*</span> são obrigatórios.</p>
+      <div id="form-erro" style="background:#fee2e2;color:#dc2626;border-radius:8px;padding:10px 14px;font-size:13px;font-weight:600;margin-bottom:14px;display:none;">Por favor, preencha todos os campos obrigatórios.</div>
+      <div id="form-corpo">
+        <!-- IDENTIFICAÇÃO -->
+        <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:22px;margin-bottom:16px;">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#1a3c6e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px;">Identificação</div>
+          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Nome completo / Razão Social <span style="color:#ef4444;">*</span></label><input id="ff-nome" type="text" placeholder="Seu nome completo ou razão social" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
+          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">CPF / CNPJ <span style="color:#ef4444;">*</span></label><input id="ff-cnpj" type="text" placeholder="000.000.000-00 ou 00.000.000/0001-00" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
+          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Tipo <span style="color:#ef4444;">*</span></label>
+            <select id="ff-tipo" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;">
+              <option value="">— Selecione —</option>
+              <option value="Residência">Residência</option>
+              <option value="Apartamento">Apartamento</option>
+              <option value="Comércio">Comércio / Empresa</option>
+              <option value="Indústria">Indústria</option>
+              <option value="Condomínio">Condomínio</option>
+              <option value="Outro">Outro</option>
+            </select>
+          </div>
+        </div>
+        <!-- ENDEREÇO -->
+        <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:22px;margin-bottom:16px;">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#1a3c6e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px;">Endereço</div>
+          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">CEP <span style="color:#ef4444;">*</span></label><input id="ff-cep" type="text" placeholder="00000-000" maxlength="9" oninput="mascaraCepFF(this);buscarCepFF(this.value)" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
+          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Rua / Avenida <span style="color:#ef4444;">*</span></label><input id="ff-endereco" type="text" placeholder="Rua, número" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
+          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Complemento / Endereço interno do condomínio</label><input id="ff-complemento" type="text" placeholder="Ex: Apto 101, Bloco B..." style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
+          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Bairro <span style="color:#ef4444;">*</span></label><input id="ff-bairro" type="text" placeholder="Bairro" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
+          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Cidade / UF <span style="color:#ef4444;">*</span></label><input id="ff-cidade" type="text" placeholder="Ex: Uberlândia/MG" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
+        </div>
+        <!-- CONTATO -->
+        <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:22px;margin-bottom:16px;">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#1a3c6e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px;">Contato</div>
+          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Telefone / WhatsApp <span style="color:#ef4444;">*</span></label><input id="ff-fone" type="tel" placeholder="(34) 9 0000-0000" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
+          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">E-mail</label><input id="ff-email" type="email" placeholder="seu@email.com" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
+        </div>
+        <button onclick="enviarFormularioEmbutido()" style="width:100%;background:#1a3c6e;color:#fff;border:none;border-radius:10px;padding:15px;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer;">Enviar Dados ✓</button>
+      </div>
+      <!-- SUCESSO -->
+      <div id="form-sucesso" style="display:none;text-align:center;padding:40px 20px;">
+        <div style="font-size:60px;margin-bottom:16px;">✅</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:#059669;margin-bottom:8px;">Dados enviados!</div>
+        <div style="font-size:14px;color:#64748b;line-height:1.6;">Recebemos suas informações com sucesso.<br>Em breve nossa equipe entrará em contato.</div>
+        <button onclick="fecharFormularioEmbutido()" style="margin-top:20px;background:#1a3c6e;color:#fff;border:none;border-radius:8px;padding:10px 24px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 <script>
 function mascaraCep(el){
   let v = el.value.replace(/\D/g,'');
@@ -311,9 +785,7 @@ function gerarCronogramaPDF() {
   .alerta-venc.urgente{background:#fee2e2;border-color:#fca5a5;}
   .alerta-venc-texto{font-size:13px;font-weight:600;}
   .alerta-venc-data{font-size:11px;color:var(--muted);margin-top:2px;}
-</style>
-  </head><body>
-    <div class="header-info">
+</style>\n  <\/head><body>\n    <div class=\"header-info\">
       ${d.nome ? '<b>'+d.nome+'</b><br>' : ''}
       ${d.fone ? 'Telefone: '+d.fone+'<br>' : ''}
       ${d.endereco ? d.endereco+(d.bairro?', '+d.bairro:'')+(d.cidade?', '+d.cidade:'')+(d.cep?' — CEP '+d.cep:'') : ''}
@@ -334,7 +806,7 @@ function gerarCronogramaPDF() {
       <button onclick="window.print()" style="font-family:sans-serif;font-weight:700;padding:10px 28px;background:#1a3c6e;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;">🖨️ Imprimir</button>
       <button onclick="salvarComoPDF()" style="font-family:sans-serif;font-weight:700;padding:10px 28px;background:#059669;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;">💾 Salvar PDF</button>
     </div>
-  </body></html>`);
+  <\/body></html>`);
   win.document.close();
   win.focus();
 }
@@ -760,7 +1232,7 @@ function imprimirCert(){
   .ag-edit-btn{font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;background:#f1f5f9;color:var(--muted);border:none;cursor:pointer;}
   .ag-edit-btn:hover{background:var(--border);}
 </style>
-  </head><body>${conteudo}
+  <\/head><body>${conteudo}
 <!-- ══ MODAL AGENDAMENTO ══ -->
 <div class="modal-overlay" id="modal-ag">
   <div class="modal" style="max-width:520px;">
@@ -800,7 +1272,7 @@ function imprimirCert(){
     </div>
   </div>
 </div>
-</body></html>`);
+<\/body></html>`);
   win.document.close();
   win.focus();
   setTimeout(()=>{win.print();},700);
@@ -1056,7 +1528,7 @@ function _imprimirOrdemServico(ags, dia) {
       .resumo{background:#f5f5f5;border-radius:6px;padding:8px 14px;font-size:10pt;margin-bottom:18px;display:flex;gap:20px;}
       @media print{body{padding:10mm 15mm;}}
     </style>
-  </head><body>
+  <\/head><body>
     <h2>${empresa}</h2>
     <div class="sub">Agenda de Serviços — ${dataTitle}</div>
     <div class="resumo">
@@ -1123,7 +1595,7 @@ function _imprimirOrdemServico(ags, dia) {
   </div>
 </div>
 
-</body></html>`);
+<\/body></html>`);
   win.document.close();
   win.focus();
   setTimeout(() => { win.print(); }, 600);
@@ -1663,9 +2135,7 @@ function gerarCronogramaPDF() {
       .aviso{text-align:center;font-style:italic;font-size:11pt;margin:20px 0;line-height:1.6;}
       .no-print{text-align:center;margin-top:30px;display:flex;gap:12px;justify-content:center;}
       @media print{.no-print{display:none;}}
-    </style>
-  </head><body>
-    <div class="header-info">
+    </style>\n  <\/head><body>\n    <div class=\"header-info\">
       ${d.nome ? '<b>'+d.nome+'</b><br>' : ''}
       ${d.fone ? 'Telefone: '+d.fone+'<br>' : ''}
       ${d.endereco ? d.endereco+(d.bairro?', '+d.bairro:'')+(d.cidade?', '+d.cidade:'')+(d.cep?' — CEP '+d.cep:'') : ''}
@@ -1680,7 +2150,7 @@ function gerarCronogramaPDF() {
       <button onclick="window.print()" style="font-family:sans-serif;font-weight:700;padding:10px 28px;background:#1a3c6e;color:#fff;border:none;border-radius:8px;cursor:pointer;">🖨️ Imprimir</button>
       <button onclick="document.querySelectorAll('.no-print').forEach(e=>e.style.display='none');window.print();document.querySelectorAll('.no-print').forEach(e=>e.style.display='flex');" style="font-family:sans-serif;font-weight:700;padding:10px 28px;background:#059669;color:#fff;border:none;border-radius:8px;cursor:pointer;">💾 Salvar PDF</button>
     </div>
-  </body></html>\`);
+  <\/body></html>\`);
   win.document.close();
   win.focus();
 }
@@ -1720,478 +2190,5 @@ function recalcularTodasValidades() {
 }
 
 </script>
-</head>
-<body>
-
-<header>
-  <div class="logo">Controle <span>Dedetizadora</span> <span id="sync-indicator" style="font-size:10px;font-weight:400;opacity:.7;margin-left:8px;"><span class="sync-dot"></span>Online</span></div>
-  <div class="tabs">
-    <button class="tab-btn active" onclick="showTab('orcamento')">Orçamento</button>
-    <button class="tab-btn" onclick="showTab('historico')">Histórico</button>
-    <button class="tab-btn" onclick="showTab('agenda')">📅 Agenda</button>
-    <button class="tab-btn" onclick="showTab('clientes')">👥 Clientes</button>
-    <button class="tab-btn" onclick="showTab('captacao')">📲 Captação</button>
-  </div>
-</header>
-
-<div class="container">
-
-<!-- ══ ORÇAMENTO ══ -->
-<section class="section active" id="sec-orcamento">
-
-  <div class="card">
-    <div class="card-header">Identificação do Orçamento</div>
-    <div class="card-body">
-      <div class="grid-4">
-        <div><label>Nº Orçamento</label><input id="num" placeholder="001"></div>
-        <div><label>Data (emissão)</label><input type="date" id="data"></div>
-        <div><label>Data do Serviço</label><input type="date" id="dataServico" onchange="recalcularTodasValidades()"></div>
-        <div><label>Hora</label><input type="time" id="hora"></div>
-      </div>
-      <div class="grid-3" style="margin-top:12px;">
-        <div><label>Valor (R$)</label><input id="valor" placeholder="0,00"></div>
-        <div><label>Recibo</label><select id="recibo"><option value="">—</option><option>Sim</option><option>Não</option></select></div>
-        <div><label>Nota Fiscal</label><select id="notafiscal"><option value="">—</option><option>Sim</option><option>Não</option></select></div>
-      </div>
-      <div style="margin-top:13px;">
-        <label>Forma de Pagamento</label>
-        <div class="check-group">
-          <label class="check-item"><input type="checkbox" id="pg-dinheiro"> Dinheiro</label>
-          <label class="check-item"><input type="checkbox" id="pg-pix"> Pix</label>
-          <label class="check-item"><input type="checkbox" id="pg-boleto"> Boleto</label>
-          <label class="check-item"><input type="checkbox" id="pg-cheque"> Cheque</label>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
-      <span>Dados da Empresa Emissora</span>
-      <span id="empresa-status" style="font-size:11px;font-weight:400;opacity:.8;"></span>
-    </div>
-    <div class="card-body">
-      <div class="grid-2">
-        <div><label>Nome da Empresa</label><input id="empresa" placeholder="Ex: DDtizadora Industrial"></div>
-        <div><label>CNPJ da Empresa</label><input id="cnpjEmpresa" placeholder="00.000.000/0001-00"></div>
-        <div><label>Responsável Técnico</label><input id="responsavel" placeholder="Nome completo"></div>
-        <div><label>CRQ / Registro Técnico</label><input id="crt" placeholder="Ex: CRQ II/MG 02421977"></div>
-        <div><label>Alvará Sanitário</label><input id="alvaraSanitario" placeholder="Ex: 63/2021"></div>
-        <div><label>Alvará de Funcionamento</label><input id="alvaraFunc" placeholder="Ex: 1/2.251.3.7677"></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header">Empresa Contratante (Cliente)</div>
-    <div class="card-body">
-      <div class="grid-2">
-        <div class="span-2"><label>Razão Social / Nome</label><input id="nome" placeholder="Nome completo ou razão social"></div>
-        <div><label>Endereço</label><input id="endereco" placeholder="Rua, número..."></div>
-        <div><label>Bairro</label><input id="bairro" placeholder="Bairro"></div>
-        <div><label>CEP</label><input id="cep" placeholder="00000-000" maxlength="9" oninput="mascaraCep(this)"></div>
-        <div><label>CNPJ / CPF</label><input id="cnpjCliente" placeholder="00.000.000/0001-00"></div>
-        <div><label>Cidade / UF</label><input id="cidade" placeholder="Uberlândia/MG"></div>
-        <div><label>Telefone</label><input id="fone" placeholder="(34) 9 0000-0000"></div>
-        <div><label>E-mail</label><input id="email" placeholder="email@exemplo.com"></div>
-        <div><label>Tipo de Comércio</label><input id="tipoComercio" placeholder="Ex: Restaurante, Residência..."></div>
-        <div><label>Contato no Local</label><input id="contato" placeholder="Nome do responsável no local"></div>
-        <div><label>Kit</label><input id="kit" placeholder="Ex: Kit 1, Kit Completo..."></div>
-        <div><label>Apartamentos</label><input id="aptos" placeholder="Nº ou descrição"></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header">Serviços Solicitados</div>
-    <div class="card-body">
-      <div class="srv-header">
-        <div></div><div>Serviço / Praga</div><div>Laudo</div><div>Garantia</div><div>Válido até</div><div>Observação</div>
-      </div>
-      <div id="servicos-lista"></div>
-      <div style="margin-top:14px;"><label>Outros Serviços</label><input id="outros" placeholder="Descreva outros serviços..."></div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header">Descrição dos Serviços Realizados</div>
-    <div class="card-body">
-      <textarea id="descricaoServicos" placeholder="Descreva detalhadamente: métodos, quantidades, caixas higienizadas, produtos, procedimentos..."></textarea>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header">Características dos Produtos Aplicados</div>
-    <div class="card-body">
-      <div id="produtos-lista"></div>
-      <button class="btn-add" onclick="adicionarProduto()">+ Adicionar Produto</button>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header">Tipo de Serviço / Contrato</div>
-    <div class="card-body">
-      <div class="pacote-box">
-        <div class="pacote-title">Modalidade</div>
-        <div class="radio-group">
-          <label class="radio-item"><input type="radio" name="modalidade" value="avulso" id="mod-avulso"> Serviço Avulso</label>
-          <label class="radio-item"><input type="radio" name="modalidade" value="contrato" id="mod-contrato"> Pacote de Contrato</label>
-        </div>
-        <div id="contrato-detalhes" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid #fcd34d;">
-          <div class="pacote-title">Modalidade do Pacote</div>
-          <div class="radio-group">
-            <label class="radio-item"><input type="radio" name="pacote-tipo" value="cortesia-inicio" onchange="atualizarCronograma()"> 1ª cortesia + 3 pagas (4 visitas)</label>
-            <label class="radio-item"><input type="radio" name="pacote-tipo" value="4" onchange="atualizarCronograma()"> 4 aplicações pagas</label>
-            <label class="radio-item"><input type="radio" name="pacote-tipo" value="cortesia-fim" onchange="atualizarCronograma()"> 3 pagas + última cortesia (4 visitas)</label>
-          </div>
-          <div style="margin-top:14px;">
-            <label>Data da 1ª Aplicação</label>
-            <input type="date" id="data-primeira-app" oninput="atualizarCronograma()" style="max-width:200px;">
-          </div>
-          <div id="cronograma-preview" style="margin-top:14px;display:none;">
-            <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:#d97706;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Cronograma Gerado</div>
-            <table style="width:100%;border-collapse:collapse;font-size:13px;" id="tabela-cronograma">
-              <thead>
-                <tr style="background:#1a3c6e;color:#fff;">
-                  <th style="padding:8px 12px;text-align:center;font-family:'Syne',sans-serif;font-size:11px;">Aplicação</th>
-                  <th style="padding:8px 12px;text-align:center;font-family:'Syne',sans-serif;font-size:11px;">Data</th>
-                  <th style="padding:8px 12px;text-align:center;font-family:'Syne',sans-serif;font-size:11px;">Pagamento</th>
-                </tr>
-              </thead>
-              <tbody id="cronograma-body"></tbody>
-            </table>
-            <div style="margin-top:10px;display:flex;gap:8px;justify-content:flex-end;">
-              <button class="btn btn-gold" style="font-size:11px;padding:7px 16px;" onclick="gerarCronogramaPDF()">🖨️ Imprimir / 💾 PDF</button>
-            </div>
-          </div>
-        </div>
-        <div style="margin-top:14px;padding-top:14px;border-top:1px solid #fcd34d;">
-          <div class="pacote-title">Status do Contrato</div>
-          <div class="radio-group">
-            <label class="radio-item"><input type="radio" name="status-contrato" value="proposta"> Proposta de Contrato</label>
-            <label class="radio-item"><input type="radio" name="status-contrato" value="existente"> Já Tem Contrato</label>
-            <label class="radio-item"><input type="radio" name="status-contrato" value="novo"> Novo Cliente</label>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header">Observações</div>
-    <div class="card-body"><textarea id="obs" placeholder="Observações gerais..."></textarea></div>
-  </div>
-
-  <div class="btn-row">
-    <button class="btn btn-outline" onclick="limparForm()">Limpar</button>
-    <button class="btn btn-gold" onclick="abrirCertificado()">📄 Gerar Laudo / Certificado</button>
-    <button class="btn btn-primary" onclick="salvarOrcamento()">💾 Salvar Orçamento</button>
-  </div>
-</section>
-
-<!-- ══ HISTÓRICO ══ -->
-<section class="section" id="sec-historico">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
-    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;">Histórico de Orçamentos</div>
-    <button class="btn btn-primary" onclick="showTab('orcamento')">+ Novo Orçamento</button>
-  </div>
-  <div id="historico-container"></div>
-</section>
-
-<!-- ══ AGENDA ══ -->
-<section class="section" id="sec-agenda">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
-    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;">Agenda de Serviços</div>
-    <button class="btn btn-outline" style="font-size:12px;" onclick="imprimirAgendaDia()">🖨️ Imprimir Agenda do Dia</button>
-    <button class="btn btn-primary" onclick="abrirModalAgendamento(null)">+ Novo Agendamento</button>
-  </div>
-  <div class="agenda-layout">
-    <!-- Calendário -->
-    <div class="card">
-      <div class="card-body">
-        <div class="cal-nav">
-          <button class="cal-nav-btn" onclick="mudarMes(-1)">&#8249;</button>
-          <span class="cal-month" id="cal-titulo"></span>
-          <button class="cal-nav-btn" onclick="mudarMes(1)">&#8250;</button>
-        </div>
-        <div class="cal-grid" id="cal-grid"></div>
-      </div>
-    </div>
-    <!-- Lista do dia selecionado -->
-    <div>
-      <div class="agenda-list-header" id="agenda-list-titulo">Selecione um dia</div>
-      <div id="agenda-list-items">
-        <div class="empty" style="padding:30px 10px;"><div class="empty-icon" style="font-size:32px;">📅</div><div style="font-size:13px;">Clique em um dia para ver os agendamentos</div></div>
-      </div>
-    </div>
-  </div>
-  <!-- Lista completa -->
-  <div style="margin-top:20px;">
-    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px;margin-bottom:12px;">Todos os Agendamentos</div>
-    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
-      <button class="btn" style="padding:6px 14px;font-size:11px;background:#dbeafe;color:var(--blue);border:none;" onclick="filtrarAgenda('todos')">Todos</button>
-      <button class="btn" style="padding:6px 14px;font-size:11px;background:#dbeafe;color:var(--blue);border:none;" onclick="filtrarAgenda('agendado')">Agendados</button>
-      <button class="btn" style="padding:6px 14px;font-size:11px;background:var(--green-light);color:var(--green);border:none;" onclick="filtrarAgenda('realizado')">Realizados</button>
-      <button class="btn" style="padding:6px 14px;font-size:11px;background:#fee2e2;color:#dc2626;border:none;" onclick="filtrarAgenda('cancelado')">Cancelados</button>
-    </div>
-    <div id="agenda-todos"></div>
-  </div>
-</section>
-
-</div>
-
-
-<!-- ══ CLIENTES ══ -->
-<section class="section" id="sec-clientes">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
-    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;">Cadastro de Clientes</div>
-    <button class="btn btn-primary" onclick="abrirModalCliente(null)">+ Novo Cliente</button>
-  </div>
-
-  <!-- Alertas de vencimento -->
-  <div id="alertas-vencimento"></div>
-
-  <!-- Busca -->
-  <div class="card" style="margin-bottom:14px;">
-    <div class="card-body" style="padding:14px 20px;">
-      <input id="busca-cliente" type="text" placeholder="🔍 Buscar por nome, telefone, endereço..." oninput="filtrarClientes()" style="font-size:14px;">
-    </div>
-  </div>
-
-  <div id="clientes-lista"></div>
-</section>
-
-
-<!-- ══ CAPTAÇÃO ══ -->
-<section class="section" id="sec-captacao">
-  <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;margin-bottom:6px;">Captação de Clientes</div>
-  <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">Envie pelo WhatsApp ou compartilhe o link do formulário — os dados chegam direto no cadastro.</div>
-
-  <!-- LINK DO FORMULÁRIO -->
-  <div class="card">
-    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
-      <span>📋 Formulário Online para o Cliente</span>
-    </div>
-    <div class="card-body">
-      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">Compartilhe esse link — o cliente preenche no celular e os dados chegam direto no cadastro.</p>
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-        <input id="link-formulario" readonly style="flex:1;background:#f8fafc;font-size:12px;" value="Gerando link...">
-        <button class="btn btn-primary" style="white-space:nowrap;" onclick="copiarLinkFormulario()">📋 Copiar Link</button>
-        <button class="btn btn-success" style="white-space:nowrap;" onclick="enviarFormularioWhatsApp()">📲 Enviar WhatsApp</button>
-        <button class="btn btn-outline" style="white-space:nowrap;" onclick="abrirFormularioEmbutido()">👁️ Pré-visualizar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MENSAGEM WHATSAPP -->
-  <div class="card">
-    <div class="card-header">📲 Mensagem Pronta para WhatsApp</div>
-    <div class="card-body">
-      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">Copie e mande para o cliente — ele responde com os dados que você precisa.</p>
-      <div style="background:#e7fde8;border-radius:12px;padding:16px 18px;font-size:13px;line-height:1.8;white-space:pre-wrap;border:1px solid #b2f2bb;" id="msg-whatsapp"></div>
-      <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
-        <button class="btn btn-primary" onclick="copiarMensagem()">📋 Copiar Mensagem</button>
-        <button class="btn btn-success" onclick="abrirWhatsApp()">📲 Abrir WhatsApp</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- RESPOSTAS RECEBIDAS -->
-  <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px;margin-bottom:12px;margin-top:8px;">Respostas Recebidas pelo Formulário</div>
-  <div id="respostas-lista">
-    <div class="empty"><div class="empty-icon">📬</div><div style="font-size:14px;">Nenhuma resposta ainda.<br><span style="font-size:12px;">Quando o cliente preencher o formulário, aparece aqui.</span></div></div>
-  </div>
-</section>
-
-<!-- ══ MODAL CERTIFICADO ══ -->
-<div class="modal-overlay" id="modal-cert">
-  <div class="modal">
-    <div class="modal-header">
-      <span class="modal-title">Laudo / Certificado de Serviço</span>
-      <button class="modal-close" onclick="fecharModal('modal-cert')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div id="cert-content"></div>
-      <div class="btn-row" style="margin-top:16px;">
-        <button class="btn btn-outline" onclick="fecharModal('modal-cert')">Fechar</button>
-        <button class="btn btn-outline" onclick="imprimirCert('imprimir')">🖨️ Imprimir</button>
-        <button class="btn btn-success" onclick="imprimirCert('pdf')">💾 Salvar PDF</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ══ MODAL VER ══ -->
-<div class="modal-overlay" id="modal-ver">
-  <div class="modal">
-    <div class="modal-header">
-      <span class="modal-title">Detalhes do Orçamento</span>
-      <button class="modal-close" onclick="fecharModal('modal-ver')">✕</button>
-    </div>
-    <div class="modal-body" id="ver-content"></div>
-  </div>
-</div>
-
-
-
-<!-- ══ MODAL AGENDAMENTO ══ -->
-<div class="modal-overlay" id="modal-ag">
-  <div class="modal" style="max-width:520px;">
-    <div class="modal-header">
-      <span class="modal-title" id="modal-ag-titulo">Novo Agendamento</span>
-      <button class="modal-close" onclick="fecharModal('modal-ag')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <div style="grid-column:span 2;">
-          <label>Vincular a Orçamento Salvo (opcional)</label>
-          <select id="ag-orcamento" onchange="preencherDoOrcamento()">
-            <option value="">— Agendamento avulso —</option>
-          </select>
-        </div>
-        <div style="grid-column:span 2;">
-          <label>Nome do Cliente</label>
-          <div style="position:relative;">
-            <input id="ag-nome" placeholder="Digite para buscar cliente cadastrado..." autocomplete="off"
-              oninput="buscarClienteAgenda(this.value)" onblur="setTimeout(()=>fecharDropCliente(),200)">
-            <div id="ag-cliente-drop" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--blue);border-radius:8px;z-index:500;max-height:180px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.12);"></div>
-          </div>
-        </div>
-        <div style="grid-column:span 2;"><label>Endereço</label><input id="ag-endereco" placeholder="Rua, número..."></div>
-        <div><label>Bairro</label><input id="ag-bairro" placeholder="Bairro"></div>
-        <div><label>CEP</label><input id="ag-cep" placeholder="00000-000" maxlength="9" oninput="mascaraCep(this)"></div>
-        <div style="grid-column:span 2;"><label>Cidade / UF</label><input id="ag-cidade" placeholder="Uberlândia/MG"></div>
-        <div style="grid-column:span 2;"><label>Serviço a Realizar</label><input id="ag-servico" placeholder="Ex: Dedetização, Desratização..."></div>
-        <div style="grid-column:span 2;">
-          <label>Tipo de Visita</label>
-          <select id="ag-tipo-visita">
-            <option value="servico">Serviço</option>
-            <option value="retorno">Retorno</option>
-            <option value="novo">Cliente Novo</option>
-          </select>
-        </div>
-        <div><label>Data</label><input type="date" id="ag-data"></div>
-        <div><label>Hora</label><input type="time" id="ag-hora"></div>
-        <div style="grid-column:span 2;"><label>Técnico Responsável</label><input id="ag-resp" placeholder="Nome do técnico que vai executar"></div>
-        <div style="grid-column:span 2;"><label>Observação</label><textarea id="ag-obs" style="min-height:60px;" placeholder="Observações sobre o agendamento..."></textarea></div>
-        <div style="grid-column:span 2;">
-          <label>Status</label>
-          <select id="ag-status">
-            <option value="agendado">Agendado</option>
-            <option value="realizado">Realizado</option>
-            <option value="cancelado">Cancelado</option>
-          </select>
-        </div>
-      </div>
-      <input type="hidden" id="ag-id">
-      <div class="btn-row" style="margin-top:16px;">
-        <button class="btn btn-outline" onclick="fecharModal('modal-ag')">Cancelar</button>
-        <button class="btn btn-primary" onclick="salvarAgendamento()">Salvar Agendamento</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
-
-<!-- ══ MODAL CLIENTE ══ -->
-<div class="modal-overlay" id="modal-cliente">
-  <div class="modal" style="max-width:620px;">
-    <div class="modal-header">
-      <span class="modal-title" id="modal-cliente-titulo">Novo Cliente</span>
-      <button class="modal-close" onclick="fecharModal('modal-cliente')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="grid-2">
-        <div class="span-2"><label>Nome / Razão Social</label><input id="cli-nome" placeholder="Nome completo ou razão social"></div>
-        <div class="span-2"><label>Endereço</label><input id="cli-endereco" placeholder="Rua, número..."></div>
-        <div><label>Bairro</label><input id="cli-bairro" placeholder="Bairro"></div>
-        <div><label>CEP</label><input id="cli-cep" placeholder="00000-000" maxlength="9" oninput="mascaraCep(this)"></div>
-        <div><label>Cidade / UF</label><input id="cli-cidade" placeholder="Uberlândia/MG"></div>
-        <div><label>Telefone / WhatsApp</label><input id="cli-fone" placeholder="(34) 9 0000-0000"></div>
-        <div><label>E-mail</label><input id="cli-email" placeholder="email@exemplo.com"></div>
-        <div><label>CNPJ / CPF</label><input id="cli-cnpj" placeholder="000.000.000-00"></div>
-        <div><label>Tipo de Comércio</label><input id="cli-tipo" placeholder="Ex: Residência, Restaurante..."></div>
-        <div class="span-2"><label>Observações</label><textarea id="cli-obs" style="min-height:60px;" placeholder="Observações sobre o cliente..."></textarea></div>
-        <div><label>Último Serviço Realizado</label><input type="date" id="cli-ultimo-servico"></div>
-        <div><label>Próximo Vencimento</label><input type="date" id="cli-vencimento"></div>
-      </div>
-      <input type="hidden" id="cli-id">
-      <div class="btn-row" style="margin-top:16px;">
-        <button class="btn btn-outline" onclick="fecharModal('modal-cliente')">Cancelar</button>
-        <button class="btn btn-primary" onclick="salvarCliente()">Salvar Cliente</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ══ MODAL HISTÓRICO CLIENTE ══ -->
-<div class="modal-overlay" id="modal-hist-cliente">
-  <div class="modal" style="max-width:680px;">
-    <div class="modal-header">
-      <span class="modal-title" id="modal-hist-cliente-titulo">Histórico do Cliente</span>
-      <button class="modal-close" onclick="fecharModal('modal-hist-cliente')">✕</button>
-    </div>
-    <div class="modal-body" id="modal-hist-cliente-body"></div>
-  </div>
-</div>
-
-
-<!-- ══ FORMULÁRIO CLIENTE (EMBUTIDO) ══ -->
-<div id="overlay-formulario" style="display:none;position:fixed;inset:0;background:#f1f5f9;z-index:9999;overflow-y:auto;">
-  <div style="max-width:520px;margin:0 auto;padding:0 0 40px;">
-    <div style="background:#0f2d4a;padding:24px 20px;text-align:center;">
-      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:#fff;" id="form-empresa-nome">Controle Dedetizadora</div>
-      <div style="font-size:13px;color:rgba(255,255,255,.7);margin-top:4px;">Preencha seus dados para atendimento</div>
-    </div>
-    <div style="padding:24px 16px;">
-      <p style="font-size:11px;color:#64748b;margin-bottom:16px;">Campos com <span style="color:#ef4444;">*</span> são obrigatórios.</p>
-      <div id="form-erro" style="background:#fee2e2;color:#dc2626;border-radius:8px;padding:10px 14px;font-size:13px;font-weight:600;margin-bottom:14px;display:none;">Por favor, preencha todos os campos obrigatórios.</div>
-      <div id="form-corpo">
-        <!-- IDENTIFICAÇÃO -->
-        <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:22px;margin-bottom:16px;">
-          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#1a3c6e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px;">Identificação</div>
-          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Nome completo / Razão Social <span style="color:#ef4444;">*</span></label><input id="ff-nome" type="text" placeholder="Seu nome completo ou razão social" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
-          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">CPF / CNPJ <span style="color:#ef4444;">*</span></label><input id="ff-cnpj" type="text" placeholder="000.000.000-00 ou 00.000.000/0001-00" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
-          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Tipo <span style="color:#ef4444;">*</span></label>
-            <select id="ff-tipo" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;">
-              <option value="">— Selecione —</option>
-              <option value="Residência">Residência</option>
-              <option value="Apartamento">Apartamento</option>
-              <option value="Comércio">Comércio / Empresa</option>
-              <option value="Indústria">Indústria</option>
-              <option value="Condomínio">Condomínio</option>
-              <option value="Outro">Outro</option>
-            </select>
-          </div>
-        </div>
-        <!-- ENDEREÇO -->
-        <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:22px;margin-bottom:16px;">
-          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#1a3c6e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px;">Endereço</div>
-          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">CEP <span style="color:#ef4444;">*</span></label><input id="ff-cep" type="text" placeholder="00000-000" maxlength="9" oninput="mascaraCepFF(this);buscarCepFF(this.value)" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
-          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Rua / Avenida <span style="color:#ef4444;">*</span></label><input id="ff-endereco" type="text" placeholder="Rua, número" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
-          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Complemento / Endereço interno do condomínio</label><input id="ff-complemento" type="text" placeholder="Ex: Apto 101, Bloco B..." style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
-          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Bairro <span style="color:#ef4444;">*</span></label><input id="ff-bairro" type="text" placeholder="Bairro" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
-          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Cidade / UF <span style="color:#ef4444;">*</span></label><input id="ff-cidade" type="text" placeholder="Ex: Uberlândia/MG" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
-        </div>
-        <!-- CONTATO -->
-        <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:22px;margin-bottom:16px;">
-          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#1a3c6e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px;">Contato</div>
-          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Telefone / WhatsApp <span style="color:#ef4444;">*</span></label><input id="ff-fone" type="tel" placeholder="(34) 9 0000-0000" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
-          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">E-mail</label><input id="ff-email" type="email" placeholder="seu@email.com" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
-        </div>
-        <button onclick="enviarFormularioEmbutido()" style="width:100%;background:#1a3c6e;color:#fff;border:none;border-radius:10px;padding:15px;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer;">Enviar Dados ✓</button>
-      </div>
-      <!-- SUCESSO -->
-      <div id="form-sucesso" style="display:none;text-align:center;padding:40px 20px;">
-        <div style="font-size:60px;margin-bottom:16px;">✅</div>
-        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:#059669;margin-bottom:8px;">Dados enviados!</div>
-        <div style="font-size:14px;color:#64748b;line-height:1.6;">Recebemos suas informações com sucesso.<br>Em breve nossa equipe entrará em contato.</div>
-        <button onclick="fecharFormularioEmbutido()" style="margin-top:20px;background:#1a3c6e;color:#fff;border:none;border-radius:8px;padding:10px 24px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;">Fechar</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 </body>
 </html>
