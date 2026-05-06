@@ -147,69 +147,7 @@
   .alerta-venc-data{font-size:11px;color:var(--muted);margin-top:2px;}
 </style>
 
-<!-- Firebase -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-  import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyCE46vBCXq6-3PL_xe6DJJkWgFdHkFyiGY",
-    authDomain: "controle-dedetizadora.firebaseapp.com",
-    projectId: "controle-dedetizadora",
-    storageBucket: "controle-dedetizadora.firebasestorage.app",
-    messagingSenderId: "103184454927",
-    appId: "1:103184454927:web:0356560927186e19619a7a"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-
-  // ── Expose DB functions globally ──
-  window._db = db;
-  window._col = collection;
-  window._doc = doc;
-  window._setDoc = setDoc;
-  window._deleteDoc = deleteDoc;
-  window._onSnapshot = onSnapshot;
-  window._query = query;
-  window._orderBy = orderBy;
-
-  // ── Live listeners — start as soon as Firebase loads ──
-  window.addEventListener('firebaseReady', () => {});
-
-  // Orcamentos listener
-  const qOrc = query(collection(db, 'orcamentos'), orderBy('criadoEm', 'desc'));
-  onSnapshot(qOrc, (snap) => {
-    window.orcamentos = snap.docs.map(d => ({id: d.id, ...d.data()}));
-    if (typeof renderHistorico === 'function') renderHistorico();
-    if (typeof popularSelectOrcamentos === 'function') popularSelectOrcamentos();
-  });
-
-  // Agendamentos listener
-  const qAg = query(collection(db, 'agendamentos'), orderBy('data', 'asc'));
-  onSnapshot(qAg, (snap) => {
-    window.agendamentos = snap.docs.map(d => ({id: d.id, ...d.data()}));
-    if (typeof renderCalendario === 'function') renderCalendario();
-    if (typeof renderAgendaTodos === 'function') renderAgendaTodos();
-    if (window.calDiaSel && typeof selecionarDia === 'function') selecionarDia(window.calDiaSel);
-  });
-
-  // Empresa emissora listener
-  onSnapshot(doc(db, 'config', 'empresa'), (snap) => {
-    if (snap.exists()) {
-      const d = snap.data();
-      window._empresaCache = d;
-      const CAMPOS_EMPRESA = ['empresa','cnpjEmpresa','responsavel','crt','alvaraSanitario','alvaraFunc'];
-      CAMPOS_EMPRESA.forEach(id => {
-        const el = document.getElementById(id);
-        if (el && d[id] && !el.value) el.value = d[id];
-      });
-    }
-  });
-
-  window._firebaseLoaded = true;
-  console.log('Firebase conectado ✓');
-</script>
 
 </head>
 <body>
@@ -377,6 +315,7 @@
     <button class="btn btn-outline" onclick="limparForm()">Limpar</button>
     <button class="btn btn-gold" onclick="abrirCertificado()">📄 Gerar Laudo / Certificado</button>
     <button class="btn btn-primary" onclick="salvarOrcamento()">💾 Salvar Orçamento</button>
+    <button class="btn btn-outline" onclick="gerarContrato()" style="border-color:#1a3c6e;color:#1a3c6e;">📄 Gerar Contrato</button>
   </div>
 </section>
 
@@ -685,132 +624,94 @@
 </div>
 
 
-<script defer>
-function mascaraCep(el){
-  let v = el.value.replace(/\D/g,'');
-  if(v.length > 5) v = v.slice(0,5)+'-'+v.slice(5,8);
-  el.value = v;
-}
-
-function mostrarToast(msg){
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), 2800);
-}
 
 
-// ══════════════════ CRONOGRAMA ══════════════════
-function addMonths(date, months) {
-  const d = new Date(date);
-  d.setMonth(d.getMonth() + months);
-  return d;
-}
 
-function fmtDataBR(d) {
-  if(!d) return '—';
-  return d.toLocaleDateString('pt-BR');
-}
 
-function atualizarCronograma() {
-  const tipo = document.querySelector('input[name="pacote-tipo"]:checked')?.value;
-  const dataStr = document.getElementById('data-primeira-app')?.value;
-  const preview = document.getElementById('cronograma-preview');
-  const tbody = document.getElementById('cronograma-body');
-  if (!tipo || !dataStr) { preview.style.display='none'; return; }
+<!-- Firebase -->
+<script type="module">
 
-  const base = new Date(dataStr + 'T12:00:00');
-  const linhas = gerarLinhasCronograma(tipo, base);
 
-  tbody.innerHTML = linhas.map(l => `
-    <tr>
-      <td><b>${l.num}ª</b></td>
-      <td>${fmtDataBR(l.data)}</td>
-      <td>${l.cortesia
-        ? '<span class="cortesia-tag">Cortesia</span>'
-        : '<span class="pago-tag">'+fmtDataBR(l.pgto)+'</span>'}</td>
-    </tr>`).join('');
-  preview.style.display = 'block';
-  // Store for PDF
-  window._cronogramaLinhas = linhas;
-}
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+  import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
-function gerarLinhasCronograma(tipo, base) {
-  const linhas = [];
-  // Sempre 4 visitas
-  for (let i = 0; i < 4; i++) {
-    const data = addMonths(base, i * 3);
-    let cortesia = false;
-    if (tipo === 'cortesia-inicio') cortesia = (i === 0);   // 1ª cortesia + 3 pagas
-    else if (tipo === '4')          cortesia = false;        // 4 pagas
-    else if (tipo === 'cortesia-fim') cortesia = (i === 3); // 3 pagas + última cortesia
-    linhas.push({ num: i+1, data, pgto: cortesia ? null : addMonths(data, 1), cortesia });
-  }
-  return linhas;
-}
+  const firebaseConfig = {
+    apiKey: "AIzaSyCE46vBCXq6-3PL_xe6DJJkWgFdHkFyiGY",
+    authDomain: "controle-dedetizadora.firebaseapp.com",
+    projectId: "controle-dedetizadora",
+    storageBucket: "controle-dedetizadora.firebasestorage.app",
+    messagingSenderId: "103184454927",
+    appId: "1:103184454927:web:0356560927186e19619a7a"
+  };
 
-function gerarCronogramaPDF() {
-  const linhas = window._cronogramaLinhas;
-  if (!linhas || !linhas.length) { alert('Gere o cronograma primeiro.'); return; }
-  const d = coletarDados();
-  const empresa = d.empresa || 'Controle Dedetizadora Ltda';
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-  const linhasHTML = linhas.map((l, i) => `
-    <tr style="${i%2===0?'background:#e8f5e9;':''}">
-      <td style="padding:10px;text-align:center;border:1px solid #ccc;font-style:italic;font-size:13pt;">${l.num}º</td>
-      <td style="padding:10px;text-align:center;border:1px solid #ccc;font-style:italic;font-size:13pt;">${fmtDataBR(l.data)}</td>
-      <td style="padding:10px;text-align:center;border:1px solid #ccc;font-style:italic;font-size:13pt;">${l.cortesia ? 'Cortesia' : fmtDataBR(l.pgto)}</td>
-    </tr>`).join('');
+  // ── Expose DB functions globally ──
+  window._db = db;
+  window._col = collection;
+  window._doc = doc;
+  window._setDoc = setDoc;
+  window._deleteDoc = deleteDoc;
+  window._onSnapshot = onSnapshot;
+  window._query = query;
+  window._orderBy = orderBy;
 
-  const win = window.open('','_blank');
-  win.document.write(`<!DOCTYPE html><html><head>
-    <meta charset="UTF-8"><title>Cronograma Dedetização</title>
-    <style>
-      @page{size:A4 portrait;margin:20mm 25mm;}
-      body{font-family:'Times New Roman',Times,serif;font-size:11pt;color:#000;margin:0;padding:20mm 25mm;}
-      .header-info{text-align:right;font-size:9pt;margin-bottom:4px;}
-      h2{text-align:center;font-size:18pt;color:#4a7c59;letter-spacing:2px;text-transform:uppercase;margin:24px 0 28px;font-style:italic;}
-      table{width:100%;border-collapse:collapse;margin:0 auto 24px;}
-      th{background:#4a7c59;color:#fff;padding:10px;text-align:center;font-style:italic;font-size:13pt;letter-spacing:1px;}
-      .aviso{text-align:center;font-style:italic;font-size:11pt;margin:20px 0;line-height:1.6;}
-      @media print{body{padding:0;} .no-print{display:none;}}
-    
-  /* Clientes */
-  .cli-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:10px;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;transition:box-shadow .2s;}
-  .cli-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08);}
-  .cli-nome{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;}
-  .cli-info{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.6;}
-  .cli-actions{display:flex;gap:7px;flex-wrap:wrap;}
-  .alerta-venc{background:#fef3c7;border:1.5px solid #fcd34d;border-radius:10px;padding:12px 16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
-  .alerta-venc.urgente{background:#fee2e2;border-color:#fca5a5;}
-  .alerta-venc-texto{font-size:13px;font-weight:600;}
-  .alerta-venc-data{font-size:11px;color:var(--muted);margin-top:2px;}
-</style>\n  <\/head><body>\n    <div class=\"header-info\">
-      ${d.nome ? '<b>'+d.nome+'</b><br>' : ''}
-      ${d.fone ? 'Telefone: '+d.fone+'<br>' : ''}
-      ${d.endereco ? d.endereco+(d.bairro?', '+d.bairro:'')+(d.cidade?', '+d.cidade:'')+(d.cep?' — CEP '+d.cep:'') : ''}
-    </div>
-    <h2>Cronograma Dedetização</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>APLICAÇÃO</th>
-          <th>DATA</th>
-          <th>PAGAMENTO</th>
-        </tr>
-      </thead>
-      <tbody>${linhasHTML}</tbody>
-    </table>
-    <div class="aviso"><i>O serviço de controle de pragas só tem efeito se<br>realizado nas datas corretas.</i></div>
-    <div class="no-print" style="text-align:center;margin-top:30px;display:flex;gap:12px;justify-content:center;">
-      <button onclick="window.print()" style="font-family:sans-serif;font-weight:700;padding:10px 28px;background:#1a3c6e;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;">🖨️ Imprimir</button>
-      <button onclick="salvarComoPDF()" style="font-family:sans-serif;font-weight:700;padding:10px 28px;background:#059669;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;">💾 Salvar PDF</button>
-    </div>
-  <\/body></html>`);
-  win.document.close();
-  win.focus();
-}
+  // ── Live listeners — start as soon as Firebase loads ──
+  window.addEventListener('firebaseReady', () => {});
 
+  // Orcamentos listener
+  const qOrc = query(collection(db, 'orcamentos'), orderBy('criadoEm', 'desc'));
+  onSnapshot(qOrc, (snap) => {
+    window.orcamentos = snap.docs.map(d => ({id: d.id, ...d.data()}));
+    if (typeof renderHistorico === 'function') renderHistorico();
+    if (typeof popularSelectOrcamentos === 'function') popularSelectOrcamentos();
+  });
+
+  // Agendamentos listener
+  const qAg = query(collection(db, 'agendamentos'), orderBy('data', 'asc'));
+  onSnapshot(qAg, (snap) => {
+    window.agendamentos = snap.docs.map(d => ({id: d.id, ...d.data()}));
+    if (typeof renderCalendario === 'function') renderCalendario();
+    if (typeof renderAgendaTodos === 'function') renderAgendaTodos();
+    if (window.calDiaSel && typeof selecionarDia === 'function') selecionarDia(window.calDiaSel);
+  });
+
+  // Empresa emissora listener
+  onSnapshot(doc(db, 'config', 'empresa'), (snap) => {
+    if (snap.exists()) {
+      const d = snap.data();
+      window._empresaCache = d;
+      const CAMPOS_EMPRESA = ['empresa','cnpjEmpresa','responsavel','crt','alvaraSanitario','alvaraFunc'];
+      CAMPOS_EMPRESA.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && d[id] && !el.value) el.value = d[id];
+      });
+    }
+  });
+
+  // Clientes
+  onSnapshot(query(collection(db,'clientes'), orderBy('nome','asc')), (snap) => {
+    window.clientes = snap.docs.map(d => ({id:d.id,...d.data()}));
+    if(typeof renderClientes==='function') renderClientes();
+    if(typeof verificarVencimentos==='function') verificarVencimentos();
+  });
+
+  // Respostas
+  try {
+    onSnapshot(query(collection(db,'respostas'), orderBy('criadoEm','desc')), (snap) => {
+      window._respostas = snap.docs.map(d => ({id:d.id,...d.data()}));
+      if(typeof renderRespostas==='function') renderRespostas();
+    });
+  } catch(e) { console.log('respostas listener:', e); }
+
+  window._firebaseLoaded = true;
+  console.log('Firebase conectado ✓');
+
+
+</script>
+
+<script>
 const SERVICOS = [
   {id:'dedetizacao', nome:'Aranhas, Baratas e Formigas', tipo:'DESINSETIZAÇÃO'},
   {id:'desratizacao', nome:'Camundongos, Ratazanas e Ratos', tipo:'DESRATIZAÇÃO'},
@@ -842,7 +743,7 @@ function carregarEmpresa(){
 window.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('data').value = new Date().toISOString().split('T')[0];
   renderServicos();
-  adicionarProdutoPadrao();
+  adicionarProduto();
   carregarEmpresa();
   // Salva automaticamente ao sair de qualquer campo da empresa
   CAMPOS_EMPRESA.forEach(id => {
@@ -988,12 +889,46 @@ function coletarDados(){
 }
 
 function salvarOrcamento(){
-  const d=coletarDados();
+  var d=coletarDados();
   if(!d.nome){alert('Informe o nome do cliente.');return;}
-  const idx=orcamentos.findIndex(o=>o.num===d.num&&o.data===d.data);
+  var idx=orcamentos.findIndex(function(o){return o.num===d.num&&o.data===d.data;});
   if(idx>=0) orcamentos[idx]=d; else orcamentos.unshift(d);
   localStorage.setItem('orcamentos_v2',JSON.stringify(orcamentos));
-  alert('Orçamento salvo!');
+
+  // Auto-salvar cliente no Firebase
+  if(window._firebaseLoaded && d.nome){
+    var nomeNorm = d.nome.trim().toLowerCase();
+    var existe = (window.clientes||[]).find(function(c){ return (c.nome||'').trim().toLowerCase()===nomeNorm; });
+    if(!existe){
+      var cliId = 'cli_'+Date.now().toString();
+      var dataVenc = '';
+      if(d.dataServico){
+        var dt = new Date(d.dataServico+'T12:00:00');
+        dt.setDate(dt.getDate()+90);
+        dataVenc = dt.toISOString().split('T')[0];
+      }
+      window._setDoc(window._doc(window._db,'clientes',cliId),{
+        id:cliId,
+        nome:d.nome,
+        fone:d.fone||'',
+        email:d.email||'',
+        endereco:d.endereco||'',
+        bairro:d.bairro||'',
+        cep:d.cep||'',
+        cidade:d.cidade||'',
+        cnpj:d.cnpjCliente||'',
+        tipo:d.tipoComercio||'',
+        obs:'',
+        ultimoServico:d.dataServico||'',
+        vencimento:dataVenc,
+        atualizadoEm:new Date().toISOString()
+      }).then(function(){
+        mostrarToast('Cliente salvo automaticamente! ✓');
+      }).catch(function(){});
+    }
+  }
+
+  mostrarToast('Orçamento salvo! ✓');
   renderHistorico();
 }
 
@@ -1010,14 +945,15 @@ function limparForm(){
 }
 
 function showTab(tab){
-  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  document.getElementById('sec-'+tab).classList.add('active');
-  document.querySelectorAll('.tab-btn').forEach(b=>{
-    if((tab==='orcamento'&&b.textContent.includes('amento'))||(tab==='historico'&&b.textContent.includes('rico'))||(tab==='agenda'&&b.textContent.includes('genda'))) b.classList.add('active');
-  });
-  if(tab==='historico') renderHistorico();
-  if(tab==='agenda') initAgenda();
+  document.querySelectorAll('.section').forEach(function(s){ s.classList.remove('active'); });
+  document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+  var sec = document.getElementById('sec-'+tab);
+  if (sec) sec.classList.add('active');
+  document.querySelectorAll('[data-tab="'+tab+'"]').forEach(function(b){ b.classList.add('active'); });
+  if (tab === 'captacao' && typeof initCaptacao === 'function') initCaptacao();
+  if (tab === 'clientes' && typeof renderClientes === 'function') renderClientes();
+  if (tab === 'agenda' && typeof initAgenda === 'function') initAgenda();
+  if (tab === 'historico' && typeof renderHistorico === 'function') renderHistorico();
 }
 
 function fecharModal(id){document.getElementById(id).classList.remove('open');}
@@ -1170,112 +1106,52 @@ function renderCertificado(d){
 }
 
 function imprimirCert(){
-  const conteudo=document.getElementById('cert-printable').outerHTML;
-  const win=window.open('','_blank');
-  win.document.write(`<!DOCTYPE html><html><head>
-    <meta charset="UTF-8"><title>Laudo de Serviço</title>
-    <style>
-      body{font-family:'Times New Roman',Times,serif;font-size:10.5pt;color:#000;padding:15mm 20mm;max-width:210mm;margin:auto;}
-      .cert-top{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:10px;border-bottom:2px solid #000;margin-bottom:14px;}
-      .cert-logo-box{border:2px solid #000;border-radius:3px;width:88px;height:60px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;text-align:center;color:#1a3c6e;line-height:1.3;padding:4px;white-space:pre-line;}
-      .cert-resp{font-size:9pt;text-align:right;line-height:1.7;}
-      .cert-label-sec{font-weight:700;font-size:10.5pt;margin:10px 0 5px;text-decoration:underline;}
-      .cert-table{width:100%;border-collapse:collapse;font-size:9.5pt;}
-      .cert-table td{border:1px solid #000;padding:3px 7px;}
-      .cert-valid-line{font-size:10pt;margin:3px 0;}
-      .cert-desc-box{border:1px solid #000;padding:8px 10px;margin:8px 0;font-size:9.5pt;}
-      .cert-desc-title{font-weight:700;font-size:10pt;text-align:center;margin-bottom:5px;}
-      .cert-prod-box{border:1px solid #000;font-size:9pt;margin-top:8px;}
-      .cert-prod-title{font-weight:700;font-size:9.5pt;text-align:center;padding:4px;background:#f0f0f0;border-bottom:1px solid #000;}
-      .cert-prod-row{padding:4px 9px;border-bottom:1px solid #ccc;line-height:1.75;}
-      .cert-prod-row:last-child{border-bottom:none;}
-      .cert-sign-area{margin-top:28px;text-align:center;}
-      .cert-sign-line{border-top:1.5px solid #000;display:inline-block;min-width:260px;padding-top:4px;font-size:9pt;text-align:center;}
-      .cert-watermark{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-30deg);font-size:50pt;font-weight:800;color:rgba(26,60,110,.05);pointer-events:none;white-space:nowrap;}
-      .cert-wrap{position:relative;}
-    
-  /* ═══ AGENDA ═══ */
-  .agenda-layout{display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start;}
-  /* Calendar */
-  .cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
-  .cal-nav-btn{background:var(--navy2);color:#fff;border:none;border-radius:7px;width:32px;height:32px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
-  .cal-nav-btn:hover{background:var(--blue);}
-  .cal-month{font-family:'Syne',sans-serif;font-weight:800;font-size:16px;}
-  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
-  .cal-dow{text-align:center;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;padding:4px 0 6px;}
-  .cal-day{min-height:52px;border-radius:8px;border:1.5px solid var(--border);background:#fff;padding:4px 5px;cursor:pointer;transition:all .15s;position:relative;}
-  .cal-day:hover{border-color:var(--blue);background:#eff6ff;}
-  .cal-day.today{border-color:var(--blue);background:#eff6ff;}
-  .cal-day.has-event{border-color:var(--navy2);}
-  .cal-day.selected{border-color:var(--blue);background:#dbeafe;box-shadow:0 0 0 2px rgba(37,99,235,.25);}
-  .cal-day.other-month{opacity:.35;}
-  .cal-day-num{font-size:12px;font-weight:700;color:var(--text);}
-  .cal-day.today .cal-day-num{color:var(--blue);}
-  .cal-dot-row{display:flex;flex-wrap:wrap;gap:2px;margin-top:3px;}
-  .cal-dot{width:7px;height:7px;border-radius:50%;}
-  .dot-agendado{background:var(--blue);}
-  .dot-realizado{background:var(--green);}
-  .dot-cancelado{background:#ef4444;}
-  /* Lista lateral */
-  .agenda-list-header{font-family:'Syne',sans-serif;font-weight:800;font-size:14px;margin-bottom:10px;color:var(--navy2);}
-  .ag-item{background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;border-left:4px solid var(--blue);transition:box-shadow .15s;}
-  .ag-item:hover{box-shadow:0 3px 12px rgba(0,0,0,.08);}
-  .ag-item.realizado{border-left-color:var(--green);}
-  .ag-item.cancelado{border-left-color:#ef4444;opacity:.7;}
-  .ag-nome{font-weight:700;font-size:13px;}
-  .ag-info{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.5;}
-  .ag-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
-  .ag-status-btn{font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;border:none;cursor:pointer;}
-  .btn-agendado{background:#dbeafe;color:var(--blue);}
-  .btn-realizado{background:var(--green-light);color:var(--green);}
-  .btn-cancelado{background:#fee2e2;color:#dc2626;}
-  .ag-edit-btn{font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;background:#f1f5f9;color:var(--muted);border:none;cursor:pointer;}
-  .ag-edit-btn:hover{background:var(--border);}
-</style>
-  <\/head><body>${conteudo}
-<!-- ══ MODAL AGENDAMENTO ══ -->
-<div class="modal-overlay" id="modal-ag">
-  <div class="modal" style="max-width:520px;">
-    <div class="modal-header">
-      <span class="modal-title" id="modal-ag-titulo">Novo Agendamento</span>
-      <button class="modal-close" onclick="fecharModal('modal-ag')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <div class="span-2" style="grid-column:span 2;">
-          <label>Vincular a Orçamento Salvo (opcional)</label>
-          <select id="ag-orcamento" onchange="preencherDoOrcamento()">
-            <option value="">— Agendamento avulso —</option>
-          </select>
-        </div>
-        <div style="grid-column:span 2;"><label>Nome do Cliente</label><input id="ag-nome" placeholder="Nome completo"></div>
-        <div style="grid-column:span 2;"><label>Endereço</label><input id="ag-endereco" placeholder="Endereço do serviço"></div>
-        <div style="grid-column:span 2;"><label>Serviço a Realizar</label><input id="ag-servico" placeholder="Ex: Dedetização, Desratização..."></div>
-        <div><label>Data</label><input type="date" id="ag-data"></div>
-        <div><label>Hora</label><input type="time" id="ag-hora"></div>
-        <div style="grid-column:span 2;"><label>Responsável / Técnico</label><input id="ag-resp" placeholder="Nome do técnico responsável"></div>
-        <div style="grid-column:span 2;"><label>Observação</label><textarea id="ag-obs" style="min-height:60px;" placeholder="Observações sobre o agendamento..."></textarea></div>
-        <div style="grid-column:span 2;">
-          <label>Status</label>
-          <select id="ag-status">
-            <option value="agendado">Agendado</option>
-            <option value="realizado">Realizado</option>
-            <option value="cancelado">Cancelado</option>
-          </select>
-        </div>
-      </div>
-      <input type="hidden" id="ag-id">
-      <div class="btn-row" style="margin-top:16px;">
-        <button class="btn btn-outline" onclick="fecharModal('modal-ag')">Cancelar</button>
-        <button class="btn btn-primary" onclick="salvarAgendamento()">Salvar Agendamento</button>
-      </div>
-    </div>
-  </div>
-</div>
-<\/body></html>`);
-  win.document.close();
+  var certDiv = document.getElementById('cert-printable');
+  if (!certDiv) { alert('Gere o certificado primeiro.'); return; }
+  var conteudo = certDiv.outerHTML;
+  var emp = JSON.parse(localStorage.getItem('empresa_emissora')||'{}');
+  var nomeEmp = emp.empresa || 'Controle Dedetizadora Ltda.';
+  
+  var estilos = [
+    'body{font-family:"Times New Roman",Times,serif;font-size:10.5pt;color:#000;padding:15mm 20mm;max-width:210mm;margin:auto;}',
+    '.cert-top{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:10px;border-bottom:2px solid #000;margin-bottom:14px;}',
+    '.cert-logo-box{border:2px solid #000;border-radius:3px;width:88px;height:60px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:9pt;text-align:center;color:#1a3c6e;letter-spacing:-.5px;padding:4px;}',
+    '.cert-resp{font-size:9pt;text-align:right;line-height:1.7;}',
+    '.cert-label-sec{font-weight:700;font-size:10.5pt;margin:10px 0 5px;text-decoration:underline;}',
+    '.cert-table{width:100%;border-collapse:collapse;font-size:9.5pt;}',
+    '.cert-table td{border:1px solid #000;padding:3px 7px;}',
+    '.cert-valid-line{font-size:10pt;margin:3px 0;}',
+    '.cert-desc-box{border:1px solid #000;padding:8px 10px;margin:8px 0;font-size:9.5pt;}',
+    '.cert-desc-title{font-weight:700;font-size:10pt;text-align:center;margin-bottom:5px;}',
+    '.cert-prod-box{border:1px solid #000;font-size:9pt;margin-top:8px;}',
+    '.cert-prod-title{font-weight:700;font-size:9.5pt;text-align:center;padding:4px;background:#f0f0f0;border-bottom:1px solid #000;}',
+    '.cert-prod-row{padding:4px 9px;border-bottom:1px solid #ccc;line-height:1.75;}',
+    '.cert-prod-row:last-child{border-bottom:none;}',
+    '.cert-sign-area{margin-top:28px;text-align:center;}',
+    '.cert-sign-line{border-top:1.5px solid #000;display:inline-block;min-width:260px;padding-top:4px;font-size:9pt;text-align:center;}',
+    '@media print{.no-print{display:none;} @page{size:A4;margin:15mm 20mm;}}'
+  ].join('');
+
+  var win = window.open('','_blank');
+  var doc = win.document;
+  doc.open();
+  doc.write('<!DOCTYPE html>');
+  doc.write('<'+'html lang="pt-BR">');
+  doc.write('<'+'head>');
+  doc.write('<meta charset="UTF-8">');
+  doc.write('<title>Laudo de Servico - ' + nomeEmp + '</title>');
+  doc.write('<'+'style>' + estilos + '</'+'style>');
+  doc.write('</'+'head>');
+  doc.write('<'+'body>');
+  doc.write(conteudo);
+  doc.write('<div class="no-print" style="text-align:center;padding:20px;display:flex;gap:12px;justify-content:center;">');
+  doc.write('<button onclick="window.print()" style="padding:10px 28px;background:#1a3c6e;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;">Imprimir</button>');
+  doc.write('<button onclick="document.querySelectorAll(\'.no-print\').forEach(function(e){e.style.display=\'none\'});window.print();" style="padding:10px 28px;background:#059669;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;">Salvar PDF</button>');
+  doc.write('</div>');
+  doc.write('</'+'body>');
+  doc.write('</'+'html>');
+  doc.close();
   win.focus();
-  setTimeout(()=>{win.print();},700);
 }
 
 // ══════════════════ AGENDA ══════════════════
@@ -1486,138 +1362,137 @@ function excluirAgendamento(id){
 }
 
 
+// ── MISSING FROM BACKUP ──
+function mostrarToast(msg){
+  var t = document.getElementById('toast');
+  if(!t) return;
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 2800);
+}
 
-// ══ NOVAS FUNCIONALIDADES ══
+function mascaraCep(el){
+  var v = el.value.replace(/[^0-9]/g,'');
+  if(v.length > 5) v = v.slice(0,5)+'-'+v.slice(5,8);
+  el.value = v;
+}
 
-function _imprimirOrdemServico(ags, dia) {
-  const emp = JSON.parse(localStorage.getItem('empresa_emissora') || '{}');
-  const empresa = emp.empresa || 'Controle Dedetizadora Ltda';
-  const tipoLabel = {servico:'Serviço', retorno:'Retorno', novo:'Cliente Novo'};
-  const dataTitle = dia ? fmtData(dia) : fmtData(ags[0].data);
+function fmtDataBR(d) {
+  if(!d) return '—';
+  return d.toLocaleDateString('pt-BR');
+}
 
-  const itens = ags.map((a, i) => `
-    <div style="border:1px solid #ccc;border-radius:6px;padding:14px 18px;margin-bottom:14px;page-break-inside:avoid;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;border-bottom:1px solid #eee;padding-bottom:8px;">
-        <div style="font-weight:700;font-size:13pt;">${i+1}. ${a.nome||'—'}</div>
-        <div style="font-size:10pt;color:#555;">${a.hora||'—'} &nbsp;|&nbsp; <b>${tipoLabel[a.tipoVisita||'servico']}</b></div>
-      </div>
-      <table style="width:100%;font-size:10pt;border-collapse:collapse;">
-        <tr>
-          <td style="padding:3px 0;width:140px;color:#555;"><b>Endereço:</b></td>
-          <td>${a.endereco||'—'}${a.bairro?', '+a.bairro:''}${a.cidade?' — '+a.cidade:''}${a.cep?' — CEP '+a.cep:''}</td>
-        </tr>
-        <tr>
-          <td style="padding:3px 0;color:#555;"><b>Serviço:</b></td>
-          <td>${a.servico||'—'}</td>
-        </tr>
-        <tr>
-          <td style="padding:3px 0;color:#555;"><b>Técnico:</b></td>
-          <td>${a.resp||'—'}</td>
-        </tr>
-        ${a.obs ? `<tr><td style="padding:3px 0;color:#555;"><b>Obs:</b></td><td>${a.obs}</td></tr>` : ''}
-      </table>
-    </div>`).join('');
+function addMonths(date, months) {
+  var d = new Date(date);
+  d.setMonth(d.getMonth() + months);
+  return d;
+}
 
-  const win = window.open('', '_blank');
-  win.document.write(`<!DOCTYPE html><html><head>
-    <meta charset="UTF-8"><title>Agenda ${dataTitle}</title>
-    <style>
-      body{font-family:'Times New Roman',Times,serif;padding:15mm 20mm;max-width:210mm;margin:auto;color:#000;}
-      h2{text-align:center;font-size:16pt;margin-bottom:4px;}
-      .sub{text-align:center;font-size:10pt;color:#555;margin-bottom:20px;}
-      .resumo{background:#f5f5f5;border-radius:6px;padding:8px 14px;font-size:10pt;margin-bottom:18px;display:flex;gap:20px;}
-      @media print{body{padding:10mm 15mm;}}
-    </style>
-  <\/head><body>
-    <h2>${empresa}</h2>
-    <div class="sub">Agenda de Serviços — ${dataTitle}</div>
-    <div class="resumo">
-      <span>📋 Total: <b>${ags.length}</b> agendamentos</span>
-      <span>🔧 Serviços: <b>${ags.filter(a=>a.tipoVisita==='servico'||!a.tipoVisita).length}</b></span>
-      <span>🔄 Retornos: <b>${ags.filter(a=>a.tipoVisita==='retorno').length}</b></span>
-      <span>🆕 Clientes novos: <b>${ags.filter(a=>a.tipoVisita==='novo').length}</b></span>
-    </div>
-    ${itens}
-  
-<!-- ══ FORMULÁRIO CLIENTE (EMBUTIDO) ══ -->
-<div id="overlay-formulario" style="display:none;position:fixed;inset:0;background:#f1f5f9;z-index:9999;overflow-y:auto;">
-  <div style="max-width:520px;margin:0 auto;padding:0 0 40px;">
-    <div style="background:#0f2d4a;padding:24px 20px;text-align:center;">
-      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:#fff;" id="form-empresa-nome">Controle Dedetizadora</div>
-      <div style="font-size:13px;color:rgba(255,255,255,.7);margin-top:4px;">Preencha seus dados para atendimento</div>
-    </div>
-    <div style="padding:24px 16px;">
-      <p style="font-size:11px;color:#64748b;margin-bottom:16px;">Campos com <span style="color:#ef4444;">*</span> são obrigatórios.</p>
-      <div id="form-erro" style="background:#fee2e2;color:#dc2626;border-radius:8px;padding:10px 14px;font-size:13px;font-weight:600;margin-bottom:14px;display:none;">Por favor, preencha todos os campos obrigatórios.</div>
-      <div id="form-corpo">
-        <!-- IDENTIFICAÇÃO -->
-        <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:22px;margin-bottom:16px;">
-          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#1a3c6e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px;">Identificação</div>
-          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Nome completo / Razão Social <span style="color:#ef4444;">*</span></label><input id="ff-nome" type="text" placeholder="Seu nome completo ou razão social" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
-          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">CPF / CNPJ <span style="color:#ef4444;">*</span></label><input id="ff-cnpj" type="text" placeholder="000.000.000-00 ou 00.000.000/0001-00" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
-          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Tipo <span style="color:#ef4444;">*</span></label>
-            <select id="ff-tipo" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;">
-              <option value="">— Selecione —</option>
-              <option value="Residência">Residência</option>
-              <option value="Apartamento">Apartamento</option>
-              <option value="Comércio">Comércio / Empresa</option>
-              <option value="Indústria">Indústria</option>
-              <option value="Condomínio">Condomínio</option>
-              <option value="Outro">Outro</option>
-            </select>
-          </div>
-        </div>
-        <!-- ENDEREÇO -->
-        <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:22px;margin-bottom:16px;">
-          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#1a3c6e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px;">Endereço</div>
-          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">CEP <span style="color:#ef4444;">*</span></label><input id="ff-cep" type="text" placeholder="00000-000" maxlength="9" oninput="mascaraCepFF(this);buscarCepFF(this.value)" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
-          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Rua / Avenida <span style="color:#ef4444;">*</span></label><input id="ff-endereco" type="text" placeholder="Rua, número" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
-          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Complemento / Endereço interno do condomínio</label><input id="ff-complemento" type="text" placeholder="Ex: Apto 101, Bloco B..." style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
-          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Bairro <span style="color:#ef4444;">*</span></label><input id="ff-bairro" type="text" placeholder="Bairro" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
-          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Cidade / UF <span style="color:#ef4444;">*</span></label><input id="ff-cidade" type="text" placeholder="Ex: Uberlândia/MG" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
-        </div>
-        <!-- CONTATO -->
-        <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:22px;margin-bottom:16px;">
-          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#1a3c6e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px;">Contato</div>
-          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Telefone / WhatsApp <span style="color:#ef4444;">*</span></label><input id="ff-fone" type="tel" placeholder="(34) 9 0000-0000" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
-          <div style="margin-bottom:14px;"><label style="display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">E-mail</label><input id="ff-email" type="email" placeholder="seu@email.com" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;"></div>
-        </div>
-        <button onclick="enviarFormularioEmbutido()" style="width:100%;background:#1a3c6e;color:#fff;border:none;border-radius:10px;padding:15px;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer;">Enviar Dados ✓</button>
-      </div>
-      <!-- SUCESSO -->
-      <div id="form-sucesso" style="display:none;text-align:center;padding:40px 20px;">
-        <div style="font-size:60px;margin-bottom:16px;">✅</div>
-        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:#059669;margin-bottom:8px;">Dados enviados!</div>
-        <div style="font-size:14px;color:#64748b;line-height:1.6;">Recebemos suas informações com sucesso.<br>Em breve nossa equipe entrará em contato.</div>
-        <button onclick="fecharFormularioEmbutido()" style="margin-top:20px;background:#1a3c6e;color:#fff;border:none;border-radius:8px;padding:10px 24px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;">Fechar</button>
-      </div>
-    </div>
-  </div>
-</div>
+function calcularValidade(srvId) {
+  var garantiaEl = document.getElementById('garantia-' + srvId);
+  var validadeEl = document.getElementById('validade-' + srvId);
+  var dataServicoEl = document.getElementById('dataServico');
+  if (!garantiaEl || !validadeEl) return;
+  var dias = parseInt(garantiaEl.value.replace(/[^0-9]/g, ''));
+  if (!dias || isNaN(dias)) return;
+  var baseStr = (dataServicoEl && dataServicoEl.value) ? dataServicoEl.value : new Date().toISOString().split('T')[0];
+  var base = new Date(baseStr + 'T12:00:00');
+  base.setDate(base.getDate() + dias);
+  validadeEl.value = base.toISOString().split('T')[0];
+}
 
-<\/body></html>`);
+function recalcularTodasValidades() {
+  ['dedetizacao','desratizacao','cxdagua','descupinizacao','cxgordura'].forEach(function(id){ calcularValidade(id); });
+}
+
+function atualizarCronograma() {
+  var tipo = document.querySelector('input[name="pacote-tipo"]:checked');
+  tipo = tipo ? tipo.value : null;
+  var dataStr = document.getElementById('data-primeira-app');
+  dataStr = dataStr ? dataStr.value : null;
+  var preview = document.getElementById('cronograma-preview');
+  var tbody = document.getElementById('cronograma-body');
+  if (!tipo || !dataStr || !preview || !tbody) { if(preview) preview.style.display='none'; return; }
+  var base = new Date(dataStr + 'T12:00:00');
+  var linhas = gerarLinhasCronograma(tipo, base);
+  tbody.innerHTML = linhas.map(function(l){ 
+    return '<tr><td><b>'+l.num+'\u00aa</b></td><td>'+fmtDataBR(l.data)+'</td><td>'+(l.cortesia ? '<span class="cortesia-tag">Cortesia</span>' : '<span class="pago-tag">'+fmtDataBR(l.pgto)+'</span>')+'</td></tr>';
+  }).join('');
+  preview.style.display = 'block';
+  window._cronogramaLinhas = linhas;
+}
+
+function gerarLinhasCronograma(tipo, base) {
+  var linhas = [];
+  for (var i = 0; i < 4; i++) {
+    var data = addMonths(base, i * 3);
+    var cortesia = false;
+    if (tipo === 'cortesia-inicio') cortesia = (i === 0);
+    else if (tipo === 'cortesia-fim') cortesia = (i === 3);
+    linhas.push({ num: i+1, data: data, pgto: cortesia ? null : addMonths(data, 1), cortesia: cortesia });
+  }
+  return linhas;
+}
+
+function gerarCronogramaPDF() {
+  var linhas = window._cronogramaLinhas;
+  if (!linhas || !linhas.length) { alert('Gere o cronograma primeiro.'); return; }
+  var d = coletarDados();
+  var empresa = d.empresa || 'Controle Dedetizadora Ltda';
+  var linhasHTML = linhas.map(function(l, i){
+    return '<tr style="'+(i%2===0?'background:#e8f5e9;':'')+'">'
+      +'<td style="padding:10px;text-align:center;border:1px solid #ccc;font-style:italic;font-size:13pt;">'+l.num+'\u00ba</td>'
+      +'<td style="padding:10px;text-align:center;border:1px solid #ccc;font-style:italic;font-size:13pt;">'+fmtDataBR(l.data)+'</td>'
+      +'<td style="padding:10px;text-align:center;border:1px solid #ccc;font-style:italic;font-size:13pt;">'+(l.cortesia ? 'Cortesia' : fmtDataBR(l.pgto))+'</td>'
+      +'</tr>';
+  }).join('');
+  var win = window.open('','_blank');
+  win.document.write('<!DOCTYPE html><'+'html><'+'head><meta charset="UTF-8"><title>Cronograma</title>'
+    +'<'+'style>@page{size:A4 portrait;margin:20mm 25mm;}body{font-family:Times New Roman,serif;font-size:11pt;padding:20mm 25mm;}'
+    +'.header-info{text-align:right;font-size:9pt;margin-bottom:4px;}'
+    +'h2{text-align:center;font-size:18pt;color:#4a7c59;text-transform:uppercase;margin:24px 0 28px;font-style:italic;}'
+    +'table{width:100%;border-collapse:collapse;}th{background:#4a7c59;color:#fff;padding:10px;text-align:center;font-style:italic;font-size:13pt;}'
+    +'.aviso{text-align:center;font-style:italic;font-size:11pt;margin:20px 0;}'
+    +'.no-print{text-align:center;padding:16px;display:flex;gap:12px;justify-content:center;}'
+    +'@media print{.no-print{display:none;}}</'+'style>'
+    +'<\/head><'+'body>'
+    +'<div class="header-info">'+(d.nome?'<b>'+d.nome+'</b><br>':'')+(d.fone?'Telefone: '+d.fone+'<br>':'')+(d.endereco?d.endereco+(d.bairro?', '+d.bairro:'')+(d.cidade?', '+d.cidade:''):'')+'</div>'
+    +'<h2>Cronograma Dedetização</h2>'
+    +'<table><thead><tr><th>APLICAÇÃO</th><th>DATA</th><th>PAGAMENTO</th></tr></thead><tbody>'+linhasHTML+'</tbody></table>'
+    +'<div class="aviso"><i>O serviço de controle de pragas só tem efeito se realizado nas datas corretas.</i></div>'
+    +'<div class="no-print">'
+    +'<button onclick="window.print()" style="padding:10px 28px;background:#1a3c6e;color:#fff;border:none;border-radius:8px;cursor:pointer;">Imprimir</button>'
+    +'<button onclick="document.querySelectorAll(\'.no-print\').forEach(function(e){e.style.display=\'none\';});window.print();" style="padding:10px 28px;background:#059669;color:#fff;border:none;border-radius:8px;cursor:pointer;">Salvar PDF</button>'
+    +'</div>');
   win.document.close();
   win.focus();
-  setTimeout(() => { win.print(); }, 600);
 }
 
-function abrirFormularioEmbutido() {
-  const emp = JSON.parse(localStorage.getItem('empresa_emissora')||'{}');
-  const nomeEmp = document.getElementById('form-empresa-nome');
-  if(nomeEmp && emp.empresa) nomeEmp.textContent = emp.empresa;
-  document.getElementById('overlay-formulario').style.display = 'block';
-  document.body.style.overflow = 'hidden';
+function adicionarProdutoPadrao(){
+  adicionarProduto({nome:'BIFENTOL 200 SC',grupo:'PIRETROIDE',qtd:'50 Ml',ant:'ANTI-HISTAMÍNICO E TRATAMENTO SINTOMÁTICO.'});
+  adicionarProduto({nome:'Maki Bloco',grupo:'Cumarínico Antídoto: Vitamina K1',qtd:'1',ant:'VITAMINA K1 E TRATAMENTO SINTOMÁTICO – Altamente tóxico, classe toxicológica: Grau II.'});
 }
+
+// Tab listeners
+document.addEventListener('DOMContentLoaded', function(){
+  document.querySelectorAll('[data-tab]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      showTab(this.getAttribute('data-tab'));
+    });
+  });
+});
+
+
+// ══ CLIENTES ══
+window.clientes = [];
 
 function abrirModalCliente(id) {
-  ['cli-nome','cli-endereco','cli-bairro','cli-cep','cli-cidade','cli-fone','cli-email','cli-cnpj','cli-tipo','cli-obs','cli-ultimo-servico','cli-vencimento'].forEach(f => {
-    const el = document.getElementById(f);
-    if (el) el.value = '';
-  });
+  var fields = ['cli-nome','cli-endereco','cli-bairro','cli-cep','cli-cidade','cli-fone','cli-email','cli-cnpj','cli-tipo','cli-obs','cli-ultimo-servico','cli-vencimento'];
+  fields.forEach(function(f){ var el=document.getElementById(f); if(el) el.value=''; });
   document.getElementById('cli-id').value = '';
   document.getElementById('modal-cliente-titulo').textContent = 'Novo Cliente';
   if (id) {
-    const c = clientes.find(x => x.id === id);
+    var c = clientes.find(function(x){ return x.id===id; });
     if (c) {
       document.getElementById('modal-cliente-titulo').textContent = 'Editar Cliente';
       document.getElementById('cli-nome').value = c.nome||'';
@@ -1638,295 +1513,13 @@ function abrirModalCliente(id) {
   document.getElementById('modal-cliente').classList.add('open');
 }
 
-function abrirWhatsApp() {
-  const msg = encodeURIComponent(window._msgWhatsapp||'');
-  window.open('https://wa.me/?text='+msg, '_blank');
-}
-
-async function buscarCepFF(cep) {
-  const c = cep.replace(/\D/g,'');
-  if (c.length !== 8) return;
-  try {
-    const r = await fetch('https://viacep.com.br/ws/'+c+'/json/');
-    const d = await r.json();
-    if (!d.erro) {
-      document.getElementById('ff-endereco').value = d.logradouro||'';
-      document.getElementById('ff-bairro').value = d.bairro||'';
-      document.getElementById('ff-cidade').value = (d.localidade||'')+'/'+(d.uf||'');
-    }
-  } catch(e) {}
-}
-
-function buscarClienteAgenda(q) {
-  const drop = document.getElementById('ag-cliente-drop');
-  if (!q || q.length < 2) { drop.style.display='none'; return; }
-  const results = clientes.filter(c =>
-    (c.nome||'').toLowerCase().includes(q.toLowerCase()) ||
-    (c.fone||'').includes(q)
-  ).slice(0, 8);
-  if (!results.length) { drop.style.display='none'; return; }
-  drop.innerHTML = results.map(c => `
-    <div onclick="selecionarClienteAgenda('${c.id}')"
-      style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px;"
-      onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='#fff'">
-      <div style="font-weight:700;">${c.nome}</div>
-      <div style="font-size:11px;color:var(--muted);">${c.fone||''} ${c.endereco?'· '+c.endereco:''}</div>
-    </div>`).join('');
-  drop.style.display = 'block';
-}
-
-function calcularValidade(srvId) {
-  const garantiaEl = document.getElementById('garantia-' + srvId);
-  const validadeEl = document.getElementById('validade-' + srvId);
-  const dataServicoEl = document.getElementById('dataServico');
-  if (!garantiaEl || !validadeEl) return;
-
-  const garantiaStr = garantiaEl.value.replace(/[^0-9]/g, '');
-  const dias = parseInt(garantiaStr);
-  if (!dias || isNaN(dias)) return;
-
-  // Usa data do serviço se preenchida, senão usa hoje
-  const baseStr = dataServicoEl?.value || new Date().toISOString().split('T')[0];
-  const base = new Date(baseStr + 'T12:00:00');
-  base.setDate(base.getDate() + dias);
-  validadeEl.value = base.toISOString().split('T')[0];
-}
-
-function copiarLinkFormulario() {
-  const link = document.getElementById('link-formulario').value;
-  navigator.clipboard.writeText(link);
-  mostrarToast('Link copiado! ✓');
-}
-
-function copiarMensagem() {
-  navigator.clipboard.writeText(window._msgWhatsapp||'');
-  mostrarToast('Mensagem copiada! ✓');
-}
-
-async function enviarFormularioEmbutido() {
-  const nome = document.getElementById('ff-nome').value.trim();
-  const cnpj = document.getElementById('ff-cnpj').value.trim();
-  const tipo = document.getElementById('ff-tipo').value;
-  const cep  = document.getElementById('ff-cep').value.trim();
-  const end  = document.getElementById('ff-endereco').value.trim();
-  const bairro = document.getElementById('ff-bairro').value.trim();
-  const cidade = document.getElementById('ff-cidade').value.trim();
-  const fone = document.getElementById('ff-fone').value.trim();
-  const erro = document.getElementById('form-erro');
-  if (!nome||!cnpj||!tipo||!cep||!end||!bairro||!cidade||!fone) {
-    erro.style.display='block'; return;
-  }
-  erro.style.display='none';
-  if(!window._firebaseLoaded){alert('Aguarde, conectando...');return;}
-  try {
-    await window._setDoc(window._doc(window._db,'respostas', Date.now().toString()), {
-      nome, cnpj, tipo, cep, endereco:end,
-      complemento: document.getElementById('ff-complemento').value.trim(),
-      bairro, cidade, fone,
-      email: document.getElementById('ff-email').value.trim(),
-      criadoEm: new Date().toISOString(),
-    });
-    document.getElementById('form-corpo').style.display='none';
-    document.getElementById('form-sucesso').style.display='block';
-  } catch(e){ alert('Erro: '+e.message); }
-}
-
-function enviarFormularioWhatsApp() {
-  const link = document.getElementById('link-formulario').value;
-  const emp = JSON.parse(localStorage.getItem('empresa_emissora')||'{}');
-  const empresa = emp.empresa || 'Controle Dedetizadora';
-  const msg = encodeURIComponent(`Olá! 😊 Aqui é da *${empresa}*.\n\nPara agilizar seu atendimento, preencha seus dados no link abaixo — leva menos de 1 minuto!\n\n🔗 ${link}\n\nObrigado! ✅`);
-  window.open('https://wa.me/?text='+msg, '_blank');
-}
-
-async function excluirCliente(id) {
-  if (!confirm('Excluir este cliente?')) return;
-  try {
-    await window._deleteDoc(window._doc(window._db, 'clientes', id));
-    mostrarToast('Cliente excluído.');
-  } catch(e) { alert('Erro: ' + e.message); }
-}
-
-async function excluirResposta(id) {
-  if (!confirm('Excluir esta resposta?')) return;
-  await window._deleteDoc(window._doc(window._db,'respostas',id));
-  mostrarToast('Resposta excluída.');
-}
-
-function fecharDropCliente() {
-  const drop = document.getElementById('ag-cliente-drop');
-  if (drop) drop.style.display = 'none';
-}
-
-function fecharFormularioEmbutido() {
-  document.getElementById('overlay-formulario').style.display = 'none';
-  document.body.style.overflow = '';
-}
-
-function filtrarClientes() {
-  const q = document.getElementById('busca-cliente')?.value.toLowerCase() || '';
-  const filtrados = q
-    ? clientes.filter(c =>
-        (c.nome||'').toLowerCase().includes(q) ||
-        (c.fone||'').includes(q) ||
-        (c.endereco||'').toLowerCase().includes(q) ||
-        (c.tipo||'').toLowerCase().includes(q)
-      )
-    : clientes;
-  renderClientes(filtrados);
-}
-
-async function importarResposta(id) {
-  const r = (window._respostas||[]).find(x => x.id === id);
-  if (!r) return;
-  // Importa para cadastro de clientes
-  const nomeNorm = (r.nome||'').trim().toLowerCase();
-  const existe = clientes.find(c => (c.nome||'').trim().toLowerCase() === nomeNorm);
-  if (existe) {
-    if (!confirm('Cliente "'+r.nome+'" já está cadastrado. Atualizar dados?')) return;
-    await window._setDoc(window._doc(window._db,'clientes',existe.id), {...existe,
-      fone: r.fone||existe.fone, email: r.email||existe.email,
-      endereco: r.endereco||existe.endereco, bairro: r.bairro||existe.bairro,
-      cep: r.cep||existe.cep, cidade: r.cidade||existe.cidade,
-      cnpj: r.cnpj||existe.cnpj, complemento: r.complemento||existe.complemento||'',
-    });
-  } else {
-    const cliId = 'cli_' + Date.now().toString();
-    await window._setDoc(window._doc(window._db,'clientes',cliId), {
-      id: cliId, nome: r.nome, fone: r.fone||'', email: r.email||'',
-      endereco: r.endereco||'', bairro: r.bairro||'', cep: r.cep||'',
-      cidade: r.cidade||'', cnpj: r.cnpj||'', complemento: r.complemento||'',
-      tipo: '', obs: '', ultimoServico: '', vencimento: '',
-      atualizadoEm: new Date().toISOString(),
-    });
-  }
-  mostrarToast('Cliente importado para o cadastro! ✓');
-}
-
-function imprimirAgendaDia() {
-  const dia = calDiaSel || new Date().toISOString().split('T')[0];
-  const ags = agendamentos.filter(a => a.data === dia).sort((a,b) => (a.hora||'').localeCompare(b.hora||''));
-  if (!ags.length) { alert('Nenhum agendamento para este dia.'); return; }
-  _imprimirOrdemServico(ags, dia);
-}
-
-function imprimirAgendamento(id) {
-  const a = agendamentos.find(x => x.id === id);
-  if (!a) return;
-  _imprimirOrdemServico([a]);
-}
-
-function initCaptacao() {
-  const emp = JSON.parse(localStorage.getItem('empresa_emissora')||'{}');
-  const empresa = emp.empresa || 'Controle Dedetizadora';
-  const linkBase = window.location.origin + window.location.pathname.replace('index.html','') + 'formulario.html';
-  // Use current domain
-  const link = window.location.href.split('?')[0].split('#')[0]+'?form=1';
-  document.getElementById('link-formulario').value = link;
-
-  const msg = `Olá! 😊 Aqui é da *${empresa}*.
-
-Para realizarmos o seu orçamento, precisamos de algumas informações. Por favor, preencha os dados abaixo:
-
-1️⃣ *Nome completo / Razão Social:*
-2️⃣ *CPF / CNPJ:*
-3️⃣ *Endereço completo* (Rua, número, complemento, endereço interno do condomínio se houver):
-4️⃣ *Bairro:*
-5️⃣ *CEP:*
-6️⃣ *Cidade / UF:*
-7️⃣ *Telefone / WhatsApp:*
-8️⃣ *E-mail:*
-
-_Ou acesse o link abaixo e preencha o formulário diretamente:_
-🔗 ${link}
-
-Obrigado! ✅`;
-
-  document.getElementById('msg-whatsapp').textContent = msg;
-  window._msgWhatsapp = msg;
-  renderRespostas();
-}
-
-function mascaraCepFF(el){
-  let v = el.value.replace(/\D/g,'');
-  if(v.length > 5) v = v.slice(0,5)+'-'+v.slice(5,8);
-  el.value = v;
-}
-
-function recalcularTodasValidades() {
-  const SERVICOS_IDS = ['dedetizacao','desratizacao','cxdagua','descupinizacao','cxgordura'];
-  SERVICOS_IDS.forEach(id => calcularValidade(id));
-}
-
-function renderClientes(lista) {
-  const arr = lista || clientes;
-  const container = document.getElementById('clientes-lista');
-  if (!container) return;
-  if (!arr.length) {
-    container.innerHTML = `<div class="empty"><div class="empty-icon">👥</div><div style="font-size:15px;">Nenhum cliente cadastrado ainda.</div></div>`;
-    return;
-  }
-  const hoje = new Date();
-  container.innerHTML = arr.map(c => {
-    const vencDate = c.vencimento ? new Date(c.vencimento + 'T12:00:00') : null;
-    const dias = vencDate ? Math.ceil((vencDate - hoje) / (1000*60*60*24)) : null;
-    let vencBadge = '';
-    if (dias !== null) {
-      if (dias < 0) vencBadge = `<span class="badge" style="background:#fee2e2;color:#dc2626;">VENCIDO</span>`;
-      else if (dias <= 30) vencBadge = `<span class="badge badge-gold">Vence em ${dias}d</span>`;
-      else vencBadge = `<span class="badge badge-green">Vence ${fmtData(c.vencimento)}</span>`;
-    }
-    return `<div class="cli-card">
-      <div>
-        <div class="cli-nome">${c.nome||'—'} ${vencBadge}</div>
-        <div class="cli-info">
-          ${c.fone ? '📞 '+c.fone+'  ' : ''}
-          ${c.tipo ? '🏢 '+c.tipo+'  ' : ''}
-          ${c.endereco ? '📍 '+c.endereco+(c.bairro?', '+c.bairro:'') : ''}
-        </div>
-      </div>
-      <div class="cli-actions">
-        <button class="btn btn-primary" style="padding:6px 12px;font-size:11px;" onclick="usarClienteNoOrcamento('${c.id}')">📋 Usar</button>
-        <button class="btn btn-outline" style="padding:6px 12px;font-size:11px;" onclick="verHistoricoCliente('${c.id}')">Histórico</button>
-        <button class="btn btn-gold" style="padding:6px 12px;font-size:11px;" onclick="abrirModalCliente('${c.id}')">✏️</button>
-        <button class="btn" style="padding:6px 12px;font-size:11px;background:#fee2e2;color:#dc2626;border:none;border-radius:8px;" onclick="excluirCliente('${c.id}')">✕</button>
-      </div>
-    </div>`;
-  }).join('');
-  verificarVencimentos();
-}
-
-function renderRespostas() {
-  const container = document.getElementById('respostas-lista');
-  if (!container) return;
-  const lista = window._respostas || [];
-  if (!lista.length) {
-    container.innerHTML = '<div class="empty"><div class="empty-icon">📬</div><div style="font-size:14px;">Nenhuma resposta ainda.<br><span style="font-size:12px;">Quando o cliente preencher o formulário, aparece aqui.</span></div></div>';
-    return;
-  }
-  container.innerHTML = lista.map(r => `
-    <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:10px;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;">
-      <div>
-        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;">${r.nome||'—'}</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:3px;">
-          📞 ${r.fone||'—'} · 📍 ${r.endereco||'—'}${r.bairro?', '+r.bairro:''} · CEP ${r.cep||'—'}
-        </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px;">Recebido em: ${new Date(r.criadoEm).toLocaleString('pt-BR')}</div>
-      </div>
-      <div style="display:flex;gap:7px;flex-wrap:wrap;">
-        <button class="btn btn-primary" style="padding:6px 12px;font-size:11px;" onclick="importarResposta('${r.id}')">✅ Importar</button>
-        <button class="btn" style="padding:6px 12px;font-size:11px;background:#fee2e2;color:#dc2626;border:none;border-radius:8px;" onclick="excluirResposta('${r.id}')">✕</button>
-      </div>
-    </div>`).join('');
-}
-
 async function salvarCliente() {
-  const nome = document.getElementById('cli-nome').value;
+  var nome = document.getElementById('cli-nome').value;
   if (!nome) { alert('Informe o nome do cliente.'); return; }
   if (!window._firebaseLoaded) { alert('Aguarde, conectando...'); return; }
-  const idExist = document.getElementById('cli-id').value;
-  const cli = {
-    nome,
+  var idExist = document.getElementById('cli-id').value;
+  var cli = {
+    nome: nome,
     endereco: document.getElementById('cli-endereco').value,
     bairro: document.getElementById('cli-bairro').value,
     cep: document.getElementById('cli-cep').value,
@@ -1938,32 +1531,29 @@ async function salvarCliente() {
     obs: document.getElementById('cli-obs').value,
     ultimoServico: document.getElementById('cli-ultimo-servico').value,
     vencimento: document.getElementById('cli-vencimento').value,
-    atualizadoEm: new Date().toISOString(),
+    atualizadoEm: new Date().toISOString()
   };
-  const id = idExist || Date.now().toString();
+  var id = idExist || Date.now().toString();
   try {
-    await window._setDoc(window._doc(window._db, 'clientes', id), {...cli, id});
+    await window._setDoc(window._doc(window._db,'clientes',id), Object.assign({id:id}, cli));
     fecharModal('modal-cliente');
     mostrarToast('Cliente salvo! ✓');
   } catch(e) { alert('Erro: ' + e.message); }
 }
 
-function selecionarClienteAgenda(id) {
-  const c = clientes.find(x => x.id === id);
-  if (!c) return;
-  document.getElementById('ag-nome').value = c.nome||'';
-  document.getElementById('ag-endereco').value = c.endereco||'';
-  document.getElementById('ag-bairro').value = c.bairro||'';
-  document.getElementById('ag-cep').value = c.cep||'';
-  document.getElementById('ag-cidade').value = c.cidade||'';
-  fecharDropCliente();
+async function excluirCliente(id) {
+  if (!confirm('Excluir este cliente?')) return;
+  try {
+    await window._deleteDoc(window._doc(window._db,'clientes',id));
+    mostrarToast('Cliente excluído.');
+  } catch(e) { alert('Erro: ' + e.message); }
 }
 
 function usarClienteNoOrcamento(id) {
-  const c = clientes.find(x => x.id === id);
+  var c = clientes.find(function(x){ return x.id===id; });
   if (!c) return;
   showTab('orcamento');
-  setTimeout(() => {
+  setTimeout(function(){
     document.getElementById('nome').value = c.nome||'';
     document.getElementById('endereco').value = c.endereco||'';
     document.getElementById('bairro').value = c.bairro||'';
@@ -1973,229 +1563,802 @@ function usarClienteNoOrcamento(id) {
     document.getElementById('email').value = c.email||'';
     document.getElementById('cnpjCliente').value = c.cnpj||'';
     document.getElementById('tipoComercio').value = c.tipo||'';
-    mostrarToast('Dados do cliente preenchidos! ✓');
-    window.scrollTo({top: 0, behavior: 'smooth'});
+    mostrarToast('Dados preenchidos! ✓');
+    window.scrollTo({top:0,behavior:'smooth'});
   }, 200);
 }
 
 function verHistoricoCliente(id) {
-  const c = clientes.find(x => x.id === id);
+  var c = clientes.find(function(x){ return x.id===id; });
   if (!c) return;
   document.getElementById('modal-hist-cliente-titulo').textContent = 'Histórico — ' + c.nome;
-  const orcsCli = orcamentos.filter(o =>
-    o.nome && c.nome && o.nome.toLowerCase().includes(c.nome.toLowerCase().split(' ')[0])
-  );
-  const vencStr = c.vencimento ? fmtData(c.vencimento) : '—';
-  const hoje = new Date();
-  const vencDate = c.vencimento ? new Date(c.vencimento) : null;
-  const diasVenc = vencDate ? Math.ceil((vencDate - hoje) / (1000*60*60*24)) : null;
-  let alertaVenc = '';
+  var orcsCli = orcamentos.filter(function(o){ return o.nome && c.nome && o.nome.toLowerCase().includes(c.nome.toLowerCase().split(' ')[0]); });
+  var vencStr = c.vencimento ? fmtData(c.vencimento) : '—';
+  var hoje = new Date();
+  var vencDate = c.vencimento ? new Date(c.vencimento) : null;
+  var diasVenc = vencDate ? Math.ceil((vencDate - hoje) / (1000*60*60*24)) : null;
+  var alertaVenc = '';
   if (diasVenc !== null) {
-    if (diasVenc < 0) alertaVenc = `<div style="background:#fee2e2;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;font-weight:600;color:#dc2626;">⚠️ Serviço VENCIDO há ${Math.abs(diasVenc)} dias!</div>`;
-    else if (diasVenc <= 30) alertaVenc = `<div style="background:#fef3c7;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;font-weight:600;color:#d97706;">⏰ Serviço vence em ${diasVenc} dias (${vencStr})</div>`;
-    else alertaVenc = `<div style="background:var(--green-light);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;font-weight:600;color:var(--green);">✅ Próximo vencimento: ${vencStr}</div>`;
+    if (diasVenc < 0) alertaVenc = '<div style="background:#fee2e2;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;font-weight:600;color:#dc2626;">⚠️ Serviço VENCIDO há '+Math.abs(diasVenc)+' dias!</div>';
+    else if (diasVenc <= 30) alertaVenc = '<div style="background:#fef3c7;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;font-weight:600;color:#d97706;">⏰ Vence em '+diasVenc+' dias ('+vencStr+')</div>';
+    else alertaVenc = '<div style="background:#d1fae5;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;font-weight:600;color:#059669;">✅ Próximo vencimento: '+vencStr+'</div>';
   }
-  const orcsHTML = orcsCli.length
-    ? orcsCli.map(o => `
-        <div style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:8px;font-size:13px;">
-          <div style="font-weight:700;">Nº ${o.num} — ${fmtData(o.data)}</div>
-          <div style="color:var(--muted);margin-top:3px;">${o.servicos.map(s=>s.nome).join(', ')||'—'} · R$ ${o.valor||'—'}</div>
-        </div>`).join('')
-    : '<div style="color:var(--muted);font-size:13px;padding:10px 0;">Nenhum orçamento encontrado para este cliente.</div>';
-  document.getElementById('modal-hist-cliente-body').innerHTML = `
-    ${alertaVenc}
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px;margin-bottom:16px;">
-      <div><b>Telefone:</b> ${c.fone||'—'}</div>
-      <div><b>E-mail:</b> ${c.email||'—'}</div>
-      <div><b>Endereço:</b> ${c.endereco||'—'}, ${c.bairro||'—'}</div>
-      <div><b>Cidade:</b> ${c.cidade||'—'}</div>
-      <div><b>Último Serviço:</b> ${fmtData(c.ultimoServico)}</div>
-      <div><b>Próx. Vencimento:</b> ${vencStr}</div>
-      ${c.obs ? `<div style="grid-column:span 2"><b>Obs:</b> ${c.obs}</div>` : ''}
-    </div>
-    <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;margin-bottom:10px;">Orçamentos</div>
-    ${orcsHTML}
-    <div class="btn-row" style="margin-top:16px;">
-      <button class="btn btn-primary" onclick="usarClienteNoOrcamento('${id}');fecharModal('modal-hist-cliente')">Usar em Novo Orçamento</button>
-    </div>
-  `;
+  var orcsHTML = orcsCli.length
+    ? orcsCli.map(function(o){ return '<div style="border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin-bottom:8px;font-size:13px;"><div style="font-weight:700;">Nº '+o.num+' — '+fmtData(o.data)+'</div><div style="color:#64748b;margin-top:3px;">'+(o.servicos||[]).map(function(s){return s.nome;}).join(', ')+'  R$ '+(o.valor||'—')+'</div></div>'; }).join('')
+    : '<div style="color:#64748b;font-size:13px;padding:10px 0;">Nenhum orçamento encontrado.</div>';
+  document.getElementById('modal-hist-cliente-body').innerHTML = alertaVenc
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px;margin-bottom:16px;">'
+    + '<div><b>Telefone:</b> '+(c.fone||'—')+'</div>'
+    + '<div><b>E-mail:</b> '+(c.email||'—')+'</div>'
+    + '<div><b>Endereço:</b> '+(c.endereco||'—')+', '+(c.bairro||'—')+'</div>'
+    + '<div><b>Cidade:</b> '+(c.cidade||'—')+'</div>'
+    + '<div><b>Último Serviço:</b> '+fmtData(c.ultimoServico)+'</div>'
+    + '<div><b>Próx. Vencimento:</b> '+vencStr+'</div>'
+    + (c.obs ? '<div style="grid-column:span 2"><b>Obs:</b> '+c.obs+'</div>' : '')
+    + '</div>'
+    + '<div style="font-family:Syne,sans-serif;font-weight:700;font-size:13px;margin-bottom:10px;">Orçamentos</div>'
+    + orcsHTML
+    + '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">'
+    + '<button class="btn btn-primary" data-cli-id="'+id+'" onclick="var i=this.getAttribute(&quot;data-cli-id&quot;);usarClienteNoOrcamento(i);fecharModal(&quot;modal-hist-cliente&quot;)">Usar em Novo Orçamento</button>'
+    + '</div>';
   document.getElementById('modal-hist-cliente').classList.add('open');
 }
 
-function verificarVencimentos() {
-  const container = document.getElementById('alertas-vencimento');
+function filtrarClientes() {
+  var q = (document.getElementById('busca-cliente')||{value:''}).value.toLowerCase();
+  var filtrados = q ? clientes.filter(function(c){ return (c.nome||'').toLowerCase().includes(q)||(c.fone||'').includes(q)||(c.endereco||'').toLowerCase().includes(q); }) : clientes;
+  renderClientes(filtrados);
+}
+
+function renderClientes(lista) {
+  var arr = lista || clientes;
+  var container = document.getElementById('clientes-lista');
   if (!container) return;
-  const hoje = new Date();
-  const urgentes = clientes.filter(c => {
-    if (!c.vencimento) return false;
-    const dias = Math.ceil((new Date(c.vencimento + 'T12:00:00') - hoje) / (1000*60*60*24));
-    return dias <= 30;
-  }).sort((a,b) => a.vencimento.localeCompare(b.vencimento));
-  if (!urgentes.length) { container.innerHTML = ''; return; }
-  container.innerHTML = `
-    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:14px;margin-bottom:10px;color:#d97706;">⏰ Atenção — Serviços a vencer</div>
-    ${urgentes.map(c => {
-      const dias = Math.ceil((new Date(c.vencimento + 'T12:00:00') - hoje) / (1000*60*60*24));
-      const urgente = dias < 0;
-      return `<div class="alerta-venc ${urgente?'urgente':''}">
-        <div>
-          <div class="alerta-venc-texto">${urgente?'⚠️':'⏰'} ${c.nome}</div>
-          <div class="alerta-venc-data">${urgente ? 'Vencido há '+Math.abs(dias)+' dias' : 'Vence em '+dias+' dias — '+fmtData(c.vencimento)}</div>
-        </div>
-        <div style="display:flex;gap:6px;">
-          <button class="btn btn-primary" style="padding:5px 12px;font-size:11px;" onclick="usarClienteNoOrcamento('${c.id}')">Agendar</button>
-          <button class="btn btn-outline" style="padding:5px 12px;font-size:11px;" onclick="verHistoricoCliente('${c.id}')">Ver</button>
-        </div>
-      </div>`;
-    }).join('')}
-    <div style="margin-bottom:16px;"></div>
-  `;
-}
-// Auto-open form if URL has ?form=1
-if(window.location.search.includes('form=1')){
-  window.addEventListener('load', ()=> setTimeout(abrirFormularioEmbutido, 500));
-}
-
-
-// ── FUNÇÕES FALTANDO ──
-
-function mostrarToast(msg){
-  const t = document.getElementById('toast');
-  if(!t) return;
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), 2800);
-}
-
-function fmtDataBR(d) {
-  if(!d) return '—';
-  return d.toLocaleDateString('pt-BR');
-}
-
-function addMonths(date, months) {
-  const d = new Date(date);
-  d.setMonth(d.getMonth() + months);
-  return d;
-}
-
-function atualizarCronograma() {
-  const tipo = document.querySelector('input[name="pacote-tipo"]:checked')?.value;
-  const dataStr = document.getElementById('data-primeira-app')?.value;
-  const preview = document.getElementById('cronograma-preview');
-  const tbody = document.getElementById('cronograma-body');
-  if (!tipo || !dataStr) { if(preview) preview.style.display='none'; return; }
-  const base = new Date(dataStr + 'T12:00:00');
-  const linhas = gerarLinhasCronograma(tipo, base);
-  tbody.innerHTML = linhas.map(l => `
-    <tr>
-      <td><b>${l.num}ª</b></td>
-      <td>${fmtDataBR(l.data)}</td>
-      <td>${l.cortesia
-        ? '<span class="cortesia-tag">Cortesia</span>'
-        : '<span class="pago-tag">'+fmtDataBR(l.pgto)+'</span>'}</td>
-    </tr>`).join('');
-  preview.style.display = 'block';
-  window._cronogramaLinhas = linhas;
-}
-
-function gerarLinhasCronograma(tipo, base) {
-  const linhas = [];
-  for (let i = 0; i < 4; i++) {
-    const data = addMonths(base, i * 3);
-    let cortesia = false;
-    if (tipo === 'cortesia-inicio') cortesia = (i === 0);
-    else if (tipo === '4') cortesia = false;
-    else if (tipo === 'cortesia-fim') cortesia = (i === 3);
-    linhas.push({ num: i+1, data, pgto: cortesia ? null : addMonths(data, 1), cortesia });
+  if (!arr.length) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">&#x1F465;</div><div style="font-size:15px;">Nenhum cliente ainda.</div></div>';
+    return;
   }
-  return linhas;
+  var hoje = new Date();
+  var html = arr.map(function(c){
+    var vencDate = c.vencimento ? new Date(c.vencimento+'T12:00:00') : null;
+    var dias = vencDate ? Math.ceil((vencDate-hoje)/(1000*60*60*24)) : null;
+    var badge = '';
+    if (dias !== null) {
+      if (dias < 0) badge = '<span class="badge" style="background:#fee2e2;color:#dc2626;">VENCIDO</span>';
+      else if (dias <= 30) badge = '<span class="badge badge-gold">Vence em '+dias+'d</span>';
+      else badge = '<span class="badge badge-green">Vence '+fmtData(c.vencimento)+'</span>';
+    }
+    return '<div class="cli-card" data-cid="'+c.id+'">'
+      +'<div>'
+      +'<div class="cli-nome">'+(c.nome||'—')+' '+badge+'</div>'
+      +'<div class="cli-info">'+(c.fone ? c.fone+'  ' : '')+(c.tipo ? c.tipo+'  ' : '')+(c.endereco ? c.endereco+(c.bairro?', '+c.bairro:'') : '')+'</div>'
+      +'</div>'
+      +'<div class="cli-actions">'
+      +'<button class="btn btn-primary cli-btn-usar" data-cid="'+c.id+'" style="padding:6px 12px;font-size:11px;">Usar</button>'
+      +'<button class="btn btn-outline cli-btn-hist" data-cid="'+c.id+'" style="padding:6px 12px;font-size:11px;">Histórico</button>'
+      +'<button class="btn btn-gold cli-btn-edit" data-cid="'+c.id+'" style="padding:6px 12px;font-size:11px;">✏️</button>'
+      +'<button class="btn cli-btn-del" data-cid="'+c.id+'" style="padding:6px 12px;font-size:11px;background:#fee2e2;color:#dc2626;border:none;border-radius:8px;">✕</button>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+  container.innerHTML = html;
+  container.querySelectorAll('.cli-btn-usar').forEach(function(b){ b.addEventListener('click', function(){ usarClienteNoOrcamento(this.getAttribute('data-cid')); }); });
+  container.querySelectorAll('.cli-btn-hist').forEach(function(b){ b.addEventListener('click', function(){ verHistoricoCliente(this.getAttribute('data-cid')); }); });
+  container.querySelectorAll('.cli-btn-edit').forEach(function(b){ b.addEventListener('click', function(){ abrirModalCliente(this.getAttribute('data-cid')); }); });
+  container.querySelectorAll('.cli-btn-del').forEach(function(b){ b.addEventListener('click', function(){ excluirCliente(this.getAttribute('data-cid')); }); });
+  verificarVencimentos();
 }
 
-function gerarCronogramaPDF() {
-  const linhas = window._cronogramaLinhas;
-  if (!linhas || !linhas.length) { alert('Gere o cronograma primeiro.'); return; }
-  const d = coletarDados();
-  const empresa = d.empresa || 'Controle Dedetizadora Ltda';
-  const linhasHTML = linhas.map((l, i) => `
-    <tr style="${i%2===0?'background:#e8f5e9;':''}">
-      <td style="padding:10px;text-align:center;border:1px solid #ccc;font-style:italic;font-size:13pt;">${l.num}º</td>
-      <td style="padding:10px;text-align:center;border:1px solid #ccc;font-style:italic;font-size:13pt;">${fmtDataBR(l.data)}</td>
-      <td style="padding:10px;text-align:center;border:1px solid #ccc;font-style:italic;font-size:13pt;">${l.cortesia ? 'Cortesia' : fmtDataBR(l.pgto)}</td>
-    </tr>`).join('');
-  const win = window.open('','_blank');
-  win.document.write(`<!DOCTYPE html><html><head>
-    <meta charset="UTF-8"><title>Cronograma</title>
-    <style>
-      @page{size:A4 portrait;margin:20mm 25mm;}
-      body{font-family:'Times New Roman',Times,serif;font-size:11pt;color:#000;margin:0;padding:20mm 25mm;}
-      .header-info{text-align:right;font-size:9pt;margin-bottom:4px;}
-      h2{text-align:center;font-size:18pt;color:#4a7c59;letter-spacing:2px;text-transform:uppercase;margin:24px 0 28px;font-style:italic;}
-      table{width:100%;border-collapse:collapse;margin:0 auto 24px;}
-      th{background:#4a7c59;color:#fff;padding:10px;text-align:center;font-style:italic;font-size:13pt;letter-spacing:1px;}
-      .aviso{text-align:center;font-style:italic;font-size:11pt;margin:20px 0;line-height:1.6;}
-      .no-print{text-align:center;margin-top:30px;display:flex;gap:12px;justify-content:center;}
-      @media print{.no-print{display:none;}}
-    </style>\n  <\/head><body>\n    <div class=\"header-info\">
-      ${d.nome ? '<b>'+d.nome+'</b><br>' : ''}
-      ${d.fone ? 'Telefone: '+d.fone+'<br>' : ''}
-      ${d.endereco ? d.endereco+(d.bairro?', '+d.bairro:'')+(d.cidade?', '+d.cidade:'')+(d.cep?' — CEP '+d.cep:'') : ''}
-    </div>
-    <h2>Cronograma Dedetização</h2>
-    <table>
-      <thead><tr><th>APLICAÇÃO</th><th>DATA</th><th>PAGAMENTO</th></tr></thead>
-      <tbody>${linhasHTML}</tbody>
-    </table>
-    <div class="aviso"><i>O serviço de controle de pragas só tem efeito se<br>realizado nas datas corretas.</i></div>
-    <div class="no-print">
-      <button onclick="window.print()" style="font-family:sans-serif;font-weight:700;padding:10px 28px;background:#1a3c6e;color:#fff;border:none;border-radius:8px;cursor:pointer;">🖨️ Imprimir</button>
-      <button onclick="document.querySelectorAll('.no-print').forEach(e=>e.style.display='none');window.print();document.querySelectorAll('.no-print').forEach(e=>e.style.display='flex');" style="font-family:sans-serif;font-weight:700;padding:10px 28px;background:#059669;color:#fff;border:none;border-radius:8px;cursor:pointer;">💾 Salvar PDF</button>
-    </div>
-  <\/body></html>\`);
-  win.document.close();
-  win.focus();
+function verificarVencimentos() {
+  var container = document.getElementById('alertas-vencimento');
+  if (!container) return;
+  var hoje = new Date();
+  var urgentes = clientes.filter(function(c){
+    if (!c.vencimento) return false;
+    return Math.ceil((new Date(c.vencimento+'T12:00:00')-hoje)/(1000*60*60*24)) <= 30;
+  }).sort(function(a,b){ return a.vencimento.localeCompare(b.vencimento); });
+  if (!urgentes.length) { container.innerHTML=''; return; }
+  var html = '<div style="font-family:Syne,sans-serif;font-weight:800;font-size:14px;margin-bottom:10px;color:#d97706;">Atencao — Servicos a vencer</div>';
+  html += urgentes.map(function(c){
+    var dias = Math.ceil((new Date(c.vencimento+'T12:00:00')-hoje)/(1000*60*60*24));
+    var urgente = dias < 0;
+    return '<div class="alerta-venc '+(urgente?'urgente':'')+'">'
+      +'<div><div class="alerta-venc-texto">'+(urgente?'!':'') +' '+c.nome+'</div>'
+      +'<div class="alerta-venc-data">'+(urgente?'Vencido ha '+Math.abs(dias)+' dias':'Vence em '+dias+' dias - '+fmtData(c.vencimento))+'</div></div>'
+      +'<div style="display:flex;gap:6px;">'
+      +'<button class="btn btn-primary alerta-usar" data-cid="'+c.id+'" style="padding:5px 12px;font-size:11px;">Agendar</button>'
+      +'<button class="btn btn-outline alerta-ver" data-cid="'+c.id+'" style="padding:5px 12px;font-size:11px;">Ver</button>'
+      +'</div></div>';
+  }).join('') + '<div style="margin-bottom:16px;"></div>';
+  container.innerHTML = html;
+  container.querySelectorAll('.alerta-usar').forEach(function(b){ b.addEventListener('click', function(){ usarClienteNoOrcamento(this.getAttribute('data-cid')); }); });
+  container.querySelectorAll('.alerta-ver').forEach(function(b){ b.addEventListener('click', function(){ verHistoricoCliente(this.getAttribute('data-cid')); }); });
 }
 
-function adicionarProdutoPadrao(){
-  adicionarProduto({
-    nome: 'BIFENTOL 200 SC', grupo: 'PIRETROIDE', qtd: '50 Ml',
-    ant: 'ANTI-HISTAMÍNICO E TRATAMENTO SINTOMÁTICO.'
-  });
-  adicionarProduto({
-    nome: 'Maki Bloco', grupo: 'Cumarínico Antídoto: Vitamina K1', qtd: '1',
-    ant: 'VITAMINA K1 E TRATAMENTO SINTOMÁTICO – Altamente tóxico, classe toxicológica: Grau II.'
-  });
+// ══ CAPTAÇÃO ══
+function initCaptacao() {
+  var emp = JSON.parse(localStorage.getItem('empresa_emissora')||'{}');
+  var empresa = emp.empresa || 'Controle Dedetizadora';
+  var link = window.location.href.split('?')[0].split('#')[0]+'?form=1';
+  var linkEl = document.getElementById('link-formulario');
+  if (linkEl) linkEl.value = link;
+  var msg = 'Olá! 😊 Aqui é da *'+empresa+'*.\n\nPara realizarmos o seu orçamento, precisamos de algumas informações:\n\n1️⃣ *Nome completo / Razão Social:*\n2️⃣ *CPF / CNPJ:*\n3️⃣ *Endereço completo* (Rua, número, complemento, condomínio):*\n4️⃣ *Bairro:*\n5️⃣ *CEP:*\n6️⃣ *Cidade / UF:*\n7️⃣ *Telefone / WhatsApp:*\n8️⃣ *E-mail:*\n\n_Ou acesse o formulário:_ 🔗 '+link+'\n\nObrigado! ✅';
+  var msgEl = document.getElementById('msg-whatsapp');
+  if (msgEl) msgEl.textContent = msg;
+  window._msgWhatsapp = msg;
+  renderRespostas();
 }
 
-function mascaraCep(el){
-  let v = el.value.replace(/\D/g,'');
+function copiarMensagem() {
+  navigator.clipboard.writeText(window._msgWhatsapp||'');
+  mostrarToast('Mensagem copiada! ✓');
+}
+
+function copiarLinkFormulario() {
+  var link = (document.getElementById('link-formulario')||{value:''}).value;
+  navigator.clipboard.writeText(link);
+  mostrarToast('Link copiado! ✓');
+}
+
+function abrirWhatsApp() {
+  var msg = encodeURIComponent(window._msgWhatsapp||'');
+  window.open('https://wa.me/?text='+msg, '_blank');
+}
+
+function enviarFormularioWhatsApp() {
+  var link = (document.getElementById('link-formulario')||{value:''}).value;
+  var emp = JSON.parse(localStorage.getItem('empresa_emissora')||'{}');
+  var empresa = emp.empresa || 'Controle Dedetizadora';
+  var msg = encodeURIComponent('Olá! 😊 Aqui é da *'+empresa+'*.\n\nPreencha seus dados no link abaixo:\n\n🔗 '+link+'\n\nObrigado! ✅');
+  window.open('https://wa.me/?text='+msg, '_blank');
+}
+
+function renderRespostas() {
+  var container = document.getElementById('respostas-lista');
+  if (!container) return;
+  var lista = window._respostas || [];
+  if (!lista.length) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">&#x1F4EC;</div><div style="font-size:14px;">Nenhuma resposta ainda.</div></div>';
+    return;
+  }
+  var html = lista.map(function(r){
+    return '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 18px;margin-bottom:10px;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;">'
+      +'<div>'
+      +'<div style="font-family:Syne,sans-serif;font-weight:700;font-size:14px;">'+(r.nome||'—')+'</div>'
+      +'<div style="font-size:12px;color:#64748b;margin-top:3px;">'+(r.fone||'—')+' · '+(r.endereco||'—')+(r.bairro?', '+r.bairro:'')+' · CEP '+(r.cep||'—')+'</div>'
+      +'<div style="font-size:11px;color:#64748b;margin-top:2px;">Recebido: '+new Date(r.criadoEm).toLocaleString('pt-BR')+'</div>'
+      +'</div>'
+      +'<div style="display:flex;gap:7px;">'
+      +'<button class="btn btn-primary resp-imp" data-rid="'+r.id+'" style="padding:6px 12px;font-size:11px;">Importar</button>'
+      +'<button class="btn resp-del" data-rid="'+r.id+'" style="padding:6px 12px;font-size:11px;background:#fee2e2;color:#dc2626;border:none;border-radius:8px;">✕</button>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+  container.innerHTML = html;
+  container.querySelectorAll('.resp-imp').forEach(function(b){ b.addEventListener('click', function(){ importarResposta(this.getAttribute('data-rid')); }); });
+  container.querySelectorAll('.resp-del').forEach(function(b){ b.addEventListener('click', function(){ excluirResposta(this.getAttribute('data-rid')); }); });
+}
+
+async function importarResposta(id) {
+  var r = (window._respostas||[]).find(function(x){ return x.id===id; });
+  if (!r) return;
+  var nomeNorm = (r.nome||'').trim().toLowerCase();
+  var existe = clientes.find(function(c){ return (c.nome||'').trim().toLowerCase()===nomeNorm; });
+  if (existe) {
+    if (!confirm('Cliente "'+r.nome+'" já cadastrado. Atualizar?')) return;
+    await window._setDoc(window._doc(window._db,'clientes',existe.id), Object.assign({}, existe, {fone:r.fone||existe.fone, email:r.email||existe.email, endereco:r.endereco||existe.endereco, bairro:r.bairro||existe.bairro, cep:r.cep||existe.cep, cidade:r.cidade||existe.cidade, cnpj:r.cnpj||existe.cnpj}));
+  } else {
+    var cliId = 'cli_'+Date.now().toString();
+    await window._setDoc(window._doc(window._db,'clientes',cliId), {id:cliId, nome:r.nome, fone:r.fone||'', email:r.email||'', endereco:r.endereco||'', bairro:r.bairro||'', cep:r.cep||'', cidade:r.cidade||'', cnpj:r.cnpj||'', tipo:'', obs:'', ultimoServico:'', vencimento:'', atualizadoEm:new Date().toISOString()});
+  }
+  mostrarToast('Cliente importado! ✓');
+}
+
+async function excluirResposta(id) {
+  if (!confirm('Excluir esta resposta?')) return;
+  await window._deleteDoc(window._doc(window._db,'respostas',id));
+  mostrarToast('Resposta excluída.');
+}
+
+// ══ FORMULÁRIO EMBUTIDO ══
+function abrirFormularioEmbutido() {
+  var emp = JSON.parse(localStorage.getItem('empresa_emissora')||'{}');
+  var nomeEmp = document.getElementById('form-empresa-nome');
+  if (nomeEmp && emp.empresa) nomeEmp.textContent = emp.empresa;
+  document.getElementById('overlay-formulario').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+}
+
+function fecharFormularioEmbutido() {
+  document.getElementById('overlay-formulario').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function mascaraCepFF(el){
+  var v = el.value.replace(/[^0-9]/g,'');
   if(v.length > 5) v = v.slice(0,5)+'-'+v.slice(5,8);
   el.value = v;
 }
 
-function calcularValidade(srvId) {
-  const garantiaEl = document.getElementById('garantia-' + srvId);
-  const validadeEl = document.getElementById('validade-' + srvId);
-  const dataServicoEl = document.getElementById('dataServico');
-  if (!garantiaEl || !validadeEl) return;
-  const dias = parseInt(garantiaEl.value.replace(/[^0-9]/g, ''));
-  if (!dias || isNaN(dias)) return;
-  const baseStr = dataServicoEl?.value || new Date().toISOString().split('T')[0];
-  const base = new Date(baseStr + 'T12:00:00');
-  base.setDate(base.getDate() + dias);
-  validadeEl.value = base.toISOString().split('T')[0];
+async function buscarCepFF(cep) {
+  var c = cep.replace(/[^0-9]/g,'');
+  if (c.length !== 8) return;
+  try {
+    var r = await fetch('https://viacep.com.br/ws/'+c+'/json/');
+    var d = await r.json();
+    if (!d.erro) {
+      document.getElementById('ff-endereco').value = d.logradouro||'';
+      document.getElementById('ff-bairro').value = d.bairro||'';
+      document.getElementById('ff-cidade').value = (d.localidade||'')+'/'+(d.uf||'');
+    }
+  } catch(e) {}
 }
 
-function recalcularTodasValidades() {
-  ['dedetizacao','desratizacao','cxdagua','descupinizacao','cxgordura'].forEach(id => calcularValidade(id));
+async function enviarFormularioEmbutido() {
+  var nome = document.getElementById('ff-nome').value.trim();
+  var cnpj = document.getElementById('ff-cnpj').value.trim();
+  var tipo = document.getElementById('ff-tipo').value;
+  var cep  = document.getElementById('ff-cep').value.trim();
+  var end  = document.getElementById('ff-endereco').value.trim();
+  var bairro = document.getElementById('ff-bairro').value.trim();
+  var cidade = document.getElementById('ff-cidade').value.trim();
+  var fone = document.getElementById('ff-fone').value.trim();
+  var erro = document.getElementById('form-erro');
+  if (!nome||!cnpj||!tipo||!cep||!end||!bairro||!cidade||!fone) { if(erro) erro.style.display='block'; return; }
+  if(erro) erro.style.display='none';
+  if(!window._firebaseLoaded){alert('Aguarde...');return;}
+  try {
+    await window._setDoc(window._doc(window._db,'respostas',Date.now().toString()), {
+      nome:nome, cnpj:cnpj, tipo:tipo, cep:cep, endereco:end,
+      complemento:(document.getElementById('ff-complemento')||{value:''}).value.trim(),
+      bairro:bairro, cidade:cidade, fone:fone,
+      email:(document.getElementById('ff-email')||{value:''}).value.trim(),
+      criadoEm:new Date().toISOString()
+    });
+    document.getElementById('form-corpo').style.display='none';
+    document.getElementById('form-sucesso').style.display='block';
+  } catch(e){ alert('Erro: '+e.message); }
 }
 
-// ── Tab button listeners ──
-document.querySelectorAll('[data-tab]').forEach(btn => {
-  btn.addEventListener('click', function() {
-    showTab(this.getAttribute('data-tab'));
+// Auto-open form
+if(window.location.search.includes('form=1')){
+  window.addEventListener('load', function(){ setTimeout(abrirFormularioEmbutido, 500); });
+}
+
+// Busca cliente no agendamento
+function buscarClienteAgenda(q) {
+  var drop = document.getElementById('ag-cliente-drop');
+  if (!q || q.length < 2) { if(drop) drop.style.display='none'; return; }
+  var results = clientes.filter(function(c){
+    return (c.nome||'').toLowerCase().includes(q.toLowerCase())||(c.fone||'').includes(q);
+  }).slice(0,8);
+  if (!results.length) { if(drop) drop.style.display='none'; return; }
+  var html = results.map(function(c){
+    return '<div class="ag-cli-opt" data-cid="'+c.id+'" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid #e2e8f0;font-size:13px;">'
+      +'<div style="font-weight:700;">'+c.nome+'</div>'
+      +'<div style="font-size:11px;color:#64748b;">'+(c.fone||'')+(c.endereco?' · '+c.endereco:'')+'</div>'
+      +'</div>';
+  }).join('');
+  drop.innerHTML = html;
+  drop.querySelectorAll('.ag-cli-opt').forEach(function(el){
+    el.addEventListener('click', function(){ selecionarClienteAgenda(this.getAttribute('data-cid')); });
+    el.addEventListener('mouseover', function(){ this.style.background='#eff6ff'; });
+    el.addEventListener('mouseout', function(){ this.style.background=''; });
   });
-});
+  drop.style.display = 'block';
+}
+
+function selecionarClienteAgenda(id) {
+  var c = clientes.find(function(x){ return x.id===id; });
+  if (!c) return;
+  document.getElementById('ag-nome').value = c.nome||'';
+  document.getElementById('ag-endereco').value = c.endereco||'';
+  document.getElementById('ag-bairro').value = c.bairro||'';
+  document.getElementById('ag-cep').value = c.cep||'';
+  document.getElementById('ag-cidade').value = c.cidade||'';
+  fecharDropCliente();
+}
+
+function fecharDropCliente() {
+  var drop = document.getElementById('ag-cliente-drop');
+  if (drop) drop.style.display = 'none';
+}
+
+
+// ══ CONTRATO ══
+function gerarContrato() {
+  var d = coletarDados();
+  // Pre-fill modal with orcamento data
+  document.getElementById('ct-nome').value = d.nome || '';
+  document.getElementById('ct-cnpj').value = d.cnpjCliente || '';
+  document.getElementById('ct-fone').value = d.fone || '';
+  document.getElementById('ct-email').value = d.email || '';
+  var end = [d.endereco, d.bairro, d.cidade, d.cep ? 'CEP: '+d.cep : ''].filter(Boolean).join(', ');
+  document.getElementById('ct-endereco').value = end;
+  document.getElementById('ct-servicos').value = (d.servicos||[]).map(function(s){return s.nome;}).join(', ') || 'Desinsetização e Desratização';
+  document.getElementById('ct-valor').value = d.valor || '';
+  document.getElementById('ct-inicio').value = d.dataServico || new Date().toISOString().split('T')[0];
+  calcularParcelasContrato();
+  document.getElementById('modal-contrato').style.display = 'block';
+}
+
+function calcularParcelasContrato() {
+  var total = parseFloat((document.getElementById('ct-valor').value||'0').replace(/\./g,'').replace(',','.'));
+  var parcelas = parseInt(document.getElementById('ct-parcelas').value||'3');
+  if (total && parcelas) {
+    var parc = (total / parcelas).toFixed(2).replace('.',',');
+    document.getElementById('ct-valor-parcela').value = parc;
+  }
+}
+
+function confirmarGerarContrato() {
+  var nome = document.getElementById('ct-nome').value || '___________________________';
+  var cnpj = document.getElementById('ct-cnpj').value || '___________________________';
+  var fone = document.getElementById('ct-fone').value || '___________________________';
+  var email = document.getElementById('ct-email').value || '___________________________';
+  var endereco = document.getElementById('ct-endereco').value || '___________________________';
+  var servicos = document.getElementById('ct-servicos').value || 'Desinsetização e Desratização';
+  var valor = document.getElementById('ct-valor').value || '0,00';
+  var parcelas = parseInt(document.getElementById('ct-parcelas').value||'3');
+  var valorParcela = document.getElementById('ct-valor-parcela').value || '0,00';
+  var inicio = document.getElementById('ct-inicio').value;
+  var vigencia = document.getElementById('ct-vigencia').value;
+  var cortesia = document.getElementById('ct-cortesia').value;
+  var obs = document.getElementById('ct-obs').value;
+
+  var emp = JSON.parse(localStorage.getItem('empresa_emissora')||'{}');
+  var nomeEmp = emp.empresa || 'Controle Dedetizadora Ltda. - ME';
+  var cnpjEmp = emp.cnpjEmpresa || '14.175.886/0001-19';
+  var endEmp = 'Rua José Batista Azevedo, 93 — Custódio Pereira, Uberlândia-MG';
+  var foneEmp = '(34) 99104-7014 / (34) 99799-4442';
+
+  var dataInicio = inicio ? new Date(inicio+'T12:00:00') : new Date();
+  var dataHoje = dataInicio.toLocaleDateString('pt-BR', {day:'2-digit',month:'long',year:'numeric'});
+
+  // Build aplicacoes table
+  var linhasCrono = window._cronogramaLinhas || [];
+  var tabelaHTML = '<table style="width:100%;border-collapse:collapse;margin:12px 0;font-size:11pt;">'
+    + '<thead><tr style="background:#1a3c6e;color:#fff;">'
+    + '<th style="padding:8px;border:1px solid #ccc;text-align:left;">Aplicação</th>'
+    + '<th style="padding:8px;border:1px solid #ccc;">Data Prevista</th>'
+    + '<th style="padding:8px;border:1px solid #ccc;">Situação</th>'
+    + '<th style="padding:8px;border:1px solid #ccc;">Valor</th>'
+    + '<th style="padding:8px;border:1px solid #ccc;">Vencimento Pgto</th>'
+    + '</tr></thead><tbody>';
+
+  if (linhasCrono.length) {
+    linhasCrono.forEach(function(l, i){
+      var isCortesia = (cortesia==='sim' && i===0) || (cortesia==='ultima' && i===linhasCrono.length-1);
+      tabelaHTML += '<tr style="background:'+(i%2===0?'#f8fafc':'#fff')+'">'
+        + '<td style="padding:7px 8px;border:1px solid #ccc;">'+(i+1)+'ª Aplicação</td>'
+        + '<td style="padding:7px 8px;border:1px solid #ccc;text-align:center;">'+(l.data?fmtDataBR(l.data):'—')+'</td>'
+        + '<td style="padding:7px 8px;border:1px solid #ccc;text-align:center;">'+(isCortesia?'<b>Cortesia</b>':'Cobrada')+'</td>'
+        + '<td style="padding:7px 8px;border:1px solid #ccc;text-align:center;">'+(isCortesia?'R$ 0,00':'R$ '+valorParcela)+'</td>'
+        + '<td style="padding:7px 8px;border:1px solid #ccc;text-align:center;">'+(isCortesia?'—':(l.pgto?fmtDataBR(l.pgto):'—'))+'</td>'
+        + '</tr>';
+    });
+  } else {
+    for (var i=0; i<parcelas; i++) {
+      var isCortesia = (cortesia==='sim' && i===0) || (cortesia==='ultima' && i===parcelas-1);
+      tabelaHTML += '<tr style="background:'+(i%2===0?'#f8fafc':'#fff')+'">'
+        + '<td style="padding:7px 8px;border:1px solid #ccc;">'+(i+1)+'ª Aplicação</td>'
+        + '<td style="padding:7px 8px;border:1px solid #ccc;text-align:center;">A definir</td>'
+        + '<td style="padding:7px 8px;border:1px solid #ccc;text-align:center;">'+(isCortesia?'<b>Cortesia</b>':'Cobrada')+'</td>'
+        + '<td style="padding:7px 8px;border:1px solid #ccc;text-align:center;">'+(isCortesia?'R$ 0,00':'R$ '+valorParcela)+'</td>'
+        + '<td style="padding:7px 8px;border:1px solid #ccc;text-align:center;">'+(isCortesia?'—':'A definir')+'</td>'
+        + '</tr>';
+    }
+  }
+  tabelaHTML += '<tr style="background:#e8f5e9;font-weight:700;">'
+    + '<td style="padding:8px;border:1px solid #ccc;" colspan="3">TOTAL A PAGAR</td>'
+    + '<td style="padding:8px;border:1px solid #ccc;text-align:center;" colspan="2">R$ '+valor+'</td>'
+    + '</tr></tbody></table>';
+
+  var obsClausula = obs ? '<h2>Cláusula Sete — Disposições Especiais</h2><p>'+obs+'</p>' : '';
+
+  var win = window.open('','_blank');
+  win.document.write('<!DOCTYPE html><'+'html><'+'head><meta charset="UTF-8"><title>Contrato — '+nome+'</title>'
+    + '<'+'style>'
+    + '@page{size:A4;margin:25mm 20mm;}'
+    + 'body{font-family:Arial,sans-serif;font-size:11pt;color:#000;line-height:1.6;}'
+    + '.header{text-align:center;border-bottom:2px solid #1a3c6e;padding-bottom:12px;margin-bottom:20px;}'
+    + '.header h1{font-size:13pt;color:#1a3c6e;margin:0;letter-spacing:1px;}'
+    + '.header p{font-size:9pt;margin:3px 0;}'
+    + 'h2{font-size:12pt;color:#1a3c6e;border-bottom:1px solid #1a3c6e;padding-bottom:4px;margin-top:20px;}'
+    + 'h3{font-size:11pt;margin:12px 0 4px;}'
+    + 'p{margin:6px 0;text-align:justify;}'
+    + '.assinaturas{margin-top:40px;display:grid;grid-template-columns:1fr 1fr;gap:40px;}'
+    + '.ass-box{border-top:1px solid #000;padding-top:8px;text-align:center;font-size:10pt;}'
+    + '.no-print{text-align:center;padding:20px;display:flex;gap:12px;justify-content:center;}'
+    + '@media print{.no-print{display:none;}}'
+    + '</'+'style></'+'head><'+'body>'
+
+    + '<div class="header">'
+    + '<h1>'+nomeEmp.toUpperCase()+'</h1>'
+    + '<p>CNPJ: '+cnpjEmp+' | '+endEmp+'</p>'
+    + '<p>Fones: '+foneEmp+'</p>'
+    + '</div>'
+
+    + '<h2 style="text-align:center;border:none;font-size:14pt;">CONTRATO DE PRESTAÇÃO DE SERVIÇOS</h2>'
+
+    + '<h2>Das Partes Contratantes</h2>'
+    + '<p><b>CONTRATANTE:</b> '+nome+', inscrito no CPF/CNPJ n.º '+cnpj+', com endereço em '+endereco+', telefone: '+fone+', e-mail: '+email+'.</p>'
+    + '<p><b>CONTRATADO:</b> '+nomeEmp+', CNPJ n.º '+cnpjEmp+', com sede na '+endEmp+'.</p>'
+
+    + '<h2>Cláusula Primeira — Do Objeto</h2>'
+    + '<p>1.1. O presente contrato tem por objeto a prestação dos seguintes serviços: <b>'+servicos+'</b>.</p>'
+    + '<p>1.2. Os serviços serão executados conforme os padrões da Vigilância Sanitária, com produtos registrados.</p>'
+    + '<p>1.3. Após cada execução será emitido certificado de prestação do serviço.</p>'
+
+    + '<h2>Cláusula Segunda — Das Condições de Pagamento</h2>'
+    + '<h3>2.1. Estrutura de Pagamento</h3>'
+    + tabelaHTML
+    + '<h3>2.2. Vencimentos</h3>'
+    + '<p>O valor total de <b>R$ '+valor+'</b> será pago em <b>'+parcelas+'</b> parcela(s) de <b>R$ '+valorParcela+'</b> cada, com vencimento 30 dias após cada aplicação realizada.</p>'
+    + '<h3>2.3. Inadimplência</h3>'
+    + '<p>O atraso acarretará multa de 2% sobre o valor em atraso, juros de 1% ao mês e correção pelo IGPM/FGV.</p>'
+
+    + '<h2>Cláusula Terceira — Do Prazo e da Vigência</h2>'
+    + '<p>3.1. O contrato vigorará por <b>'+vigencia+' ('+vigencia+') meses</b>, com início em '+dataHoje+', renovando-se automaticamente salvo manifestação contrária por escrito com 90 dias de antecedência.</p>'
+
+    + '<h2>Cláusula Quarta — Da Rescisão</h2>'
+    + '<p>4.1. O contrato poderá ser rescindido por mútuo acordo ou por descumprimento contratual, após notificação escrita e 15 dias sem regularização.</p>'
+    + '<p>4.2. A rescisão não exime as partes do cumprimento das obrigações financeiras já vencidas.</p>'
+
+    + '<h2>Cláusula Quinta — Do Foro</h2>'
+    + '<p>5.1. Fica eleito o Foro da Comarca de Uberlândia-MG para dirimir quaisquer controvérsias.</p>'
+
+    + '<h2>Cláusula Sexta — Disposições Gerais</h2>'
+    + '<p>6.1. Este contrato substitui todos os entendimentos anteriores sobre o mesmo objeto.</p>'
+    + '<p>6.2. Qualquer alteração somente será válida se formalizada por escrito e assinada por ambas as partes.</p>'
+
+    + obsClausula
+
+    + '<p style="margin-top:30px;">Uberlândia-MG, '+dataHoje+'.</p>'
+
+    + '<div class="assinaturas">'
+    + '<div class="ass-box">'+nome+'<br><small>CPF/CNPJ: '+cnpj+'<br>CONTRATANTE</small></div>'
+    + '<div class="ass-box">'+nomeEmp+'<br><small>CNPJ: '+cnpjEmp+'<br>CONTRATADO</small></div>'
+    + '</div>'
+    + '<div class="assinaturas" style="margin-top:30px;">'
+    + '<div class="ass-box">Nome: ______________________________<br><small>CPF: ________________<br>TESTEMUNHA 1</small></div>'
+    + '<div class="ass-box">Nome: ______________________________<br><small>CPF: ________________<br>TESTEMUNHA 2</small></div>'
+    + '</div>'
+
+    + '<div class="no-print">'
+    + '<button onclick="window.print()" style="padding:10px 28px;background:#1a3c6e;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;">Imprimir</button>'
+    + '<button onclick="document.querySelectorAll(\'.no-print\').forEach(function(e){e.style.display=\'none\'});window.print();" style="padding:10px 28px;background:#059669;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;">Salvar PDF</button>'
+    + '</div>');
+  win.document.close();
+  win.focus();
+  // Auto-salvar cliente no Firebase
+  if(window._firebaseLoaded && nome && nome !== '___________________________'){
+    var nomeNorm = nome.trim().toLowerCase();
+    var existe = (window.clientes||[]).find(function(c){ return (c.nome||'').trim().toLowerCase()===nomeNorm; });
+    if(!existe){
+      var cliId = 'cli_'+Date.now().toString();
+      var dataVenc = '';
+      if(inicio){
+        var dt = new Date(inicio+'T12:00:00');
+        dt.setDate(dt.getDate()+90);
+        dataVenc = dt.toISOString().split('T')[0];
+      }
+      window._setDoc(window._doc(window._db,'clientes',cliId),{
+        id:cliId,
+        nome:nome,
+        fone:fone||'',
+        email:email||'',
+        endereco:endereco||'',
+        bairro:'',
+        cep:'',
+        cidade:'',
+        cnpj:cnpj||'',
+        tipo:servicos||'',
+        obs:'',
+        ultimoServico:inicio||'',
+        vencimento:dataVenc,
+        atualizadoEm:new Date().toISOString()
+      }).then(function(){
+        mostrarToast('Cliente salvo automaticamente! ✓');
+      }).catch(function(){});
+    } else {
+      mostrarToast('Contrato gerado! Cliente já cadastrado ✓');
+    }
+  }
+
+  fecharModal('modal-contrato');
+}
 
 </script>
+
+
+
+<!-- MODAL CONTRATO -->
+<div class="modal-overlay" id="modal-contrato" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;overflow-y:auto;">
+  <div style="background:#fff;border-radius:16px;max-width:600px;margin:40px auto;padding:32px;position:relative;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+      <h2 style="font-family:Syne,sans-serif;font-size:18px;font-weight:800;color:#0f2d4a;margin:0;">📄 Editar e Gerar Contrato</h2>
+      <button onclick="fecharModal('modal-contrato')" style="background:none;border:none;font-size:20px;cursor:pointer;color:#64748b;">✕</button>
+    </div>
+
+    <div style="display:grid;gap:14px;">
+      <div>
+        <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">CLIENTE</label>
+        <input id="ct-nome" class="input" placeholder="Nome do cliente" style="width:100%;">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">CPF / CNPJ</label>
+          <input id="ct-cnpj" class="input" placeholder="000.000.000-00">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">TELEFONE</label>
+          <input id="ct-fone" class="input" placeholder="(34) 9 0000-0000">
+        </div>
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">ENDEREÇO COMPLETO</label>
+        <input id="ct-endereco" class="input" placeholder="Rua, número, bairro, cidade">
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">E-MAIL</label>
+        <input id="ct-email" class="input" placeholder="email@exemplo.com">
+      </div>
+
+      <hr style="border:none;border-top:1px solid #e2e8f0;margin:4px 0;">
+
+      <div>
+        <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">SERVIÇOS</label>
+        <input id="ct-servicos" class="input" placeholder="Ex: Desinsetização, Desratização">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">VALOR TOTAL (R$)</label>
+          <input id="ct-valor" class="input" placeholder="0,00" oninput="calcularParcelasContrato()">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">Nº PARCELAS</label>
+          <select id="ct-parcelas" class="input" onchange="calcularParcelasContrato()">
+            <option value="1">1x</option>
+            <option value="2">2x</option>
+            <option value="3" selected>3x</option>
+            <option value="4">4x</option>
+            <option value="6">6x</option>
+            <option value="12">12x</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">VALOR PARCELA</label>
+          <input id="ct-valor-parcela" class="input" placeholder="0,00" readonly style="background:#f8fafc;">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">INÍCIO DO CONTRATO</label>
+          <input id="ct-inicio" type="date" class="input">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">VIGÊNCIA (meses)</label>
+          <select id="ct-vigencia" class="input">
+            <option value="6">6 meses</option>
+            <option value="12" selected>12 meses</option>
+            <option value="24">24 meses</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">1ª APLICAÇÃO (CORTESIA?)</label>
+        <select id="ct-cortesia" class="input">
+          <option value="sim">Sim — 1ª aplicação é cortesia</option>
+          <option value="nao">Não — todas as aplicações são cobradas</option>
+          <option value="ultima">Última aplicação é cortesia</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">OBSERVAÇÕES ADICIONAIS</label>
+        <textarea id="ct-obs" class="input" rows="3" placeholder="Ex: Limpeza de caixa de gordura inclusa como cortesia..." style="width:100%;resize:vertical;"></textarea>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:24px;">
+      <button class="btn btn-outline" onclick="fecharModal('modal-contrato')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarGerarContrato()">📄 Gerar Contrato</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL CONTRATO -->
+<!-- MODAL CONTRATO -->
+<div class="modal-overlay" id="modal-contrato" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;overflow-y:auto;">
+  <div style="background:#fff;border-radius:16px;max-width:600px;margin:40px auto;padding:32px;position:relative;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+      <h2 style="font-family:Syne,sans-serif;font-size:18px;font-weight:800;color:#0f2d4a;margin:0;">📄 Editar e Gerar Contrato</h2>
+      <button onclick="fecharModal('modal-contrato')" style="background:none;border:none;font-size:20px;cursor:pointer;color:#64748b;">✕</button>
+    </div>
+
+    <div style="display:grid;gap:14px;">
+      <div>
+        <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">CLIENTE</label>
+        <input id="ct-nome" class="input" placeholder="Nome do cliente" style="width:100%;">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">CPF / CNPJ</label>
+          <input id="ct-cnpj" class="input" placeholder="000.000.000-00">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">TELEFONE</label>
+          <input id="ct-fone" class="input" placeholder="(34) 9 0000-0000">
+        </div>
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">ENDEREÇO COMPLETO</label>
+        <input id="ct-endereco" class="input" placeholder="Rua, número, bairro, cidade">
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">E-MAIL</label>
+        <input id="ct-email" class="input" placeholder="email@exemplo.com">
+      </div>
+
+      <hr style="border:none;border-top:1px solid #e2e8f0;margin:4px 0;">
+
+      <div>
+        <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">SERVIÇOS</label>
+        <input id="ct-servicos" class="input" placeholder="Ex: Desinsetização, Desratização">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">VALOR TOTAL (R$)</label>
+          <input id="ct-valor" class="input" placeholder="0,00" oninput="calcularParcelasContrato()">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">Nº PARCELAS</label>
+          <select id="ct-parcelas" class="input" onchange="calcularParcelasContrato()">
+            <option value="1">1x</option>
+            <option value="2">2x</option>
+            <option value="3" selected>3x</option>
+            <option value="4">4x</option>
+            <option value="6">6x</option>
+            <option value="12">12x</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">VALOR PARCELA</label>
+          <input id="ct-valor-parcela" class="input" placeholder="0,00" readonly style="background:#f8fafc;">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">INÍCIO DO CONTRATO</label>
+          <input id="ct-inicio" type="date" class="input">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">VIGÊNCIA (meses)</label>
+          <select id="ct-vigencia" class="input">
+            <option value="6">6 meses</option>
+            <option value="12" selected>12 meses</option>
+            <option value="24">24 meses</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">1ª APLICAÇÃO (CORTESIA?)</label>
+        <select id="ct-cortesia" class="input">
+          <option value="sim">Sim — 1ª aplicação é cortesia</option>
+          <option value="nao">Não — todas as aplicações são cobradas</option>
+          <option value="ultima">Última aplicação é cortesia</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">OBSERVAÇÕES ADICIONAIS</label>
+        <textarea id="ct-obs" class="input" rows="3" placeholder="Ex: Limpeza de caixa de gordura inclusa como cortesia..." style="width:100%;resize:vertical;"></textarea>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:24px;">
+      <button class="btn btn-outline" onclick="fecharModal('modal-contrato')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarGerarContrato()">📄 Gerar Contrato</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONTRATO -->
+<div class="modal-overlay" id="modal-contrato" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;overflow-y:auto;">
+  <div style="background:#fff;border-radius:16px;max-width:600px;margin:40px auto;padding:32px;position:relative;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+      <h2 style="font-family:Syne,sans-serif;font-size:18px;font-weight:800;color:#0f2d4a;margin:0;">📄 Editar e Gerar Contrato</h2>
+      <button onclick="fecharModal('modal-contrato')" style="background:none;border:none;font-size:20px;cursor:pointer;color:#64748b;">✕</button>
+    </div>
+
+    <div style="display:grid;gap:14px;">
+      <div>
+        <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">CLIENTE</label>
+        <input id="ct-nome" class="input" placeholder="Nome do cliente" style="width:100%;">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">CPF / CNPJ</label>
+          <input id="ct-cnpj" class="input" placeholder="000.000.000-00">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">TELEFONE</label>
+          <input id="ct-fone" class="input" placeholder="(34) 9 0000-0000">
+        </div>
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">ENDEREÇO COMPLETO</label>
+        <input id="ct-endereco" class="input" placeholder="Rua, número, bairro, cidade">
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">E-MAIL</label>
+        <input id="ct-email" class="input" placeholder="email@exemplo.com">
+      </div>
+
+      <hr style="border:none;border-top:1px solid #e2e8f0;margin:4px 0;">
+
+      <div>
+        <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">SERVIÇOS</label>
+        <input id="ct-servicos" class="input" placeholder="Ex: Desinsetização, Desratização">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">VALOR TOTAL (R$)</label>
+          <input id="ct-valor" class="input" placeholder="0,00" oninput="calcularParcelasContrato()">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">Nº PARCELAS</label>
+          <select id="ct-parcelas" class="input" onchange="calcularParcelasContrato()">
+            <option value="1">1x</option>
+            <option value="2">2x</option>
+            <option value="3" selected>3x</option>
+            <option value="4">4x</option>
+            <option value="6">6x</option>
+            <option value="12">12x</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">VALOR PARCELA</label>
+          <input id="ct-valor-parcela" class="input" placeholder="0,00" readonly style="background:#f8fafc;">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">INÍCIO DO CONTRATO</label>
+          <input id="ct-inicio" type="date" class="input">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">VIGÊNCIA (meses)</label>
+          <select id="ct-vigencia" class="input">
+            <option value="6">6 meses</option>
+            <option value="12" selected>12 meses</option>
+            <option value="24">24 meses</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">1ª APLICAÇÃO (CORTESIA?)</label>
+        <select id="ct-cortesia" class="input">
+          <option value="sim">Sim — 1ª aplicação é cortesia</option>
+          <option value="nao">Não — todas as aplicações são cobradas</option>
+          <option value="ultima">Última aplicação é cortesia</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">OBSERVAÇÕES ADICIONAIS</label>
+        <textarea id="ct-obs" class="input" rows="3" placeholder="Ex: Limpeza de caixa de gordura inclusa como cortesia..." style="width:100%;resize:vertical;"></textarea>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:24px;">
+      <button class="btn btn-outline" onclick="fecharModal('modal-contrato')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarGerarContrato()">📄 Gerar Contrato</button>
+    </div>
+  </div>
+</div>
+
+</'+'body></'+'html>
+</'+'body></'+'html>');
+</body></html>
 </body>
 </html>
