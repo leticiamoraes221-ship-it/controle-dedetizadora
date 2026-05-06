@@ -215,7 +215,11 @@
     <div class="card-header">Empresa Contratante (Cliente)</div>
     <div class="card-body">
       <div class="grid-2">
-        <div class="span-2"><label>Razão Social / Nome</label><input id="nome" placeholder="Nome completo ou razão social"></div>
+        <div class="span-2"><label>Razão Social / Nome</label>
+          <div style="position:relative;">
+            <input id="nome" placeholder="Nome completo ou razão social" autocomplete="off" oninput="buscarClienteOrcamento(this.value)" onblur="setTimeout(fecharDropOrcamento,200)">
+            <div id="drop-cliente-orc" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.12);z-index:200;max-height:220px;overflow-y:auto;"></div>
+          </div></div>
         <div><label>Endereço</label><input id="endereco" placeholder="Rua, número..."></div>
         <div><label>Bairro</label><input id="bairro" placeholder="Bairro"></div>
         <div><label>CEP</label><input id="cep" placeholder="00000-000" maxlength="9" oninput="mascaraCep(this)"></div>
@@ -2067,6 +2071,61 @@ function confirmarGerarContrato() {
   }
 
   fecharModal('modal-contrato');
+}
+
+// ── AUTOCOMPLETE CLIENTES NO ORÇAMENTO ──
+function buscarClienteOrcamento(q) {
+  var drop = document.getElementById('drop-cliente-orc');
+  if (!drop) return;
+  if (!q || q.length < 2) { drop.style.display='none'; return; }
+  var lista = (window.clientes||[]).filter(function(c){
+    return (c.nome||'').toLowerCase().includes(q.toLowerCase())
+      || (c.fone||'').includes(q)
+      || (c.cnpj||'').includes(q);
+  }).slice(0,8);
+  if (!lista.length) { drop.style.display='none'; return; }
+  drop.innerHTML = lista.map(function(c){
+    return '<div class="cli-drop-item" data-cid="'+c.id+'" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid #f0f0f0;font-size:13px;">'
+      +'<div style="font-weight:700;color:#0f2d4a;">'+c.nome+'</div>'
+      +'<div style="font-size:11px;color:#64748b;">'+(c.fone?'📞 '+c.fone+'  ':'')+' '+(c.endereco?'📍 '+c.endereco:'')+'</div>'
+      +'</div>';
+  }).join('');
+  drop.querySelectorAll('.cli-drop-item').forEach(function(el){
+    el.addEventListener('mousedown', function(e){
+      e.preventDefault();
+      preencherClienteOrcamento(this.getAttribute('data-cid'));
+    });
+    el.addEventListener('mouseover', function(){ this.style.background='#eff6ff'; });
+    el.addEventListener('mouseout', function(){ this.style.background=''; });
+  });
+  drop.style.display = 'block';
+}
+
+function fecharDropOrcamento() {
+  var drop = document.getElementById('drop-cliente-orc');
+  if (drop) drop.style.display = 'none';
+}
+
+function preencherClienteOrcamento(id) {
+  var c = (window.clientes||[]).find(function(x){ return x.id===id; });
+  if (!c) return;
+  var campos = {
+    'nome': c.nome,
+    'endereco': c.endereco,
+    'bairro': c.bairro,
+    'cep': c.cep,
+    'cidade': c.cidade,
+    'fone': c.fone,
+    'email': c.email,
+    'cnpjCliente': c.cnpj,
+    'tipoComercio': c.tipo
+  };
+  Object.keys(campos).forEach(function(id){
+    var el = document.getElementById(id);
+    if (el && campos[id]) el.value = campos[id];
+  });
+  fecharDropOrcamento();
+  mostrarToast('Dados preenchidos! ✓');
 }
 
 </script>
