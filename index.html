@@ -2300,7 +2300,7 @@ function valorPorExtenso(valor) {
     return ext.charAt(0).toUpperCase() + ext.slice(1);
   } catch(e) { return ''; }
 }
-f (el && campos[id]) el.value = campos[id];
+    if (el && campos[id]) el.value = campos[id];
   });
   fecharDropOrcamento();
   mostrarToast('Dados preenchidos! ✓');
