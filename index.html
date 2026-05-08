@@ -2215,11 +2215,11 @@ function imprimirRecibo(d, parcSel, emp, nomeEmp, cnpjEmp, respEmp, crtEmp, endE
   var doc = win.document;
   doc.open();
   doc.write('<!DOCTYPE html>');
-  doc.write('<html lang="pt-BR">');
-  doc.write('<head>');
+  doc.write('<'+'html lang="pt-BR">');
+  doc.write('<'+'head>');
   doc.write('<meta charset="UTF-8">');
   doc.write('<title>Recibo - ' + nome + '</title>');
-  doc.write('<style>');
+  doc.write('<'+'style>');
   doc.write('@page{size:A4;margin:20mm 25mm;}');
   doc.write('body{font-family:Arial,sans-serif;font-size:11pt;color:#000;line-height:1.6;}');
   doc.write('.rec-box{border:2px solid #000;border-radius:4px;padding:20px 28px;max-width:160mm;margin:0 auto;}');
