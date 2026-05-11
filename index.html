@@ -2192,7 +2192,7 @@ function gerarRecibo(d, parcela) {
     + '<p style="font-size:13px;color:#64748b;margin:0 0 16px;">Cliente: <b>'+nome+'</b> · Total: <b>R$ '+valor+'</b></p>'
     + parcelasHTML
     + '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">'
-    + '<button onclick="this.closest('div[style]').remove()" style="padding:8px 18px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;">Cancelar</button>'
+    + '<button class="rec-cancel-btn" style="padding:8px 18px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;">Cancelar</button>'
     + '<button id="btn-imprimir-recibo" style="padding:8px 18px;background:#059669;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;">🖨️ Gerar e Imprimir</button>'
     + '</div></div>';
 
