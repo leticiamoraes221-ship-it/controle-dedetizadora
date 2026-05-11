@@ -709,7 +709,14 @@
       window._respostas = snap.docs.map(d => ({id:d.id,...d.data()}));
       if(typeof renderRespostas==='function') renderRespostas();
     });
-  } catch(e) { console.log('resposconst SERVICOS = [
+  } catch(e) { console.log('respostas listener:', e); }
+
+  window._firebaseLoaded = true;
+  console.log('Firebase conectado ✓');
+</script>
+
+<script>
+const SERVICOS = [
   {id:'dedetizacao', nome:'Aranhas, Baratas e Formigas', tipo:'DESINSETIZAÇÃO'},
   {id:'desratizacao', nome:'Camundongos, Ratazanas e Ratos', tipo:'DESRATIZAÇÃO'},
   {id:'cxdagua', nome:'Caixa D\'Água', tipo:'LIMPEZA E HIGIENIZAÇÃO DE CAIXA D\'ÁGUA'},
