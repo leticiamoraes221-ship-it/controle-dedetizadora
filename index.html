@@ -634,8 +634,31 @@
 
 
 
+<!-- Seção Contratos Salvos -->
+<div id="sec-contratos" class="section">
+  <div class="container">
+    <div class="card">
+      <div class="card-header">📄 Contratos Salvos</div>
+      <div class="card-body">
+        <div id="contratos-container">
+          <div class="empty"><div class="empty-icon">📄</div><div style="font-size:15px;">Carregando contratos...</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Contrato Salvo -->
+<div id="modal-contrato-salvo" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:3000;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:28px;max-width:560px;width:92%;box-shadow:0 8px 32px rgba(0,0,0,0.2);max-height:90vh;overflow-y:auto;">
+    <h3 id="mcs-titulo" style="font-family:Syne,sans-serif;font-size:16px;font-weight:800;color:#0f2d4a;margin:0 0 16px;"></h3>
+    <div id="mcs-body"></div>
+  </div>
+</div>
+
 <!-- Firebase -->
 <script type="module">
+
 
 
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
@@ -710,6 +733,15 @@
       if(typeof renderRespostas==='function') renderRespostas();
     });
   } catch(e) { console.log('respostas listener:', e); }
+
+  // Contratos listener
+  try {
+    onSnapshot(query(collection(db,'contratos'), orderBy('criadoEm','desc')), (snap) => {
+      window._contratos = snap.docs.map(d => ({id:d.id,...d.data()}));
+      if(typeof verificarVencimentosContratos==='function') verificarVencimentosContratos();
+      if(typeof renderContratosTab==='function') renderContratosTab();
+    });
+  } catch(e) { console.log('contratos listener:', e); }
 
   window._firebaseLoaded = true;
   console.log('Firebase conectado ✓');
@@ -1656,30 +1688,176 @@ function renderClientes(lista) {
   verificarVencimentos();
 }
 
+function verificarVencimentosContratos() {
+  verificarVencimentos();
+}
+
 function verificarVencimentos() {
   var container = document.getElementById('alertas-vencimento');
   if (!container) return;
   var hoje = new Date();
-  var urgentes = clientes.filter(function(c){
+  hoje.setHours(0,0,0,0);
+
+  // Alertas de clientes
+  var alertasClientes = (window.clientes||[]).filter(function(c){
     if (!c.vencimento) return false;
-    return Math.ceil((new Date(c.vencimento+'T12:00:00')-hoje)/(1000*60*60*24)) <= 30;
-  }).sort(function(a,b){ return a.vencimento.localeCompare(b.vencimento); });
-  if (!urgentes.length) { container.innerHTML=''; return; }
-  var html = '<div style="font-family:Syne,sans-serif;font-weight:800;font-size:14px;margin-bottom:10px;color:#d97706;">Atencao — Servicos a vencer</div>';
-  html += urgentes.map(function(c){
-    var dias = Math.ceil((new Date(c.vencimento+'T12:00:00')-hoje)/(1000*60*60*24));
-    var urgente = dias < 0;
-    return '<div class="alerta-venc '+(urgente?'urgente':'')+'">'
-      +'<div><div class="alerta-venc-texto">'+(urgente?'!':'') +' '+c.nome+'</div>'
-      +'<div class="alerta-venc-data">'+(urgente?'Vencido ha '+Math.abs(dias)+' dias':'Vence em '+dias+' dias - '+fmtData(c.vencimento))+'</div></div>'
-      +'<div style="display:flex;gap:6px;">'
-      +'<button class="btn btn-primary alerta-usar" data-cid="'+c.id+'" style="padding:5px 12px;font-size:11px;">Agendar</button>'
-      +'<button class="btn btn-outline alerta-ver" data-cid="'+c.id+'" style="padding:5px 12px;font-size:11px;">Ver</button>'
-      +'</div></div>';
+    var dias = Math.ceil((new Date(c.vencimento+'T12:00:00') - hoje)/(1000*60*60*24));
+    return dias <= 30;
+  }).map(function(c){
+    var dias = Math.ceil((new Date(c.vencimento+'T12:00:00') - hoje)/(1000*60*60*24));
+    return { tipo:'cliente', nome:c.nome, dias:dias, data:c.vencimento, id:c.id };
+  });
+
+  // Alertas de contratos
+  var alertasContratos = (window._contratos||[]).filter(function(ct){
+    if (!ct.vigenciaFim) return false;
+    var dias = Math.ceil((new Date(ct.vigenciaFim+'T12:00:00') - hoje)/(1000*60*60*24));
+    return dias <= 30;
+  }).map(function(ct){
+    var dias = Math.ceil((new Date(ct.vigenciaFim+'T12:00:00') - hoje)/(1000*60*60*24));
+    return { tipo:'contrato', nome:ct.nome, dias:dias, data:ct.vigenciaFim, id:ct.id, servicos:ct.servicos };
+  });
+
+  var todos = alertasClientes.concat(alertasContratos).sort(function(a,b){ return a.dias - b.dias; });
+
+  if (!todos.length) { container.innerHTML=''; return; }
+
+  var html = '<div style="font-family:Syne,sans-serif;font-weight:800;font-size:14px;margin-bottom:10px;color:#d97706;">&#9888; Vencimentos Próximos (' + todos.length + ')</div>';
+  html += todos.map(function(item){
+    var vencido = item.dias < 0;
+    var urgente = item.dias >= 0 && item.dias <= 7;
+    var cor = vencido ? '#fee2e2' : urgente ? '#fef3c7' : '#f0fdf4';
+    var corBorda = vencido ? '#dc2626' : urgente ? '#d97706' : '#059669';
+    var icone = vencido ? '&#128308;' : urgente ? '&#128993;' : '&#128994;';
+    var tipoLabel = item.tipo === 'contrato' ? ' [Contrato]' : ' [Cliente]';
+    var diasTxt = vencido ? 'Vencido há ' + Math.abs(item.dias) + ' dias' : item.dias === 0 ? 'Vence HOJE!' : 'Vence em ' + item.dias + ' dia(s) — ' + fmtDataBR(item.data);
+    return '<div style="background:' + cor + ';border-left:4px solid ' + corBorda + ';border-radius:8px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;">'
+      + '<div>'
+      + '<div style="font-weight:700;font-size:13px;">' + icone + ' ' + item.nome + '<span style="font-size:11px;color:#64748b;font-weight:400;">' + tipoLabel + '</span></div>'
+      + '<div style="font-size:12px;color:#374151;margin-top:2px;">' + diasTxt + '</div>'
+      + '</div>'
+      + '<div style="display:flex;gap:6px;flex-shrink:0;">'
+      + (item.tipo==='cliente' ? '<button class="btn btn-primary alerta-usar" data-cid="' + item.id + '" style="padding:5px 12px;font-size:11px;">Agendar</button>' : '')
+      + '<button class="btn btn-outline alerta-ver" data-cid="' + item.id + '" data-tipo="' + item.tipo + '" style="padding:5px 12px;font-size:11px;">Ver</button>'
+      + '</div>'
+      + '</div>';
   }).join('') + '<div style="margin-bottom:16px;"></div>';
+
   container.innerHTML = html;
-  container.querySelectorAll('.alerta-usar').forEach(function(b){ b.addEventListener('click', function(){ usarClienteNoOrcamento(this.getAttribute('data-cid')); }); });
-  container.querySelectorAll('.alerta-ver').forEach(function(b){ b.addEventListener('click', function(){ verHistoricoCliente(this.getAttribute('data-cid')); }); });
+  container.querySelectorAll('.alerta-usar').forEach(function(b){
+    b.addEventListener('click', function(){ usarClienteNoOrcamento(this.dataset.cid); });
+  });
+  container.querySelectorAll('.alerta-ver').forEach(function(b){
+    b.addEventListener('click', function(){
+      if(this.dataset.tipo === 'contrato') {
+        verContratosCliente(this.dataset.cid);
+      } else {
+        verHistoricoCliente(this.dataset.cid);
+      }
+    });
+  });
+}
+
+
+// ══ CONTRATOS SALVOS ══
+function verContratosCliente(ctId) {
+  var ct = (window._contratos||[]).find(function(c){ return c.id===ctId; });
+  if (!ct) { alert('Contrato não encontrado.'); return; }
+  abrirModalContratoSalvo(ct);
+}
+
+function abrirModalContratoSalvo(ct) {
+  var m = document.getElementById('modal-contrato-salvo');
+  if (!m) return;
+  var inicio = ct.inicio ? fmtDataBR(ct.inicio) : '—';
+  var fim = ct.vigenciaFim ? fmtDataBR(ct.vigenciaFim) : '—';
+  var hoje = new Date(); hoje.setHours(0,0,0,0);
+  var dias = ct.vigenciaFim ? Math.ceil((new Date(ct.vigenciaFim+'T12:00:00')-hoje)/(1000*60*60*24)) : null;
+  var statusHtml = dias === null ? '' : dias < 0
+    ? '<span style="background:#fee2e2;color:#dc2626;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;">Vencido há '+Math.abs(dias)+' dias</span>'
+    : dias === 0
+    ? '<span style="background:#fef3c7;color:#d97706;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;">Vence HOJE!</span>'
+    : '<span style="background:#d1fae5;color:#059669;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;">Vigente — '+dias+' dias restantes</span>';
+
+  document.getElementById('mcs-titulo').textContent = 'Contrato — ' + ct.nome;
+  document.getElementById('mcs-body').innerHTML =
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">'
+    + '<div><b>Cliente:</b> ' + ct.nome + '</div>'
+    + '<div><b>Serviços:</b> ' + ct.servicos + '</div>'
+    + '<div><b>Valor Total:</b> R$ ' + ct.valor + '</div>'
+    + '<div><b>Parcelas:</b> ' + ct.parcelas + 'x R$ ' + ct.valorParcela + '</div>'
+    + '<div><b>Início:</b> ' + inicio + '</div>'
+    + '<div><b>Vigência:</b> ' + ct.vigencia + ' meses (até ' + fim + ')</div>'
+    + '</div>'
+    + '<div style="margin-bottom:12px;">' + statusHtml + '</div>'
+    + (ct.obs ? '<div style="background:#f8fafc;border-radius:8px;padding:10px;font-size:13px;margin-bottom:12px;"><b>Obs:</b> ' + ct.obs + '</div>' : '')
+    + '<button class="btn btn-primary" onclick="reimprirContrato(\'' + ct.id + '\')" style="margin-right:8px;">🖨️ Reimprimir Contrato</button>'
+    + '<button class="btn btn-outline" onclick="document.getElementById(\'modal-contrato-salvo\').style.display=\'none\'" style="color:#dc2626;border-color:#dc2626;">Fechar</button>';
+  m.style.display = 'flex';
+}
+
+function reimprirContrato(ctId) {
+  var ct = (window._contratos||[]).find(function(c){ return c.id===ctId; });
+  if (!ct) return;
+  // Restaurar dados no modal e regenerar
+  window._cronogramaLinhas = ct.linhasCronograma || [];
+  document.getElementById('ct-nome').value = ct.nome || '';
+  document.getElementById('ct-cnpj').value = ct.cnpj || '';
+  document.getElementById('ct-fone').value = ct.fone || '';
+  document.getElementById('ct-email').value = ct.email || '';
+  document.getElementById('ct-endereco').value = ct.endereco || '';
+  document.getElementById('ct-servicos').value = ct.servicos || '';
+  document.getElementById('ct-valor').value = ct.valor || '';
+  document.getElementById('ct-parcelas').value = ct.parcelas || '3';
+  document.getElementById('ct-valor-parcela').value = ct.valorParcela || '';
+  document.getElementById('ct-inicio').value = ct.inicio || '';
+  document.getElementById('ct-vigencia').value = ct.vigencia || '';
+  document.getElementById('ct-cortesia').value = ct.cortesia || 'nao';
+  document.getElementById('ct-obs').value = ct.obs || '';
+  document.getElementById('modal-contrato-salvo').style.display = 'none';
+  confirmarGerarContrato();
+}
+
+function renderContratosTab() {
+  var c = document.getElementById('contratos-container');
+  if (!c) return;
+  var lista = window._contratos || [];
+  if (!lista.length) {
+    c.innerHTML = '<div class="empty"><div class="empty-icon">📄</div><div style="font-size:15px;">Nenhum contrato salvo ainda</div></div>';
+    return;
+  }
+  var hoje = new Date(); hoje.setHours(0,0,0,0);
+  c.innerHTML = '<div class="historico-list">' + lista.map(function(ct){
+    var dias = ct.vigenciaFim ? Math.ceil((new Date(ct.vigenciaFim+'T12:00:00')-hoje)/(1000*60*60*24)) : null;
+    var badge = dias === null ? '' : dias < 0
+      ? '<span class="badge" style="background:#fee2e2;color:#dc2626;">Vencido</span>'
+      : dias <= 7
+      ? '<span class="badge" style="background:#fef3c7;color:#d97706;">Vence em '+dias+'d</span>'
+      : '<span class="badge badge-green">Vigente</span>';
+    var fimStr = ct.vigenciaFim ? fmtDataBR(ct.vigenciaFim) : '—';
+    var iniStr = ct.inicio ? fmtDataBR(ct.inicio) : '—';
+    return '<div class="hist-card">'
+      + '<div>'
+      + '<div class="hist-nome">' + ct.nome + '</div>'
+      + '<div class="hist-info">' + ct.servicos + ' · Início: ' + iniStr + ' · Fim: ' + fimStr + ' · R$ ' + ct.valor + '</div>'
+      + '<div style="margin-top:5px;">' + badge + '</div>'
+      + '</div>'
+      + '<div class="hist-actions">'
+      + '<button class="btn btn-outline" style="padding:6px 12px;font-size:11px;" onclick="abrirModalContratoSalvo((_contratos||[]).find(function(c){return c.id===\'' + ct.id + '\'})|| {})">Ver</button>'
+      + '<button class="btn btn-primary" style="padding:6px 12px;font-size:11px;" onclick="reimprirContrato(\'' + ct.id + '\')">🖨️ Reimprimir</button>'
+      + '<button class="btn" style="padding:6px 12px;font-size:11px;background:#fee2e2;color:#dc2626;border:none;border-radius:8px;" onclick="excluirContrato(\'' + ct.id + '\')">Excluir</button>'
+      + '</div>'
+      + '</div>';
+  }).join('') + '</div>';
+}
+
+function excluirContrato(ctId) {
+  if (!confirm('Excluir este contrato?')) return;
+  if (window._firebaseLoaded) {
+    window._deleteDoc(window._doc(window._db,'contratos',ctId))
+      .then(function(){ mostrarToast('Contrato excluído.'); })
+      .catch(function(e){ console.log('erro excluir contrato',e); });
+  }
 }
 
 // ══ CAPTAÇÃO ══
@@ -2073,6 +2251,38 @@ function confirmarGerarContrato() {
     }
   }
 
+  // Salvar contrato no Firebase
+  if(window._firebaseLoaded) {
+    var ctId = 'ct_' + Date.now().toString();
+    var dataVigFim = '';
+    if(inicio && vigencia) {
+      var dtFim = new Date(inicio+'T12:00:00');
+      dtFim.setMonth(dtFim.getMonth() + parseInt(vigencia));
+      dataVigFim = dtFim.toISOString().split('T')[0];
+    }
+    window._setDoc(window._doc(window._db,'contratos',ctId), {
+      id: ctId,
+      nome: nome,
+      cnpj: cnpj,
+      fone: fone,
+      email: email,
+      endereco: endereco,
+      servicos: servicos,
+      valor: valor,
+      parcelas: parcelas,
+      valorParcela: valorParcela,
+      inicio: inicio,
+      vigencia: vigencia,
+      vigenciaFim: dataVigFim,
+      cortesia: cortesia,
+      obs: obs,
+      linhasCronograma: window._cronogramaLinhas || [],
+      nomeEmp: nomeEmp,
+      cnpjEmp: cnpjEmp,
+      criadoEm: new Date().toISOString()
+    }).then(function(){ mostrarToast('Contrato salvo no sistema! ✓'); }).catch(function(e){ console.log('erro salvar contrato',e); });
+  }
+
   fecharModal('modal-contrato');
 }
 
@@ -2283,6 +2493,18 @@ function imprimirRecibo(d, parcSel, emp, nomeEmp, cnpjEmp, respEmp, crtEmp, endE
   doc.write('</'+'html>');
   doc.close();
   win.focus();
+
+  // Salvar cronograma no Firebase
+  if(window._firebaseLoaded && window._cronogramaLinhas && window._cronogramaLinhas.length) {
+    var cronoId = 'crono_' + Date.now().toString();
+    window._setDoc(window._doc(window._db,'cronogramas',cronoId), {
+      id: cronoId,
+      empresa: empresa,
+      cliente: d.nome || '',
+      linhas: window._cronogramaLinhas,
+      criadoEm: new Date().toISOString()
+    }).then(function(){ mostrarToast('Cronograma salvo! ✓'); }).catch(function(e){ console.log('erro salvar cronograma',e); });
+  }
 }
 
 function valorPorExtenso(valor) {
