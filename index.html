@@ -59,7 +59,7 @@
   .badge-blue{background:#dbeafe;color:var(--blue);}.badge-green{background:var(--green-light);color:var(--green);}.badge-gold{background:var(--gold-light);color:var(--gold);}
   .empty{text-align:center;padding:60px 20px;color:var(--muted);}
   .empty-icon{font-size:48px;margin-bottom:12px;}
-  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);z-index:200;display:none;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;}
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);z-index:2000;display:none;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;}
   .modal-overlay.open{display:flex;}
   .modal{background:#fff;border-radius:16px;width:100%;max-width:760px;max-height:93vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.3);}
   .modal-header{background:var(--navy);color:#fff;padding:16px 22px;border-radius:16px 16px 0 0;display:flex;justify-content:space-between;align-items:center;}
@@ -757,6 +757,22 @@ const SERVICOS = [
 ];
 
 let orcamentos = JSON.parse(localStorage.getItem('orcamentos_v2')||'[]');
+
+// Próximo número de orçamento automático
+function proximoNumOrc() {
+  if (!orcamentos.length) return '001';
+  var nums = orcamentos.map(function(o){
+    return parseInt((o.num||'0').replace(/\D/g,'')) || 0;
+  });
+  var proximo = Math.max.apply(null, nums) + 1;
+  return String(proximo).padStart(3, '0');
+}
+
+// Preencher número ao carregar
+window.addEventListener('DOMContentLoaded', function(){
+  var numEl = document.getElementById('num');
+  if(numEl) numEl.value = proximoNumOrc();
+});
 let produtoCount = 0;
 
 const CAMPOS_EMPRESA = ['empresa','cnpjEmpresa','responsavel','crt','alvaraSanitario','alvaraFunc'];
@@ -983,6 +999,10 @@ function limparForm(){
 function showTab(tab){
   document.querySelectorAll('.section').forEach(function(s){ s.classList.remove('active'); });
   document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+  if(tab === 'orcamento') {
+    var numEl = document.getElementById('num');
+    if(numEl && !numEl.value) numEl.value = proximoNumOrc();
+  }
   var sec = document.getElementById('sec-'+tab);
   if (sec) sec.classList.add('active');
   document.querySelectorAll('[data-tab="'+tab+'"]').forEach(function(b){ b.classList.add('active'); });
@@ -2258,8 +2278,8 @@ function confirmarGerarContrato() {
 
   // Salvar contrato no Firebase
   function _salvarContrato() {
-    if(!window._firebaseLoaded || !window._setDoc) {
-      setTimeout(_salvarContrato, 500);
+    if(!window._firebaseLoaded || !window._setDoc || !window._db) {
+      setTimeout(_salvarContrato, 800);
       return;
     }
     var ctId = 'ct_' + Date.now().toString();
@@ -2567,7 +2587,7 @@ function valorPorExtenso(valor) {
 
 <!-- MODAL CONTRATO -->
 <div class="modal-overlay" id="modal-contrato">
-  <div style="background:#fff;border-radius:16px;max-width:600px;width:100%;margin:20px auto;padding:32px;position:relative;max-height:90vh;overflow-y:auto;">
+  <div style="background:#fff;border-radius:16px;max-width:600px;width:100%;margin:20px auto;padding:28px;position:relative;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
       <h2 style="font-family:Syne,sans-serif;font-size:18px;font-weight:800;color:#0f2d4a;margin:0;">📄 Editar e Gerar Contrato</h2>
       <button onclick="fecharModal('modal-contrato')" style="background:none;border:none;font-size:20px;cursor:pointer;color:#64748b;">✕</button>
