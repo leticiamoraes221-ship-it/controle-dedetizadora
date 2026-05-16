@@ -59,7 +59,7 @@
   .badge-blue{background:#dbeafe;color:var(--blue);}.badge-green{background:var(--green-light);color:var(--green);}.badge-gold{background:var(--gold-light);color:var(--gold);}
   .empty{text-align:center;padding:60px 20px;color:var(--muted);}
   .empty-icon{font-size:48px;margin-bottom:12px;}
-  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);z-index:2000;display:none;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;}
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);z-index:200;display:none;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;}
   .modal-overlay.open{display:flex;}
   .modal{background:#fff;border-radius:16px;width:100%;max-width:760px;max-height:93vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.3);}
   .modal-header{background:var(--navy);color:#fff;padding:16px 22px;border-radius:16px 16px 0 0;display:flex;justify-content:space-between;align-items:center;}
@@ -160,6 +160,7 @@
     <button class="tab-btn" data-tab="agenda">📅 Agenda</button>
     <button class="tab-btn" data-tab="clientes">👥 Clientes</button>
     <button class="tab-btn" data-tab="captacao">📲 Captação</button>
+    <button class="tab-btn" data-tab="avisos">📢 Avisos</button>
   </div>
 </header>
 
@@ -437,6 +438,92 @@
   <div id="respostas-lista">
     <div class="empty"><div class="empty-icon">📬</div><div style="font-size:14px;">Nenhuma resposta ainda.<br><span style="font-size:12px;">Quando o cliente preencher o formulário, aparece aqui.</span></div></div>
   </div>
+</section>
+
+<!-- ══ AVISOS ══ -->
+<section class="section" id="sec-avisos">
+  <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;margin-bottom:6px;">📢 Gerar Avisos</div>
+  <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">Crie avisos para moradores de condomínios — dedetização ou limpeza de caixa d'água.</div>
+
+  <!-- Tipo de aviso -->
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-header">Tipo de Aviso</div>
+    <div class="card-body">
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;">
+          <input type="radio" name="tipo-aviso" value="dedetizacao" checked onchange="atualizarFormAviso()"> 🦟 Dedetização / Controle de Pragas
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;">
+          <input type="radio" name="tipo-aviso" value="caixa_nao_falta"> 💧 Caixa d'água — NÃO faltará água
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;">
+          <input type="radio" name="tipo-aviso" value="caixa_falta"> 🚰 Caixa d'água — FALTARÁ água
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dados do aviso -->
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-header">Dados do Aviso</div>
+    <div class="card-body">
+      <div style="display:grid;gap:14px;">
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div>
+            <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">CONDOMÍNIO</label>
+            <input id="av-condominio" class="input" placeholder="Ex: Bosque das Gameleiras" style="width:100%;">
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">ENDEREÇO</label>
+            <input id="av-endereco" class="input" placeholder="Ex: Rua do Conde, 1.306 - Pacaembu" style="width:100%;">
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div>
+            <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">DATA DO SERVIÇO</label>
+            <input id="av-data" type="date" class="input" style="width:100%;">
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">DIA DA SEMANA</label>
+            <input id="av-diaSemana" class="input" placeholder="Ex: Terça-feira" readonly style="width:100%;background:#f8fafc;">
+          </div>
+        </div>
+
+        <!-- Campos só para dedetização -->
+        <div id="av-campos-dede">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>
+              <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">HORÁRIO INÍCIO</label>
+              <input id="av-horaInicio" class="input" placeholder="Ex: 08" style="width:100%;">
+            </div>
+            <div>
+              <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">HORÁRIO FIM</label>
+              <input id="av-horaFim" class="input" placeholder="Ex: 12" style="width:100%;">
+            </div>
+          </div>
+        </div>
+
+        <!-- Campos só para caixa falta água -->
+        <div id="av-campos-falta" style="display:none;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>
+              <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">FALTARÁ DAS</label>
+              <input id="av-faltaInicio" class="input" placeholder="Ex: 11H" style="width:100%;">
+            </div>
+            <div>
+              <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">ATÉ</label>
+              <input id="av-faltaFim" class="input" placeholder="Ex: 22H" style="width:100%;">
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" style="font-size:14px;padding:12px 28px;" onclick="gerarAviso()">🖨️ Gerar e Imprimir Aviso</button>
 </section>
 
 <!-- ══ MODAL CERTIFICADO ══ -->
@@ -757,22 +844,6 @@ const SERVICOS = [
 ];
 
 let orcamentos = JSON.parse(localStorage.getItem('orcamentos_v2')||'[]');
-
-// Próximo número de orçamento automático
-function proximoNumOrc() {
-  if (!orcamentos.length) return '001';
-  var nums = orcamentos.map(function(o){
-    return parseInt((o.num||'0').replace(/\D/g,'')) || 0;
-  });
-  var proximo = Math.max.apply(null, nums) + 1;
-  return String(proximo).padStart(3, '0');
-}
-
-// Preencher número ao carregar
-window.addEventListener('DOMContentLoaded', function(){
-  var numEl = document.getElementById('num');
-  if(numEl) numEl.value = proximoNumOrc();
-});
 let produtoCount = 0;
 
 const CAMPOS_EMPRESA = ['empresa','cnpjEmpresa','responsavel','crt','alvaraSanitario','alvaraFunc'];
@@ -999,10 +1070,6 @@ function limparForm(){
 function showTab(tab){
   document.querySelectorAll('.section').forEach(function(s){ s.classList.remove('active'); });
   document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
-  if(tab === 'orcamento') {
-    var numEl = document.getElementById('num');
-    if(numEl && !numEl.value) numEl.value = proximoNumOrc();
-  }
   var sec = document.getElementById('sec-'+tab);
   if (sec) sec.classList.add('active');
   document.querySelectorAll('[data-tab="'+tab+'"]').forEach(function(b){ b.classList.add('active'); });
@@ -2278,8 +2345,8 @@ function confirmarGerarContrato() {
 
   // Salvar contrato no Firebase
   function _salvarContrato() {
-    if(!window._firebaseLoaded || !window._setDoc || !window._db) {
-      setTimeout(_salvarContrato, 800);
+    if(!window._firebaseLoaded || !window._setDoc) {
+      setTimeout(_salvarContrato, 500);
       return;
     }
     var ctId = 'ct_' + Date.now().toString();
@@ -2581,13 +2648,108 @@ function valorPorExtenso(valor) {
   } catch(e) { return ''; }
 }
 
+
+// ══ AVISOS ══
+document.addEventListener('DOMContentLoaded', function(){
+  var dataEl = document.getElementById('av-data');
+  if(dataEl){
+    dataEl.addEventListener('change', function(){
+      var dias = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+      if(this.value){
+        var d = new Date(this.value + 'T12:00:00');
+        document.getElementById('av-diaSemana').value = dias[d.getDay()];
+      }
+    });
+  }
+});
+
+function atualizarFormAviso(){
+  var tipo = document.querySelector('input[name="tipo-aviso"]:checked').value;
+  document.getElementById('av-campos-dede').style.display = (tipo === 'dedetizacao') ? '' : 'none';
+  document.getElementById('av-campos-falta').style.display = (tipo === 'caixa_falta') ? '' : 'none';
+}
+
+function gerarAviso(){
+  var tipo = document.querySelector('input[name="tipo-aviso"]:checked').value;
+  var cond = document.getElementById('av-condominio').value || 'CONDOMÍNIO';
+  var end = document.getElementById('av-endereco').value || '';
+  var dataVal = document.getElementById('av-data').value;
+  var diaSem = document.getElementById('av-diaSemana').value || '';
+  var logoSrc = 'data:image/jpeg;base64,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';
+
+  // Formatar data
+  var dataFmt = '';
+  if(dataVal){
+    var p = dataVal.split('-');
+    dataFmt = p[2]+'/'+p[1]+'/'+p[0];
+  }
+
+  var conteudoCentral = '';
+
+  if(tipo === 'dedetizacao'){
+    var hIni = document.getElementById('av-horaInicio').value || '08';
+    var hFim = document.getElementById('av-horaFim').value || '12';
+    conteudoCentral = '<h1 style="font-size:28pt;font-weight:900;text-align:center;line-height:1.2;margin:20px 0;">'
+      + 'NO DIA <span style="color:#cc0000;text-decoration:underline;">' + dataFmt + '</span>'
+      + (diaSem ? ' (' + diaSem.toUpperCase() + ')' : '')
+      + '<br>DAS ' + hIni + ' às ' + hFim + ' HORAS<br>REALIZAREMOS A DEDETIZAÇÃO<br>DA ÁREA COMUM DO SEU EDIFÍCIO.</h1>'
+      + '<p style="font-size:13pt;text-align:center;margin:16px 0;">Orientamos que pessoas e animais domésticos não permaneçam na área comum durante a aplicação do produto e por um período de 04 horas, é permitida a passagem rápida pelo local. Lembrando que o produto não é tóxico, mas em algumas pessoas e animais domésticos podem causar reações alérgicas.</p>'
+      + '<p style="font-size:13pt;font-weight:800;color:#cc0000;text-align:center;margin:16px 0;">ATENÇÃO NÃO DEIXE OS CARROS ESTACIONADOS ONDE HÁ CAIXA DE GORDURA!</p>'
+      + '<p style="font-size:13pt;text-align:center;margin:16px 0;">A Controle Dedetizadora tem como objetivo a satisfação e a qualidade de vida de seus clientes.<br><strong>Agradecemos a preferência!</strong></p>';
+  } else if(tipo === 'caixa_nao_falta'){
+    conteudoCentral = '<h1 style="font-size:26pt;font-weight:900;text-align:center;line-height:1.2;margin:20px 0;">'
+      + 'No <span style="color:#cc0000;text-decoration:underline;">' + dataFmt + '</span>'
+      + (diaSem ? ' (' + diaSem.toLowerCase() + ')' : '')
+      + '<br>realizaremos a higienização<br>das caixas de água do seu condomínio.</h1>'
+      + '<h1 style="font-size:32pt;font-weight:900;font-style:italic;text-decoration:underline;color:#cc0000;text-align:center;margin:20px 0;">NÃO FALTARÁ ÁGUA.</h1>'
+      + '<p style="font-size:13pt;text-align:center;margin:16px 0;">A Controle Dedetizadora tem o compromisso de oferecer segurança, bem-estar e qualidade de vida aos seus clientes, sempre com excelência em cada atendimento.<br>Agradecemos a confiança e preferência!</p>';
+  } else {
+    var fIni = document.getElementById('av-faltaInicio').value || '11H';
+    var fFim = document.getElementById('av-faltaFim').value || '22H';
+    conteudoCentral = '<h1 style="font-size:26pt;font-weight:900;text-align:center;line-height:1.2;margin:20px 0;">'
+      + 'NO DIA <span style="color:#cc0000;text-decoration:underline;">' + dataFmt + '</span>'
+      + (diaSem ? ' (' + diaSem.toUpperCase() + ')' : '')
+      + '<br>REALIZAREMOS A LIMPEZA DOS RESERVATÓRIOS DE ÁGUA DO SEU CONDOMÍNIO.</h1>'
+      + '<h1 style="font-size:28pt;font-weight:900;font-style:italic;text-decoration:underline;color:#cc0000;text-align:center;margin:16px 0;">FALTARÁ ÁGUA DAS ' + fIni + ' ÀS ' + fFim + '.</h1>'
+      + '<p style="font-size:13pt;font-weight:800;text-align:center;margin:16px 0;">NÃO USE A DESCARGA, NÃO ABRA AS TORNEIRAS, NÃO USE OS FILTROS E NÃO LIGUE MÁQUINAS DE LAVAR, PARA QUE NÃO ACONTEÇA ENTRADA DE AR.</p>'
+      + '<p style="font-size:13pt;font-weight:800;color:#cc0000;text-decoration:underline;text-align:center;margin:16px 0;">NÃO NOS RESPONSABILIZAMOS POR APARELHOS DANIFICADOS E POR ENTRADA DE AR.</p>'
+      + '<p style="font-size:13pt;text-align:center;margin:16px 0;">A Controle Dedetizadora tem como objetivo a satisfação e a qualidade de vida de seus clientes.<br><strong>Agradecemos a preferência!</strong></p>';
+  }
+
+  var html = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">'
+    + '<title>Aviso - ' + cond + '</title>'
+    + '<style>@page{size:A4;margin:15mm 20mm;}body{font-family:Arial,sans-serif;color:#000;margin:0;padding:0;}'
+    + '.emergencia{border:2px solid #666;border-radius:6px;padding:10px 20px;text-align:center;display:inline-block;margin:10px auto;}'
+    + '.rodape{text-align:center;font-size:10pt;color:#333;border-top:1px solid #ccc;padding-top:10px;margin-top:20px;}'
+    + '.no-print{text-align:center;padding:16px;}@media print{.no-print{display:none;}}'
+    + '</style></head><body>'
+    + '<div class="no-print"><button onclick="window.print()" style="padding:10px 24px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;">🖨️ Imprimir</button></div>'
+    + '<div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #8B8B4A;padding-bottom:10px;margin-bottom:10px;">'
+    + '<img src="' + logoSrc + '" style="height:60px;object-fit:contain;">'
+    + '<div style="text-align:right;font-size:11pt;">'
+    + '<strong>' + cond + '</strong><br>'
+    + (end ? end : '') + '</div></div>'
+    + '<p style="font-size:14pt;font-weight:700;text-decoration:underline;text-align:center;margin:12px 0;">SR (A). MORADOR (A)</p>'
+    + conteudoCentral
+    + '<div style="text-align:center;margin:20px 0;"><div class="emergencia"><strong>EMERGÊNCIA</strong><br>' + '99104-7014' + '</div></div>'
+    + '<div class="rodape">Controle Dedetizadora Ltda. www.controlededetizadora.com.br<br>'
+    + 'Fones: 99104-7014 (Tim)/99799-4442 — controle@controlededetizadora.com.br</div>'
+    + '</body></html>';
+
+  var win = window.open('','_blank');
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+}
+
 </script>
 
 
 
 <!-- MODAL CONTRATO -->
 <div class="modal-overlay" id="modal-contrato">
-  <div style="background:#fff;border-radius:16px;max-width:600px;width:100%;margin:20px auto;padding:28px;position:relative;">
+  <div style="background:#fff;border-radius:16px;max-width:600px;width:100%;margin:20px auto;padding:32px;position:relative;max-height:90vh;overflow-y:auto;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
       <h2 style="font-family:Syne,sans-serif;font-size:18px;font-weight:800;color:#0f2d4a;margin:0;">📄 Editar e Gerar Contrato</h2>
       <button onclick="fecharModal('modal-contrato')" style="background:none;border:none;font-size:20px;cursor:pointer;color:#64748b;">✕</button>
