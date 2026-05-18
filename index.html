@@ -860,6 +860,15 @@ const SERVICOS = [
 ];
 
 let orcamentos = JSON.parse(localStorage.getItem('orcamentos_v2')||'[]');
+
+function proximoNumOrc() {
+  if (!orcamentos.length) return '001';
+  var nums = orcamentos.map(function(o){
+    return parseInt((o.num||'0').replace(/[^0-9]/g,'')) || 0;
+  });
+  var proximo = Math.max.apply(null, nums) + 1;
+  return String(proximo).padStart(3, '0');
+}
 let produtoCount = 0;
 
 const CAMPOS_EMPRESA = ['empresa','cnpjEmpresa','responsavel','crt','alvaraSanitario','alvaraFunc'];
@@ -881,6 +890,8 @@ function carregarEmpresa(){
 
 window.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('data').value = new Date().toISOString().split('T')[0];
+  var numEl = document.getElementById('num');
+  if(numEl && !numEl.value) numEl.value = proximoNumOrc();
   renderServicos();
   adicionarProduto();
   carregarEmpresa();
