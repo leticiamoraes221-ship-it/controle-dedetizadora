@@ -161,6 +161,7 @@
     <button class="tab-btn" data-tab="clientes">👥 Clientes</button>
     <button class="tab-btn" data-tab="captacao">📲 Captação</button>
     <button class="tab-btn" data-tab="avisos">📢 Avisos</button>
+    <button class="tab-btn" data-tab="proposta">📋 Proposta</button>
   </div>
 </header>
 
@@ -540,6 +541,177 @@
   </div>
 
   <button class="btn btn-primary" style="font-size:14px;padding:12px 28px;" onclick="gerarAviso()">🖨️ Gerar e Imprimir Aviso</button>
+</section>
+
+<!-- ══ PROPOSTA ══ -->
+<section class="section" id="sec-proposta">
+  <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;margin-bottom:6px;">📋 Gerar Proposta Comercial</div>
+  <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">Preencha os dados abaixo e gere uma proposta profissional para imprimir ou salvar em PDF.</div>
+
+  <div style="display:grid;gap:16px;">
+
+    <!-- Dados do Cliente -->
+    <div class="card">
+      <div class="card-header">👤 Dados do Cliente</div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div>
+            <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">NOME / RAZÃO SOCIAL</label>
+            <input id="prop-nome" class="input" placeholder="Nome do cliente" style="width:100%;" oninput="buscarClienteProposta(this.value)">
+            <div id="prop-sugestoes" style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;margin-top:4px;display:none;max-height:160px;overflow-y:auto;position:relative;z-index:100;"></div>
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">CPF / CNPJ</label>
+            <input id="prop-cnpj" class="input" placeholder="000.000.000-00" style="width:100%;">
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">TELEFONE</label>
+            <input id="prop-fone" class="input" placeholder="(34) 9 0000-0000" style="width:100%;">
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">E-MAIL</label>
+            <input id="prop-email" class="input" placeholder="email@exemplo.com" style="width:100%;">
+          </div>
+          <div style="grid-column:1/-1;">
+            <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">ENDEREÇO</label>
+            <input id="prop-endereco" class="input" placeholder="Rua, número, bairro, cidade" style="width:100%;">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dados da Proposta -->
+    <div class="card">
+      <div class="card-header">📄 Dados da Proposta</div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+          <div>
+            <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">Nº DA PROPOSTA</label>
+            <input id="prop-num" class="input" placeholder="001" style="width:100%;">
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">DATA DE EMISSÃO</label>
+            <input id="prop-data" type="date" class="input" style="width:100%;">
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">VALIDADE DA PROPOSTA</label>
+            <select id="prop-validade" class="input" style="width:100%;">
+              <option value="15">15 dias</option>
+              <option value="30" selected>30 dias</option>
+              <option value="60">60 dias</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">DATA PREVISTA EXECUÇÃO</label>
+            <input id="prop-data-exec" type="date" class="input" style="width:100%;">
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">ÁREA TRATADA (m²)</label>
+            <input id="prop-area" class="input" placeholder="Ex: 500 m²" style="width:100%;">
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">Nº DE APLICAÇÕES</label>
+            <input id="prop-aplicacoes" class="input" placeholder="Ex: 1 aplicação" style="width:100%;">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Serviços -->
+    <div class="card">
+      <div class="card-header">🦟 Serviços</div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" id="ps-baratas"> Controle de Baratas</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" id="ps-formigas"> Controle de Formigas</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" id="ps-escorpioes"> Controle de Escorpiões</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" id="ps-ratos"> Desratização</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" id="ps-cupins"> Descupinização</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" id="ps-sanitizacao"> Sanitização de Ambientes</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" id="ps-agua"> Limpeza de Caixa d'Água</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" id="ps-gordura"> Limpeza de Caixa de Gordura</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" id="ps-outros"> Outros</label>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">DESCRIÇÃO DETALHADA DOS SERVIÇOS</label>
+          <textarea id="prop-desc-servicos" class="input" rows="4" placeholder="Descreva detalhadamente os serviços a serem realizados..." style="width:100%;resize:vertical;"></textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
+          <div>
+            <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">MÉTODO UTILIZADO</label>
+            <input id="prop-metodo" class="input" placeholder="Ex: Pulverização, Gel, Iscas" style="width:100%;">
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">PRODUTOS APLICADOS</label>
+            <input id="prop-produtos" class="input" placeholder="Ex: Bifentol 200 SC, Maki Bloco" style="width:100%;">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Valores -->
+    <div class="card">
+      <div class="card-header">💰 Valores e Pagamento</div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+          <div>
+            <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">VALOR TOTAL (R$)</label>
+            <input id="prop-valor" class="input" placeholder="0,00" style="width:100%;" oninput="calcularParcelasProposta()">
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">FORMA DE PAGAMENTO</label>
+            <select id="prop-forma-pgto" class="input" style="width:100%;">
+              <option value="À vista">À vista</option>
+              <option value="Boleto bancário">Boleto bancário</option>
+              <option value="PIX">PIX</option>
+              <option value="Cartão de crédito">Cartão de crédito</option>
+              <option value="Cheque">Cheque</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">PARCELAMENTO</label>
+            <select id="prop-parcelas" class="input" onchange="calcularParcelasProposta()" style="width:100%;">
+              <option value="1">À vista (1x)</option>
+              <option value="2">2x</option>
+              <option value="3">3x</option>
+              <option value="6">6x</option>
+              <option value="12">12x</option>
+            </select>
+          </div>
+          <div style="grid-column:1/-1;">
+            <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">VALOR DA PARCELA</label>
+            <input id="prop-valor-parcela" class="input" readonly style="width:200px;background:#f8fafc;">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Garantia e Observações -->
+    <div class="card">
+      <div class="card-header">🛡️ Garantia e Observações</div>
+      <div class="card-body">
+        <div style="display:grid;gap:12px;">
+          <div>
+            <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">PRAZO DE GARANTIA</label>
+            <select id="prop-garantia" class="input" style="width:100%;">
+              <option value="30 dias">30 dias</option>
+              <option value="60 dias">60 dias</option>
+              <option value="90 dias" selected>90 dias</option>
+              <option value="6 meses">6 meses</option>
+              <option value="12 meses">12 meses</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">OBSERVAÇÕES</label>
+            <textarea id="prop-obs" class="input" rows="3" placeholder="Necessidade de desocupar o local, cuidados antes e após aplicação..." style="width:100%;resize:vertical;"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" style="font-size:14px;padding:12px 32px;width:fit-content;" onclick="gerarProposta()">📋 Gerar e Imprimir Proposta</button>
+
+  </div>
 </section>
 
 <!-- ══ MODAL CERTIFICADO ══ -->
@@ -2815,6 +2987,195 @@ function gerarAviso(){
     + conteudo
     + '<div style="text-align:center;margin:18px 0;"><div class="emergencia"><strong>EMERGÊNCIA</strong><br>99104-7014</div></div>'
     + '<div class="rodape">Controle Dedetizadora Ltda. www.controlededetizadora.com.br<br>Fones: 99104-7014 (Tim)/99799-4442 — controle@controlededetizadora.com.br</div>'
+    + '</body></html>';
+
+  var win = window.open('','_blank');
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+}
+
+
+// ══ PROPOSTA ══
+(function(){
+  window.addEventListener('DOMContentLoaded', function(){
+    var d = document.getElementById('prop-data');
+    if(d) d.value = new Date().toISOString().split('T')[0];
+    var n = document.getElementById('prop-num');
+    if(n) n.value = proximoNumOrc ? proximoNumOrc() : '001';
+  });
+})();
+
+function buscarClienteProposta(q){
+  var sug = document.getElementById('prop-sugestoes');
+  if(!q || q.length < 2){ sug.style.display='none'; return; }
+  var lista = (window.clientes||[]).filter(function(c){
+    return (c.nome||'').toLowerCase().includes(q.toLowerCase());
+  }).slice(0,6);
+  if(!lista.length){ sug.style.display='none'; return; }
+  sug.innerHTML = lista.map(function(c){
+    return '<div onclick="selecionarClienteProposta(\''+c.id+'\')" style="padding:9px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid #f1f5f9;" onmouseover="this.style.background=\'#f0f9ff\'" onmouseout="this.style.background=\'#fff\'">'
+      + '<div style="font-weight:700;">'+c.nome+'</div>'
+      + (c.endereco ? '<div style="font-size:11px;color:#64748b;">'+c.endereco+'</div>' : '')
+      + '</div>';
+  }).join('');
+  sug.style.display = 'block';
+}
+
+function selecionarClienteProposta(id){
+  var c = (window.clientes||[]).find(function(x){ return x.id===id; });
+  if(!c) return;
+  document.getElementById('prop-nome').value = c.nome||'';
+  document.getElementById('prop-cnpj').value = c.cnpj||'';
+  document.getElementById('prop-fone').value = c.fone||'';
+  document.getElementById('prop-email').value = c.email||'';
+  var end = [c.endereco, c.bairro, c.cidade].filter(Boolean).join(', ');
+  document.getElementById('prop-endereco').value = end;
+  document.getElementById('prop-sugestoes').style.display = 'none';
+}
+
+function calcularParcelasProposta(){
+  var val = parseFloat((document.getElementById('prop-valor').value||'0').replace(/\./g,'').replace(',','.'));
+  var parc = parseInt(document.getElementById('prop-parcelas').value||'1');
+  var parcel = parc > 1 ? (val/parc).toFixed(2).replace('.',',') : '';
+  var el = document.getElementById('prop-valor-parcela');
+  if(el) el.value = parc > 1 ? 'R$ ' + parcel : 'À vista';
+}
+
+function gerarProposta(){
+  var nome    = document.getElementById('prop-nome').value || '___________________________';
+  var cnpj    = document.getElementById('prop-cnpj').value || '';
+  var fone    = document.getElementById('prop-fone').value || '';
+  var email   = document.getElementById('prop-email').value || '';
+  var end     = document.getElementById('prop-endereco').value || '';
+  var num     = document.getElementById('prop-num').value || '001';
+  var dataVal = document.getElementById('prop-data').value;
+  var validade= document.getElementById('prop-validade').value;
+  var dataExec= document.getElementById('prop-data-exec').value;
+  var area    = document.getElementById('prop-area').value || '';
+  var aplic   = document.getElementById('prop-aplicacoes').value || '';
+  var descServ= document.getElementById('prop-desc-servicos').value || '';
+  var metodo  = document.getElementById('prop-metodo').value || '';
+  var produtos= document.getElementById('prop-produtos').value || '';
+  var valor   = document.getElementById('prop-valor').value || '0,00';
+  var formaPgto = document.getElementById('prop-forma-pgto').value;
+  var parcelas= document.getElementById('prop-parcelas').value;
+  var valParcela = document.getElementById('prop-valor-parcela').value || '';
+  var garantia= document.getElementById('prop-garantia').value;
+  var obs     = document.getElementById('prop-obs').value || '';
+
+  var emp = JSON.parse(localStorage.getItem('empresa_emissora')||'{}');
+  var nomeEmp  = emp.empresa || 'Controle Dedetizadora Ltda. - ME';
+  var cnpjEmp  = emp.cnpjEmpresa || '14.175.886/0001-19';
+  var endEmp   = 'Rua José Batista Azevedo, 93 — Custódio Pereira, Uberlândia-MG';
+  var foneEmp  = '(34) 99104-7014 / (34) 99799-4442';
+  var emailEmp = 'controle@controlededetizadora.com.br';
+
+  // Formatar datas
+  function fmtD(d){ if(!d) return '—'; var p=d.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
+  var dataEmissao = fmtD(dataVal);
+  var dataExecFmt = fmtD(dataExec);
+
+  // Calcular validade
+  var dataValidadeFmt = '—';
+  if(dataVal){
+    var dv = new Date(dataVal+'T12:00:00');
+    dv.setDate(dv.getDate() + parseInt(validade));
+    dataValidadeFmt = fmtD(dv.toISOString().split('T')[0]);
+  }
+
+  // Serviços selecionados
+  var srvMap = {
+    'ps-baratas':'Controle de Baratas','ps-formigas':'Controle de Formigas',
+    'ps-escorpioes':'Controle de Escorpiões','ps-ratos':'Desratização',
+    'ps-cupins':'Descupinização','ps-sanitizacao':'Sanitização de Ambientes',
+    'ps-agua':'Limpeza de Caixa d\'Água','ps-gordura':'Limpeza de Caixa de Gordura','ps-outros':'Outros Serviços'
+  };
+  var srvSel = Object.keys(srvMap).filter(function(id){
+    var el = document.getElementById(id); return el && el.checked;
+  }).map(function(id){ return srvMap[id]; });
+
+  var srvHTML = srvSel.length
+    ? srvSel.map(function(s){ return '<li>'+s+'</li>'; }).join('')
+    : '<li>Conforme descrição abaixo</li>';
+
+  var pgtoHTML = parcelas > 1
+    ? formaPgto + ' — ' + parcelas + 'x de ' + valParcela
+    : formaPgto + ' — À vista';
+
+  var html = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Proposta Nº '+num+' — '+nome+'</title>'
+    + '<style>'
+    + '@page{size:A4;margin:15mm 18mm;}'
+    + 'body{font-family:Arial,sans-serif;font-size:10pt;color:#000;line-height:1.5;margin:0;}'
+    + '.header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1a3c6e;padding-bottom:10px;margin-bottom:14px;}'
+    + '.emp-info{font-size:9pt;text-align:right;line-height:1.6;}'
+    + '.titulo{text-align:center;font-size:14pt;font-weight:900;color:#1a3c6e;letter-spacing:1px;text-transform:uppercase;margin:10px 0;}'
+    + '.num-prop{text-align:center;font-size:10pt;color:#64748b;margin-bottom:14px;}'
+    + '.secao{margin:12px 0;}'
+    + '.secao-titulo{background:#1a3c6e;color:#fff;padding:5px 12px;font-size:10pt;font-weight:700;border-radius:4px;margin-bottom:8px;}'
+    + 'table{width:100%;border-collapse:collapse;font-size:10pt;}'
+    + 'td,th{padding:5px 8px;border:1px solid #ccc;vertical-align:top;}'
+    + 'th{background:#f1f5f9;font-weight:700;text-align:left;width:35%;}'
+    + '.valor-box{text-align:center;background:#f0fdf4;border:2px solid #059669;border-radius:8px;padding:12px;margin:12px 0;}'
+    + '.valor-num{font-size:20pt;font-weight:900;color:#059669;}'
+    + '.garantia-box{background:#eff6ff;border-left:4px solid #2563eb;padding:10px 14px;border-radius:4px;font-size:9.5pt;margin:10px 0;}'
+    + '.obs-box{background:#fefce8;border-left:4px solid #d97706;padding:10px 14px;border-radius:4px;font-size:9.5pt;margin:10px 0;}'
+    + '.assinaturas{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:30px;}'
+    + '.ass-line{border-top:1px solid #000;padding-top:6px;text-align:center;font-size:9pt;}'
+    + '.rodape{text-align:center;font-size:8.5pt;color:#64748b;border-top:1px solid #ccc;padding-top:8px;margin-top:16px;}'
+    + '.no-print{text-align:center;padding:16px;display:flex;gap:12px;justify-content:center;}'
+    + '@media print{.no-print{display:none;}}'
+    + '</style></head><body>'
+
+    + '<div class="no-print">'
+    + '<button onclick="window.print()" style="padding:10px 24px;background:#1a3c6e;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;">🖨️ Imprimir / Salvar PDF</button>'
+    + '</div>'
+
+    + '<div class="header">'
+    + '<div style="font-size:13pt;font-weight:900;color:#1a3c6e;">'+nomeEmp+'</div>'
+    + '<div class="emp-info">CNPJ: '+cnpjEmp+'<br>'+endEmp+'<br>'+foneEmp+'<br>'+emailEmp+'</div>'
+    + '</div>'
+
+    + '<div class="titulo">Proposta Comercial</div>'
+    + '<div class="num-prop">Proposta Nº <b>'+num+'</b> &nbsp;|&nbsp; Emissão: <b>'+dataEmissao+'</b> &nbsp;|&nbsp; Válida até: <b>'+dataValidadeFmt+'</b></div>'
+
+    + '<div class="secao"><div class="secao-titulo">DADOS DO CLIENTE</div>'
+    + '<table><tr><th>Nome / Razão Social</th><td>'+nome+'</td></tr>'
+    + (cnpj ? '<tr><th>CPF / CNPJ</th><td>'+cnpj+'</td></tr>' : '')
+    + (fone ? '<tr><th>Telefone</th><td>'+fone+'</td></tr>' : '')
+    + (email ? '<tr><th>E-mail</th><td>'+email+'</td></tr>' : '')
+    + (end ? '<tr><th>Endereço</th><td>'+end+'</td></tr>' : '')
+    + '</table></div>'
+
+    + '<div class="secao"><div class="secao-titulo">SERVIÇOS</div>'
+    + '<table>'
+    + '<tr><th>Serviços</th><td><ul style="margin:0;padding-left:16px;">'+srvHTML+'</ul></td></tr>'
+    + (descServ ? '<tr><th>Descrição</th><td>'+descServ.replace(/\n/g,'<br>')+'</td></tr>' : '')
+    + (area ? '<tr><th>Área Tratada</th><td>'+area+'</td></tr>' : '')
+    + (aplic ? '<tr><th>Nº de Aplicações</th><td>'+aplic+'</td></tr>' : '')
+    + (metodo ? '<tr><th>Método Utilizado</th><td>'+metodo+'</td></tr>' : '')
+    + (produtos ? '<tr><th>Produtos Aplicados</th><td>'+produtos+'</td></tr>' : '')
+    + (dataExecFmt !== '—' ? '<tr><th>Data Prevista</th><td>'+dataExecFmt+'</td></tr>' : '')
+    + '</table></div>'
+
+    + '<div class="valor-box">'
+    + '<div style="font-size:10pt;color:#374151;margin-bottom:4px;">VALOR TOTAL DO SERVIÇO</div>'
+    + '<div class="valor-num">R$ '+valor+'</div>'
+    + '<div style="font-size:9.5pt;color:#374151;margin-top:6px;">'+pgtoHTML+'</div>'
+    + '</div>'
+
+    + '<div class="garantia-box">🛡️ <b>Garantia:</b> Serviço com garantia de <b>'+garantia+'</b> para as pragas especificadas nesta proposta, desde que sejam mantidas as condições adequadas de higiene e conservação do ambiente.</div>'
+
+    + (obs ? '<div class="obs-box">📌 <b>Observações:</b><br>'+obs.replace(/\n/g,'<br>')+'</div>' : '')
+
+    + '<div class="assinaturas">'
+    + '<div class="ass-line">___________________________________<br>'+nome+'<br><small>CLIENTE / CONTRATANTE</small></div>'
+    + '<div class="ass-line">___________________________________<br>'+nomeEmp+'<br><small>CONTRATADO</small></div>'
+    + '</div>'
+
+    + '<div class="rodape">'+nomeEmp+' — CNPJ: '+cnpjEmp+' — '+foneEmp+' — '+emailEmp+'<br>'+endEmp+'</div>'
+
     + '</body></html>';
 
   var win = window.open('','_blank');
