@@ -861,6 +861,13 @@ const SERVICOS = [
 
 let orcamentos = JSON.parse(localStorage.getItem('orcamentos_v2')||'[]');
 
+function numeroPorExtenso(n) {
+  var ext = ['','uma','duas','três','quatro','cinco','seis','sete','oito','nove','dez',
+             'onze','doze','treze','quatorze','quinze','dezesseis','dezessete','dezoito','dezenove','vinte',
+             'vinte e uma','vinte e duas','vinte e três','vinte e quatro'];
+  return ext[n] || String(n);
+}
+
 function proximoNumOrc() {
   if (!orcamentos.length) return '001';
   var nums = orcamentos.map(function(o){
@@ -2197,144 +2204,161 @@ function calcularParcelasContrato() {
   }
 }
 
+function atualizarServicosContrato() {
+  var campos = {'ct-srv-dede': 'ct-srv-dede-campos', 'ct-srv-agua': 'ct-srv-agua-campos', 'ct-srv-gordura': 'ct-srv-gordura-campos'};
+  Object.keys(campos).forEach(function(id){
+    var cb = document.getElementById(id);
+    var div = document.getElementById(campos[id]);
+    if(cb && div) div.style.display = cb.checked ? 'grid' : 'none';
+  });
+}
+
 function confirmarGerarContrato() {
-  var nome = document.getElementById('ct-nome').value || '___________________________';
-  var cnpj = document.getElementById('ct-cnpj').value || '___________________________';
-  var fone = document.getElementById('ct-fone').value || '___________________________';
-  var email = document.getElementById('ct-email').value || '___________________________';
+  var nome     = document.getElementById('ct-nome').value || '___________________________';
+  var cnpj     = document.getElementById('ct-cnpj').value || '___________________________';
+  var fone     = document.getElementById('ct-fone').value || '___________________________';
+  var email    = document.getElementById('ct-email').value || '___________________________';
   var endereco = document.getElementById('ct-endereco').value || '___________________________';
-  var servicos = document.getElementById('ct-servicos').value || 'Desinsetização e Desratização';
-  var valor = document.getElementById('ct-valor').value || '0,00';
-  var parcelas = parseInt(document.getElementById('ct-parcelas').value||'3');
+  var valor    = document.getElementById('ct-valor').value || '0,00';
+  var parcelas = parseInt(document.getElementById('ct-parcelas').value||'12');
   var valorParcela = document.getElementById('ct-valor-parcela').value || '0,00';
-  var inicio = document.getElementById('ct-inicio').value;
+  var inicio   = document.getElementById('ct-inicio').value;
   var vigencia = document.getElementById('ct-vigencia').value;
   var cortesia = document.getElementById('ct-cortesia').value;
-  var obs = document.getElementById('ct-obs').value;
+  var obs      = document.getElementById('ct-obs').value;
+  var diaBoleto = parseInt(document.getElementById('ct-dia-boleto').value||'20');
 
   var emp = JSON.parse(localStorage.getItem('empresa_emissora')||'{}');
-  var nomeEmp = emp.empresa || 'Controle Dedetizadora Ltda. - ME';
-  var cnpjEmp = emp.cnpjEmpresa || '14.175.886/0001-19';
-  var endEmp = 'Rua José Batista Azevedo, 93 — Custódio Pereira, Uberlândia-MG';
-  var foneEmp = '(34) 99104-7014 / (34) 99799-4442';
+  var nomeEmp  = emp.empresa || 'Controle Dedetizadora Ltda. - ME';
+  var cnpjEmp  = emp.cnpjEmpresa || '14.175.886/0001-19';
+  var endEmp   = 'Rua José Batista Azevedo, 93 — Custódio Pereira, Uberlândia-MG';
+  var foneEmp  = '(34) 99104-7014 / (34) 99799-4442';
 
   var dataInicio = inicio ? new Date(inicio+'T12:00:00') : new Date();
-  var dataHoje = dataInicio.toLocaleDateString('pt-BR', {day:'2-digit',month:'long',year:'numeric'});
+  var dataHoje   = dataInicio.toLocaleDateString('pt-BR', {day:'2-digit',month:'long',year:'numeric'});
 
-  // Build aplicacoes table
-  var linhasCrono = window._cronogramaLinhas || [];
-  var tabelaHTML = '<table style="width:100%;border-collapse:collapse;margin:12px 0;font-size:11pt;">'
-    + '<thead><tr style="background:#1a3c6e;color:#fff;">'
-    + '<th style="padding:8px;border:1px solid #ccc;text-align:left;">Aplicação</th>'
-    + '<th style="padding:8px;border:1px solid #ccc;">Data Prevista</th>'
-    + '<th style="padding:8px;border:1px solid #ccc;">Situação</th>'
-    + '<th style="padding:8px;border:1px solid #ccc;">Valor</th>'
-    + '<th style="padding:8px;border:1px solid #ccc;">Vencimento Pgto</th>'
-    + '</tr></thead><tbody>';
+  // Calcular data de encerramento
+  var dataFim = new Date(dataInicio);
+  dataFim.setMonth(dataFim.getMonth() + parseInt(vigencia));
+  var dataFimStr = dataFim.toLocaleDateString('pt-BR', {day:'2-digit',month:'long',year:'numeric'});
 
-  if (linhasCrono.length) {
-    linhasCrono.forEach(function(l, i){
-      var isCortesia = (cortesia==='sim' && i===0) || (cortesia==='ultima' && i===linhasCrono.length-1);
-      tabelaHTML += '<tr style="background:'+(i%2===0?'#f8fafc':'#fff')+'">'
-        + '<td style="padding:7px 8px;border:1px solid #ccc;">'+(i+1)+'ª Aplicação</td>'
-        + '<td style="padding:7px 8px;border:1px solid #ccc;text-align:center;">'+(l.data?fmtDataBR(l.data):'—')+'</td>'
-        + '<td style="padding:7px 8px;border:1px solid #ccc;text-align:center;">'+(isCortesia?'<b>Cortesia</b>':'Cobrada')+'</td>'
-        + '<td style="padding:7px 8px;border:1px solid #ccc;text-align:center;">'+(isCortesia?'R$ 0,00':'R$ '+valorParcela)+'</td>'
-        + '<td style="padding:7px 8px;border:1px solid #ccc;text-align:center;">'+(isCortesia?'—':(l.pgto?fmtDataBR(l.pgto):'—'))+'</td>'
-        + '</tr>';
-    });
-  } else {
-    for (var i=0; i<parcelas; i++) {
-      var isCortesia = (cortesia==='sim' && i===0) || (cortesia==='ultima' && i===parcelas-1);
-      tabelaHTML += '<tr style="background:'+(i%2===0?'#f8fafc':'#fff')+'">'
-        + '<td style="padding:7px 8px;border:1px solid #ccc;">'+(i+1)+'ª Aplicação</td>'
-        + '<td style="padding:7px 8px;border:1px solid #ccc;text-align:center;">A definir</td>'
-        + '<td style="padding:7px 8px;border:1px solid #ccc;text-align:center;">'+(isCortesia?'<b>Cortesia</b>':'Cobrada')+'</td>'
-        + '<td style="padding:7px 8px;border:1px solid #ccc;text-align:center;">'+(isCortesia?'R$ 0,00':'R$ '+valorParcela)+'</td>'
-        + '<td style="padding:7px 8px;border:1px solid #ccc;text-align:center;">'+(isCortesia?'—':'A definir')+'</td>'
-        + '</tr>';
-    }
+  // Gerar datas dos boletos
+  var boletos = [];
+  for(var b=0; b<parcelas; b++){
+    var dtBol = new Date(dataInicio);
+    dtBol.setMonth(dtBol.getMonth() + b);
+    dtBol.setDate(diaBoleto);
+    boletos.push(dtBol.toLocaleDateString('pt-BR'));
   }
-  tabelaHTML += '<tr style="background:#e8f5e9;font-weight:700;">'
-    + '<td style="padding:8px;border:1px solid #ccc;" colspan="3">TOTAL A PAGAR</td>'
-    + '<td style="padding:8px;border:1px solid #ccc;text-align:center;" colspan="2">R$ '+valor+'</td>'
-    + '</tr></tbody></table>';
+  var boletosStr = boletos.map(function(d,i){ return '<b>'+d+'</b>'; }).join(', ');
 
-  var obsClausula = obs ? '<h2>Cláusula Sete — Disposições Especiais</h2><p>'+obs+'</p>' : '';
+  // Montar cláusula de serviços
+  var itemServicos = '';
+  var temAgua = document.getElementById('ct-srv-agua') && document.getElementById('ct-srv-agua').checked;
+  var temDede = document.getElementById('ct-srv-dede') && document.getElementById('ct-srv-dede').checked;
+  var temGordura = document.getElementById('ct-srv-gordura') && document.getElementById('ct-srv-gordura').checked;
+
+  var letra = 97; // 'a'
+  if(temDede){
+    var freqDede = document.getElementById('ct-freq-dede').value;
+    var descDede = document.getElementById('ct-desc-dede').value;
+    itemServicos += '<p>'+String.fromCharCode(letra++)+') Desinsetização, desratização'+(descDede?' ('+descDede+')':'')+' com aplicações '+freqDede+'.</p>';
+  }
+  if(temAgua){
+    var freqAgua = document.getElementById('ct-freq-agua').value;
+    var descAgua = document.getElementById('ct-desc-agua').value;
+    itemServicos += '<p>'+String.fromCharCode(letra++)+') Limpeza de reservatórios de água'+(descAgua?' — '+descAgua:'')+'. Serviço realizado '+freqAgua+'.</p>';
+    itemServicos += '<p style="color:#cc0000;font-weight:700;">Observação: Em caso de rescisão antecipada do contrato, o serviço de limpeza de caixa d\'água já executado deverá ser pago proporcionalmente ao período contratado, independentemente da data de rescisão.</p>';
+  }
+  if(temGordura){
+    var freqGordura = document.getElementById('ct-freq-gordura').value;
+    itemServicos += '<p>'+String.fromCharCode(letra++)+') Limpeza de caixa de gordura '+freqGordura+'.</p>';
+  }
+  if(!itemServicos) itemServicos = '<p>a) Serviços de controle de pragas conforme acordado entre as partes.</p>';
+
+  // Objeto contratado (texto resumido)
+  var listaServicos = [];
+  if(temDede) listaServicos.push('desinsetização, desratização e limpeza de caixa de gordura');
+  if(temAgua) listaServicos.push('limpeza de caixa d\'água');
+  if(temGordura) listaServicos.push('limpeza de caixa de gordura');
+  var servicosResumo = listaServicos.join(', ') || 'controle de pragas';
+
+  // Salvar campo oculto
+  var ctServ = document.getElementById('ct-servicos');
+  if(ctServ) ctServ.value = servicosResumo;
+
+  // Cláusula de rescisão com caixa d'água
+  var clausulaRescisao = '<p>5.1. O contrato poderá ser rescindido por mútuo acordo ou por iniciativa de qualquer das partes, a qualquer tempo, antes do término do prazo estipulado na Cláusula Terceira, mediante comunicação escrita com antecedência mínima de três meses.</p>'
+    + (temAgua ? '<p>5.2. Em caso de rescisão, o serviço de limpeza de caixa d\'água já realizado deverá ser pago integralmente de forma proporcional ao período contratado, mesmo que o contrato seja cancelado antes do término da vigência.</p>' : '');
+
+  var obsClausula = obs ? '<h2>CLÁUSULA SÉTIMA — DISPOSIÇÕES ESPECIAIS</h2><p>'+obs+'</p>' : '';
 
   var win = window.open('','_blank');
-  win.document.write('<!DOCTYPE html><'+'html><'+'head><meta charset="UTF-8"><title>Contrato — '+nome+'</title>'
-    + '<'+'style>'
-    + '@page{size:A4;margin:25mm 20mm;}'
-    + 'body{font-family:Arial,sans-serif;font-size:11pt;color:#000;line-height:1.6;}'
-    + '.header{text-align:center;border-bottom:2px solid #1a3c6e;padding-bottom:12px;margin-bottom:20px;}'
-    + '.header h1{font-size:13pt;color:#1a3c6e;margin:0;letter-spacing:1px;}'
-    + '.header p{font-size:9pt;margin:3px 0;}'
-    + 'h2{font-size:12pt;color:#1a3c6e;border-bottom:1px solid #1a3c6e;padding-bottom:4px;margin-top:20px;}'
-    + 'h3{font-size:11pt;margin:12px 0 4px;}'
-    + 'p{margin:6px 0;text-align:justify;}'
-    + '.assinaturas{margin-top:40px;display:grid;grid-template-columns:1fr 1fr;gap:40px;}'
-    + '.ass-box{border-top:1px solid #000;padding-top:8px;text-align:center;font-size:10pt;}'
+  win.document.write('<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Contrato — '+nome+'</title>'
+    + '<style>'
+    + '@page{size:A4;margin:12mm 15mm;}'
+    + 'body{font-family:Arial,sans-serif;font-size:9.5pt;color:#000;line-height:1.4;}'
+    + '.logo-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid #ccc;padding-bottom:6px;margin-bottom:8px;}'
+    + '.titulo-contrato{text-align:center;font-size:12pt;font-weight:900;text-decoration:underline;margin:8px 0;}'
+    + 'h2{font-size:10pt;font-weight:900;margin:10px 0 4px;}'
+    + 'p{margin:3px 0;text-align:justify;}'
+    + '.assinaturas{margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:30px;}'
+    + '.ass-box{border-top:1px solid #000;padding-top:6px;font-size:10pt;}'
     + '.no-print{text-align:center;padding:20px;display:flex;gap:12px;justify-content:center;}'
     + '@media print{.no-print{display:none;}}'
-    + '</'+'style></'+'head><'+'body>'
+    + '</style></head><body>'
 
-    + '<div class="header">'
-    + '<h1>'+nomeEmp.toUpperCase()+'</h1>'
-    + '<p>CNPJ: '+cnpjEmp+' | '+endEmp+'</p>'
-    + '<p>Fones: '+foneEmp+'</p>'
+    + '<div class="no-print">'
+    + '<button onclick="window.print()" style="padding:10px 28px;background:#1a3c6e;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;">🖨️ Imprimir</button>'
     + '</div>'
 
-    + '<h2 style="text-align:center;border:none;font-size:14pt;">CONTRATO DE PRESTAÇÃO DE SERVIÇOS</h2>'
+    + '<div class="titulo-contrato">CONTRATO DE PRESTAÇÃO DE SERVIÇOS</div>'
 
-    + '<h2>Das Partes Contratantes</h2>'
-    + '<p><b>CONTRATANTE:</b> '+nome+', inscrito no CPF/CNPJ n.º '+cnpj+', com endereço em '+endereco+', telefone: '+fone+', e-mail: '+email+'.</p>'
-    + '<p><b>CONTRATADO:</b> '+nomeEmp+', CNPJ n.º '+cnpjEmp+', com sede na '+endEmp+'.</p>'
+    + '<p><b>CONTRATANTE:</b> Razão Social: '+nome+', CNPJ: '+cnpj+', com sede na '+endereco+', Telefone: '+fone+', E-mail: '+email+', a seguir mencionado tão somente CONTRATANTE.</p>'
+    + '<p><b>CONTRATADO (A):</b> '+nomeEmp+', localizada à '+endEmp+', CNPJ: '+cnpjEmp+', nesta cidade de Uberlândia-MG, doravante denominado simplesmente contratado.</p>'
+    + '<p>A CONTRATANTE e o CONTRATADO ajustam e convencionam um contrato de prestação de serviços que se regerá pelas cláusulas e considerações seguintes.</p>'
 
-    + '<h2>Cláusula Primeira — Do Objeto</h2>'
-    + '<p>1.1. O presente contrato tem por objeto a prestação dos seguintes serviços: <b>'+servicos+'</b>.</p>'
-    + '<p>1.2. Os serviços serão executados conforme os padrões da Vigilância Sanitária, com produtos registrados.</p>'
-    + '<p>1.3. Após cada execução será emitido certificado de prestação do serviço.</p>'
+    + '<h2>CLÁUSULA PRIMEIRA - DO OBJETO</h2>'
+    + '<p>1.1. O CONTRATADO fornecerá à CONTRATANTE prestação de serviços de '+servicosResumo+'.</p>'
+    + '<p>1.2. A execução das atividades mencionadas no item anterior compreende:</p>'
+    + itemServicos
+    + '<p>1.3. O CONTRATADO se obriga a executar os serviços objeto do presente contrato, dentro dos padrões exigidos pela Vigilância Sanitária e em consonância com a CONTRATANTE.</p>'
 
-    + '<h2>Cláusula Segunda — Das Condições de Pagamento</h2>'
-    + '<h3>2.1. Estrutura de Pagamento</h3>'
-    + tabelaHTML
-    + '<h3>2.2. Vencimentos</h3>'
-    + '<p>O valor total de <b>R$ '+valor+'</b> será pago em <b>'+parcelas+'</b> parcela(s) de <b>R$ '+valorParcela+'</b> cada, com vencimento 30 dias após cada aplicação realizada.</p>'
-    + '<h3>2.3. Inadimplência</h3>'
-    + '<p>O atraso acarretará multa de 2% sobre o valor em atraso, juros de 1% ao mês e correção pelo IGPM/FGV.</p>'
+    + '<h2>CLÁUSULA SEGUNDA - DAS CONDIÇÕES DE PAGAMENTO</h2>'
+    + '<p>2.1. Pela prestação dos serviços especificados na Cláusula Primeira, a CONTRATANTE pagará ao CONTRATADO:</p>'
+    + '<p>a) A importância total de <b>R$ '+valor+'</b>, dividida em <b>'+parcelas+' ('+numeroPorExtenso(parcelas)+') parcelas mensais</b> de <b>R$ '+valorParcela+'</b>, com início em '+dataHoje+'.</p>'
+    + '<p>b) Os boletos terão vencimento nas seguintes datas: '+boletosStr+'.</p>'
+    + '<p>2.2. O atraso no pagamento acarretará multa de 2% sobre o valor em atraso, acrescido de juros de 1% ao mês.</p>'
 
-    + '<h2>Cláusula Terceira — Do Prazo e da Vigência</h2>'
-    + '<p>3.1. O contrato vigorará por <b>'+vigencia+' ('+vigencia+') meses</b>, com início em '+dataHoje+', renovando-se automaticamente salvo manifestação contrária por escrito com 90 dias de antecedência.</p>'
+    + '<h2>CLÁUSULA TERCEIRA - DO PRAZO</h2>'
+    + '<p>3.1. O presente contrato terá validade a partir de '+dataHoje+', encerrando-se automaticamente em '+dataFimStr+'.</p>'
+    + '<p>3.2. Para eventual renovação deste contrato, deverá haver negociação expressa entre ambas as partes, com formalização por escrito, antes do término da vigência contratual.</p>'
 
-    + '<h2>Cláusula Quarta — Da Rescisão</h2>'
-    + '<p>4.1. O contrato poderá ser rescindido por mútuo acordo ou por descumprimento contratual, após notificação escrita e 15 dias sem regularização.</p>'
-    + '<p>4.2. A rescisão não exime as partes do cumprimento das obrigações financeiras já vencidas.</p>'
+    + '<h2>CLÁUSULA QUARTA - DOS DIAS E HORÁRIOS DE EXECUÇÃO DOS SERVIÇOS</h2>'
+    + '<p>4.1. As datas e horários para a execução dos serviços deverão ser previamente acordadas entre as partes, respeitando a conveniência e rotina da CONTRATANTE.</p>'
+    + '<p>4.2. Fica vedada a realização dos serviços em horários ou dias considerados inapropriados ou que possam comprometer o bem-estar e segurança dos moradores.</p>'
 
-    + '<h2>Cláusula Quinta — Do Foro</h2>'
-    + '<p>5.1. Fica eleito o Foro da Comarca de Uberlândia-MG para dirimir quaisquer controvérsias.</p>'
+    + '<h2>CLÁUSULA QUINTA - DA RESCISÃO</h2>'
+    + clausulaRescisao
 
-    + '<h2>Cláusula Sexta — Disposições Gerais</h2>'
-    + '<p>6.1. Este contrato substitui todos os entendimentos anteriores sobre o mesmo objeto.</p>'
-    + '<p>6.2. Qualquer alteração somente será válida se formalizada por escrito e assinada por ambas as partes.</p>'
+    + '<h2>CLÁUSULA SEXTA - DO FORO</h2>'
+    + '<p>6.1. As partes elegem o foro da cidade de Uberlândia-MG para dirimir quaisquer dúvidas ou controvérsias decorrentes deste contrato, com renúncia expressa a qualquer outro por mais privilegiado que seja.</p>'
 
     + obsClausula
 
-    + '<p style="margin-top:30px;">Uberlândia-MG, '+dataHoje+'.</p>'
+    + '<p style="margin-top:14px;">E por estarem assim justas e contratadas, assinam o presente instrumento em duas vias de igual teor.</p>'
+    + '<p style="margin-top:4px;">Uberlândia-MG, '+dataHoje+'.</p>'
 
     + '<div class="assinaturas">'
-    + '<div class="ass-box">'+nome+'<br><small>CPF/CNPJ: '+cnpj+'<br>CONTRATANTE</small></div>'
-    + '<div class="ass-box">'+nomeEmp+'<br><small>CNPJ: '+cnpjEmp+'<br>CONTRATADO</small></div>'
+    + '<div class="ass-box">CONTRATANTE ____<br><br>___________________________________<br><small>'+nome+'</small></div>'
+    + '<div class="ass-box">CONTRATADO ____<br><br>___________________________________<br><small>'+nomeEmp+'</small></div>'
     + '</div>'
     + '<div class="assinaturas" style="margin-top:30px;">'
-    + '<div class="ass-box">Nome: ______________________________<br><small>CPF: ________________<br>TESTEMUNHA 1</small></div>'
-    + '<div class="ass-box">Nome: ______________________________<br><small>CPF: ________________<br>TESTEMUNHA 2</small></div>'
+    + '<div class="ass-box">TESTEMUNHAS ____<br><br>___________________________________<br><small>Nome: ______________________ CPF: ____________</small></div>'
+    + '<div class="ass-box"><br><br>___________________________________<br><small>Nome: ______________________ CPF: ____________</small></div>'
     + '</div>'
 
-    + '<div class="no-print">'
-    + '<button onclick="window.print()" style="padding:10px 28px;background:#1a3c6e;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;">Imprimir</button>'
-    + '<button onclick="document.querySelectorAll(\'.no-print\').forEach(function(e){e.style.display=\'none\'});window.print();" style="padding:10px 28px;background:#059669;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;">Salvar PDF</button>'
-    + '</div>');
+    + '</body></html>');
   win.document.close();
   win.focus();
   // Auto-salvar cliente no Firebase
@@ -2838,10 +2862,65 @@ function gerarAviso(){
 
       <hr style="border:none;border-top:1px solid #e2e8f0;margin:4px 0;">
 
-      <div>
-        <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">SERVIÇOS</label>
-        <input id="ct-servicos" class="input" placeholder="Ex: Desinsetização, Desratização">
+      <div style="font-size:12px;font-weight:700;color:#1a3c6e;margin-bottom:8px;">SERVIÇOS CONTRATADOS</div>
+      <div style="display:grid;gap:10px;margin-bottom:4px;">
+
+        <div style="background:#f8fafc;border-radius:8px;padding:12px;border:1px solid #e2e8f0;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:6px;">
+            <input type="checkbox" id="ct-srv-dede" onchange="atualizarServicosContrato()"> 🦟 Desinsetização / Desratização / Caixa de Gordura
+          </label>
+          <div id="ct-srv-dede-campos" style="display:none;grid-template-columns:1fr 1fr;gap:10px;">
+            <div>
+              <label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:3px;">FREQUÊNCIA</label>
+              <select id="ct-freq-dede" class="input" style="font-size:12px;">
+                <option value="de 03 em 03 meses, totalizando 04 serviços no período de um ano">A cada 3 meses (4x/ano)</option>
+                <option value="de 06 em 06 meses, totalizando 02 serviços no período de um ano">A cada 6 meses (2x/ano)</option>
+                <option value="1 vez ao ano">1x ao ano</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:3px;">DESCRIÇÃO</label>
+              <input id="ct-desc-dede" class="input" placeholder="Ex: Áreas comuns, garagem" style="font-size:12px;">
+            </div>
+          </div>
+        </div>
+
+        <div style="background:#f8fafc;border-radius:8px;padding:12px;border:1px solid #e2e8f0;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:6px;">
+            <input type="checkbox" id="ct-srv-agua" onchange="atualizarServicosContrato()"> 💧 Limpeza de Caixa d'Água
+          </label>
+          <div id="ct-srv-agua-campos" style="display:none;grid-template-columns:1fr 1fr;gap:10px;">
+            <div>
+              <label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:3px;">RESERVATÓRIOS</label>
+              <input id="ct-desc-agua" class="input" placeholder="Ex: 2 reserv. de 15.000L e 6 caixas de 10.000L" style="font-size:12px;">
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:3px;">FREQUÊNCIA</label>
+              <select id="ct-freq-agua" class="input" style="font-size:12px;">
+                <option value="1 vez ao ano">1x ao ano</option>
+                <option value="2 vezes ao ano">2x ao ano</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div style="background:#f8fafc;border-radius:8px;padding:12px;border:1px solid #e2e8f0;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:6px;">
+            <input type="checkbox" id="ct-srv-gordura" onchange="atualizarServicosContrato()"> 🔧 Limpeza de Caixa de Gordura (separado)
+          </label>
+          <div id="ct-srv-gordura-campos" style="display:none;">
+            <div>
+              <label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:3px;">FREQUÊNCIA</label>
+              <select id="ct-freq-gordura" class="input" style="font-size:12px;">
+                <option value="de 06 em 06 meses, totalizando 02 execuções ao ano">A cada 6 meses (2x/ano)</option>
+                <option value="1 vez ao ano">1x ao ano</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
       </div>
+      <input type="hidden" id="ct-servicos" value="">
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
         <div>
           <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">VALOR TOTAL (R$)</label>
@@ -2884,6 +2963,14 @@ function gerarAviso(){
           <option value="nao">Não — todas as aplicações são cobradas</option>
           <option value="ultima">Última aplicação é cortesia</option>
         </select>
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">DIA DO VENCIMENTO DOS BOLETOS</label>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:13px;">Todo dia</span>
+          <input id="ct-dia-boleto" type="number" min="1" max="28" class="input" value="20" style="width:70px;">
+          <span style="font-size:13px;">de cada mês</span>
+        </div>
       </div>
       <div>
         <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">OBSERVAÇÕES ADICIONAIS</label>
