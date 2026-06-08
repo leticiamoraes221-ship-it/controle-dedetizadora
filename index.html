@@ -2376,6 +2376,22 @@ function calcularParcelasContrato() {
   }
 }
 
+function atualizarBoletoContrato() {
+  var periodo = document.getElementById('ct-periodo-boleto').value;
+  var diaBox = document.getElementById('ct-dia-boleto-box');
+  var persBox = document.getElementById('ct-boleto-personalizado-box');
+  if(periodo === 'personalizado') {
+    if(diaBox) diaBox.style.display = 'none';
+    if(persBox) persBox.style.display = 'block';
+  } else if(periodo === 'avista') {
+    if(diaBox) diaBox.style.display = 'none';
+    if(persBox) persBox.style.display = 'none';
+  } else {
+    if(diaBox) diaBox.style.display = 'block';
+    if(persBox) persBox.style.display = 'none';
+  }
+}
+
 function atualizarServicosContrato() {
   var campos = {'ct-srv-dede': 'ct-srv-dede-campos', 'ct-srv-agua': 'ct-srv-agua-campos', 'ct-srv-gordura': 'ct-srv-gordura-campos'};
   Object.keys(campos).forEach(function(id){
@@ -2396,235 +2412,142 @@ function confirmarGerarContrato() {
   var valorParcela = document.getElementById('ct-valor-parcela').value || '0,00';
   var inicio   = document.getElementById('ct-inicio').value;
   var vigencia = document.getElementById('ct-vigencia').value;
-  var cortesia = document.getElementById('ct-cortesia').value;
   var obs      = document.getElementById('ct-obs').value;
-  var diaBoleto = parseInt(document.getElementById('ct-dia-boleto').value||'20');
+  var periodo  = document.getElementById('ct-periodo-boleto') ? document.getElementById('ct-periodo-boleto').value : 'mensal';
+  var diaBoleto = parseInt(document.getElementById('ct-dia-boleto') ? document.getElementById('ct-dia-boleto').value||'20' : '20');
+  var boletoPersonalizado = document.getElementById('ct-boleto-personalizado') ? document.getElementById('ct-boleto-personalizado').value : '';
 
   var emp = JSON.parse(localStorage.getItem('empresa_emissora')||'{}');
   var nomeEmp  = emp.empresa || 'Controle Dedetizadora Ltda. - ME';
   var cnpjEmp  = emp.cnpjEmpresa || '14.175.886/0001-19';
   var endEmp   = 'Rua José Batista Azevedo, 93 — Custódio Pereira, Uberlândia-MG';
-  var foneEmp  = '(34) 99104-7014 / (34) 99799-4442';
 
   var dataInicio = inicio ? new Date(inicio+'T12:00:00') : new Date();
   var dataHoje   = dataInicio.toLocaleDateString('pt-BR', {day:'2-digit',month:'long',year:'numeric'});
-
-  // Calcular data de encerramento
   var dataFim = new Date(dataInicio);
-  dataFim.setMonth(dataFim.getMonth() + parseInt(vigencia));
+  dataFim.setMonth(dataFim.getMonth() + parseInt(vigencia||12));
   var dataFimStr = dataFim.toLocaleDateString('pt-BR', {day:'2-digit',month:'long',year:'numeric'});
 
-  // Gerar datas dos boletos
-  var boletos = [];
-  for(var b=0; b<parcelas; b++){
-    var dtBol = new Date(dataInicio);
-    dtBol.setMonth(dtBol.getMonth() + b);
-    dtBol.setDate(diaBoleto);
-    boletos.push(dtBol.toLocaleDateString('pt-BR'));
+  // Gerar datas dos boletos conforme periodicidade
+  var boletosStr = '';
+  if(periodo === 'avista') {
+    boletosStr = 'À vista, no ato da contratação.';
+  } else if(periodo === 'personalizado') {
+    boletosStr = boletoPersonalizado || 'Conforme negociado entre as partes.';
+  } else {
+    var intervalo = periodo === 'mensal' ? 1 : periodo === 'trimestral' ? 3 : periodo === 'semestral' ? 6 : 12;
+    var boletos = [];
+    for(var b=0; b*intervalo < parseInt(vigencia||12); b++){
+      var dtBol = new Date(dataInicio);
+      dtBol.setMonth(dtBol.getMonth() + (b * intervalo));
+      dtBol.setDate(diaBoleto);
+      boletos.push('<b>'+dtBol.toLocaleDateString('pt-BR')+'</b>');
+    }
+    boletosStr = boletos.join(', ') + '.';
   }
-  var boletosStr = boletos.map(function(d,i){ return '<b>'+d+'</b>'; }).join(', ');
 
-  // Montar cláusula de serviços
+  // Serviços
   var itemServicos = '';
   var temAgua = document.getElementById('ct-srv-agua') && document.getElementById('ct-srv-agua').checked;
   var temDede = document.getElementById('ct-srv-dede') && document.getElementById('ct-srv-dede').checked;
   var temGordura = document.getElementById('ct-srv-gordura') && document.getElementById('ct-srv-gordura').checked;
-
-  var letra = 97; // 'a'
+  var letra = 97;
   if(temDede){
-    var freqDede = document.getElementById('ct-freq-dede').value;
+    var freqDede = document.getElementById('ct-freq-dede').value || 'conforme acordado';
     var descDede = document.getElementById('ct-desc-dede').value;
-    itemServicos += '<p>'+String.fromCharCode(letra++)+') Desinsetização, desratização'+(descDede?' ('+descDede+')':'')+' com aplicações '+freqDede+'.</p>';
+    itemServicos += String.fromCharCode(letra++)+') Desinsetização, desratização'+(descDede?' ('+descDede+')':'')+' com aplicações '+freqDede+'.\n';
   }
   if(temAgua){
-    var freqAgua = document.getElementById('ct-freq-agua').value;
+    var freqAgua = document.getElementById('ct-freq-agua').value || '1 vez ao ano';
     var descAgua = document.getElementById('ct-desc-agua').value;
-    itemServicos += '<p>'+String.fromCharCode(letra++)+') Limpeza de reservatórios de água'+(descAgua?' — '+descAgua:'')+'. Serviço realizado '+freqAgua+'.</p>';
-    itemServicos += '<p style="color:#cc0000;font-weight:700;">Observação: Em caso de rescisão antecipada do contrato, o serviço de limpeza de caixa d\'água já executado deverá ser pago proporcionalmente ao período contratado, independentemente da data de rescisão.</p>';
+    itemServicos += String.fromCharCode(letra++)+') Limpeza de reservatórios de água'+(descAgua?' — '+descAgua:'')+'. Serviço realizado '+freqAgua+'.\n';
+    itemServicos += 'Em caso de rescisão antecipada, o serviço de limpeza de caixa d\'água já executado deverá ser pago proporcionalmente.\n';
   }
   if(temGordura){
-    var freqGordura = document.getElementById('ct-freq-gordura').value;
-    itemServicos += '<p>'+String.fromCharCode(letra++)+') Limpeza de caixa de gordura '+freqGordura+'.</p>';
+    var freqGordura = document.getElementById('ct-freq-gordura').value || 'conforme acordado';
+    itemServicos += String.fromCharCode(letra++)+') Limpeza de caixa de gordura '+freqGordura+'.\n';
   }
-  if(!itemServicos) itemServicos = '<p>a) Serviços de controle de pragas conforme acordado entre as partes.</p>';
+  if(!itemServicos) itemServicos = 'a) Serviços de controle de pragas conforme acordado entre as partes.\n';
 
-  // Objeto contratado (texto resumido)
   var listaServicos = [];
   if(temDede) listaServicos.push('desinsetização, desratização e limpeza de caixa de gordura');
   if(temAgua) listaServicos.push('limpeza de caixa d\'água');
   if(temGordura) listaServicos.push('limpeza de caixa de gordura');
   var servicosResumo = listaServicos.join(', ') || 'controle de pragas';
 
-  // Salvar campo oculto
-  var ctServ = document.getElementById('ct-servicos');
-  if(ctServ) ctServ.value = servicosResumo;
+  var clausulaRescisao = '5.1. O contrato poderá ser rescindido por mútuo acordo ou por iniciativa de qualquer das partes, a qualquer tempo, antes do término do prazo estipulado na Cláusula Terceira, mediante comunicação escrita com antecedência mínima de três meses.\n'
+    + (temAgua ? '5.2. Em caso de rescisão, o serviço de limpeza de caixa d\'água já realizado deverá ser pago integralmente de forma proporcional ao período contratado.\n' : '');
 
-  // Cláusula de rescisão com caixa d'água
-  var clausulaRescisao = '<p>5.1. O contrato poderá ser rescindido por mútuo acordo ou por iniciativa de qualquer das partes, a qualquer tempo, antes do término do prazo estipulado na Cláusula Terceira, mediante comunicação escrita com antecedência mínima de três meses.</p>'
-    + (temAgua ? '<p>5.2. Em caso de rescisão, o serviço de limpeza de caixa d\'água já realizado deverá ser pago integralmente de forma proporcional ao período contratado, mesmo que o contrato seja cancelado antes do término da vigência.</p>' : '');
+  var pgtoTexto = periodo === 'avista' ? 'À vista.' :
+    periodo === 'personalizado' ? boletoPersonalizado :
+    'Em '+parcelas+' parcelas '+periodo+'s de R$ '+valorParcela+', com vencimento todo dia '+diaBoleto+'.';
 
-  var obsClausula = obs ? '<h2>CLÁUSULA SÉTIMA — DISPOSIÇÕES ESPECIAIS</h2><p>'+obs+'</p>' : '';
+  // Montar texto completo editável
+  var textoContrato =
+'CONTRATO DE PRESTAÇÃO DE SERVIÇOS\n\n'
++'CONTRATANTE: Razão Social: '+nome+', CNPJ: '+cnpj+', com sede na '+endereco+', Telefone: '+fone+', E-mail: '+email+', a seguir mencionado tão somente CONTRATANTE.\n\n'
++'CONTRATADO (A): '+nomeEmp+', localizada à '+endEmp+', CNPJ: '+cnpjEmp+', nesta cidade de Uberlândia-MG, doravante denominado simplesmente contratado.\n\n'
++'A CONTRATANTE e o CONTRATADO ajustam e convencionam um contrato de prestação de serviços que se regerá pelas cláusulas e considerações seguintes.\n\n'
++'CLÁUSULA PRIMEIRA - DO OBJETO\n\n'
++'1.1. O CONTRATADO fornecerá à CONTRATANTE prestação de serviços de '+servicosResumo+'.\n\n'
++'1.2. A execução das atividades mencionadas no item anterior compreende:\n\n'
++itemServicos+'\n'
++'1.3. O CONTRATADO se obriga a executar os serviços objeto do presente contrato, dentro dos padrões exigidos pela Vigilância Sanitária e em consonância com a CONTRATANTE.\n\n'
++'CLÁUSULA SEGUNDA - DAS CONDIÇÕES DE PAGAMENTO\n\n'
++'2.1. Pela prestação dos serviços especificados na Cláusula Primeira, a CONTRATANTE pagará ao CONTRATADO:\n\n'
++'a) A importância total de R$ '+valor+', dividida em '+parcelas+' parcelas de R$ '+valorParcela+', com início em '+dataHoje+'.\n\n'
++'b) Os boletos terão vencimento nas seguintes datas: '+boletosStr+'\n\n'
++'2.2. O atraso no pagamento acarretará multa de 2% sobre o valor em atraso, acrescido de juros de 1% ao mês.\n\n'
++'CLÁUSULA TERCEIRA - DO PRAZO\n\n'
++'3.1. O presente contrato terá validade a partir de '+dataHoje+', encerrando-se automaticamente em '+dataFimStr+'.\n\n'
++'3.2. Para eventual renovação deste contrato, deverá haver negociação expressa entre ambas as partes, com formalização por escrito, antes do término da vigência contratual.\n\n'
++'CLÁUSULA QUARTA - DOS DIAS E HORÁRIOS DE EXECUÇÃO DOS SERVIÇOS\n\n'
++'4.1. As datas e horários para a execução dos serviços deverão ser previamente acordadas entre as partes, respeitando a conveniência e rotina da CONTRATANTE.\n\n'
++'4.2. Fica vedada a realização dos serviços em horários ou dias considerados inapropriados ou que possam comprometer o bem-estar e segurança dos moradores.\n\n'
++'CLÁUSULA QUINTA - DA RESCISÃO\n\n'
++clausulaRescisao+'\n'
++'CLÁUSULA SEXTA - DO FORO\n\n'
++'6.1. As partes elegem o foro da cidade de Uberlândia-MG para dirimir quaisquer dúvidas ou controvérsias decorrentes deste contrato, com renúncia expressa a qualquer outro por mais privilegiado que seja.\n\n'
++(obs ? 'CLÁUSULA SÉTIMA - DISPOSIÇÕES ESPECIAIS\n\n'+obs+'\n\n' : '')
++'E por estarem assim justas e contratadas, assinam o presente instrumento em duas vias de igual teor.\n\n'
++'Uberlândia-MG, '+dataHoje+'.\n\n'
++'CONTRATANTE _________________________________________________\n\n'
++'CONTRATADO __________________________________________________\n\n'
++'TESTEMUNHAS _________________________________________________\n'
++'_____________________________________________________________';
 
+  // Abrir janela com textarea editável
   var win = window.open('','_blank');
+  win.document.open();
   win.document.write('<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Contrato — '+nome+'</title>'
-    + '<style>'
-    + '@page{size:A4;margin:12mm 15mm;}'
-    + 'body{font-family:Arial,sans-serif;font-size:9.5pt;color:#000;line-height:1.4;}'
-    + '.logo-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid #ccc;padding-bottom:6px;margin-bottom:8px;}'
-    + '.titulo-contrato{text-align:center;font-size:12pt;font-weight:900;text-decoration:underline;margin:8px 0;}'
-    + 'h2{font-size:10pt;font-weight:900;margin:10px 0 4px;}'
-    + 'p{margin:3px 0;text-align:justify;}'
-    + '.assinaturas{margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:30px;}'
-    + '.ass-box{border-top:1px solid #000;padding-top:6px;font-size:10pt;}'
-    + '.no-print{text-align:center;padding:20px;display:flex;gap:12px;justify-content:center;}'
-    + '@media print{.no-print{display:none;}}'
-    + '</style></head><body>'
-
-    + '<div class="no-print">'
-    + '<button onclick="window.print()" style="padding:10px 28px;background:#1a3c6e;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;">🖨️ Imprimir</button>'
-    + '</div>'
-
-    + '<div class="titulo-contrato">CONTRATO DE PRESTAÇÃO DE SERVIÇOS</div>'
-
-    + '<p><b>CONTRATANTE:</b> Razão Social: '+nome+', CNPJ: '+cnpj+', com sede na '+endereco+', Telefone: '+fone+', E-mail: '+email+', a seguir mencionado tão somente CONTRATANTE.</p>'
-    + '<p><b>CONTRATADO (A):</b> '+nomeEmp+', localizada à '+endEmp+', CNPJ: '+cnpjEmp+', nesta cidade de Uberlândia-MG, doravante denominado simplesmente contratado.</p>'
-    + '<p>A CONTRATANTE e o CONTRATADO ajustam e convencionam um contrato de prestação de serviços que se regerá pelas cláusulas e considerações seguintes.</p>'
-
-    + '<h2>CLÁUSULA PRIMEIRA - DO OBJETO</h2>'
-    + '<p>1.1. O CONTRATADO fornecerá à CONTRATANTE prestação de serviços de '+servicosResumo+'.</p>'
-    + '<p>1.2. A execução das atividades mencionadas no item anterior compreende:</p>'
-    + itemServicos
-    + '<p>1.3. O CONTRATADO se obriga a executar os serviços objeto do presente contrato, dentro dos padrões exigidos pela Vigilância Sanitária e em consonância com a CONTRATANTE.</p>'
-
-    + '<h2>CLÁUSULA SEGUNDA - DAS CONDIÇÕES DE PAGAMENTO</h2>'
-    + '<p>2.1. Pela prestação dos serviços especificados na Cláusula Primeira, a CONTRATANTE pagará ao CONTRATADO:</p>'
-    + '<p>a) A importância total de <b>R$ '+valor+'</b>, dividida em <b>'+parcelas+' ('+numeroPorExtenso(parcelas)+') parcelas mensais</b> de <b>R$ '+valorParcela+'</b>, com início em '+dataHoje+'.</p>'
-    + '<p>b) Os boletos terão vencimento nas seguintes datas: '+boletosStr+'.</p>'
-    + '<p>2.2. O atraso no pagamento acarretará multa de 2% sobre o valor em atraso, acrescido de juros de 1% ao mês.</p>'
-
-    + '<h2>CLÁUSULA TERCEIRA - DO PRAZO</h2>'
-    + '<p>3.1. O presente contrato terá validade a partir de '+dataHoje+', encerrando-se automaticamente em '+dataFimStr+'.</p>'
-    + '<p>3.2. Para eventual renovação deste contrato, deverá haver negociação expressa entre ambas as partes, com formalização por escrito, antes do término da vigência contratual.</p>'
-
-    + '<h2>CLÁUSULA QUARTA - DOS DIAS E HORÁRIOS DE EXECUÇÃO DOS SERVIÇOS</h2>'
-    + '<p>4.1. As datas e horários para a execução dos serviços deverão ser previamente acordadas entre as partes, respeitando a conveniência e rotina da CONTRATANTE.</p>'
-    + '<p>4.2. Fica vedada a realização dos serviços em horários ou dias considerados inapropriados ou que possam comprometer o bem-estar e segurança dos moradores.</p>'
-
-    + '<h2>CLÁUSULA QUINTA - DA RESCISÃO</h2>'
-    + clausulaRescisao
-
-    + '<h2>CLÁUSULA SEXTA - DO FORO</h2>'
-    + '<p>6.1. As partes elegem o foro da cidade de Uberlândia-MG para dirimir quaisquer dúvidas ou controvérsias decorrentes deste contrato, com renúncia expressa a qualquer outro por mais privilegiado que seja.</p>'
-
-    + obsClausula
-
-    + '<p style="margin-top:14px;">E por estarem assim justas e contratadas, assinam o presente instrumento em duas vias de igual teor.</p>'
-    + '<p style="margin-top:4px;">Uberlândia-MG, '+dataHoje+'.</p>'
-
-    + '<div class="assinaturas">'
-    + '<div class="ass-box">CONTRATANTE ____<br><br>___________________________________<br><small>'+nome+'</small></div>'
-    + '<div class="ass-box">CONTRATADO ____<br><br>___________________________________<br><small>'+nomeEmp+'</small></div>'
-    + '</div>'
-    + '<div class="assinaturas" style="margin-top:30px;">'
-    + '<div class="ass-box">TESTEMUNHAS ____<br><br>___________________________________<br><small>Nome: ______________________ CPF: ____________</small></div>'
-    + '<div class="ass-box"><br><br>___________________________________<br><small>Nome: ______________________ CPF: ____________</small></div>'
-    + '</div>'
-
-    + '</body></html>');
+    +'<style>'
+    +'body{font-family:Arial,sans-serif;margin:0;padding:0;background:#f1f5f9;}'
+    +'.toolbar{background:#1a3c6e;color:#fff;padding:12px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;}'
+    +'.toolbar button{padding:8px 20px;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:700;}'
+    +'.btn-print{background:#059669;color:#fff;}'
+    +'.btn-cancel{background:#fff3;color:#fff;}'
+    +'.editor-container{max-width:800px;margin:24px auto;background:#fff;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.1);overflow:hidden;}'
+    +'.editor-header{background:#1a3c6e;color:#fff;padding:14px 20px;font-size:14px;font-weight:700;}'
+    +'textarea{width:100%;min-height:700px;border:none;padding:24px;font-family:Arial,sans-serif;font-size:11pt;line-height:1.7;resize:vertical;outline:none;box-sizing:border-box;}'
+    +'@media print{'
+    +'.toolbar{display:none;}'
+    +'.editor-container{box-shadow:none;margin:0;border-radius:0;}'
+    +'.editor-header{display:none;}'
+    +'textarea{font-size:10.5pt;line-height:1.6;min-height:auto;padding:12mm 15mm;}'
+    +'}'
+    +'</style></head><body>'
+    +'<div class="toolbar">'
+    +'<span style="flex:1;font-size:14px;font-weight:700;">📄 Revise e edite o contrato antes de imprimir</span>'
+    +'<button class="btn-print" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>'
+    +'<button class="btn-cancel" onclick="window.close()">✕ Fechar</button>'
+    +'</div>'
+    +'<div class="editor-container">'
+    +'<div class="editor-header">Contrato de Prestação de Serviços — '+nome+' &nbsp;|&nbsp; Clique no texto para editar</div>'
+    +'<textarea id="contrato-texto">'+textoContrato+'</textarea>'
+    +'</div>'
+    +'</body></html>');
   win.document.close();
   win.focus();
-  // Auto-salvar cliente no Firebase
-  if(window._firebaseLoaded && nome && nome !== '___________________________'){
-    var nomeNorm = nome.trim().toLowerCase();
-    var existe = (window.clientes||[]).find(function(c){ return (c.nome||'').trim().toLowerCase()===nomeNorm; });
-    if(!existe){
-      var cliId = 'cli_'+Date.now().toString();
-      var dataVenc = '';
-      if(inicio){
-        var dt = new Date(inicio+'T12:00:00');
-        dt.setDate(dt.getDate()+90);
-        dataVenc = dt.toISOString().split('T')[0];
-      }
-      window._setDoc(window._doc(window._db,'clientes',cliId),{
-        id:cliId,
-        nome:nome,
-        fone:fone||'',
-        email:email||'',
-        endereco:endereco||'',
-        bairro:'',
-        cep:'',
-        cidade:'',
-        cnpj:cnpj||'',
-        tipo:servicos||'',
-        obs:'',
-        ultimoServico:inicio||'',
-        vencimento:dataVenc,
-        atualizadoEm:new Date().toISOString()
-      }).then(function(){
-        mostrarToast('Cliente salvo automaticamente! ✓');
-      }).catch(function(){});
-    } else {
-      mostrarToast('Contrato gerado! Cliente já cadastrado ✓');
-    }
-  }
-
-  // Salvar contrato no Firebase
-  function _salvarContrato() {
-    if(!window._firebaseLoaded || !window._setDoc) {
-      setTimeout(_salvarContrato, 500);
-      return;
-    }
-    var ctId = 'ct_' + Date.now().toString();
-    var dataVigFim = '';
-    if(inicio && vigencia) {
-      var dtFim = new Date(inicio+'T12:00:00');
-      dtFim.setMonth(dtFim.getMonth() + parseInt(vigencia));
-      dataVigFim = dtFim.toISOString().split('T')[0];
-    }
-    window._setDoc(window._doc(window._db,'contratos',ctId), {
-      id: ctId,
-      nome: nome,
-      cnpj: cnpj,
-      fone: fone,
-      email: email,
-      endereco: endereco,
-      servicos: servicos,
-      valor: valor,
-      parcelas: parcelas,
-      valorParcela: valorParcela,
-      inicio: inicio,
-      vigencia: vigencia,
-      vigenciaFim: dataVigFim,
-      cortesia: cortesia,
-      obs: obs,
-      linhasCronograma: window._cronogramaLinhas || [],
-      nomeEmp: nomeEmp,
-      cnpjEmp: cnpjEmp,
-      criadoEm: new Date().toISOString()
-    }).then(function(){
-        mostrarToast('Contrato salvo no sistema! ✓');
-        // Criar agendamentos automáticos para cada aplicação do cronograma
-        var linhas = window._cronogramaLinhas || [];
-        linhas.forEach(function(l, idx){
-          if(!l.data) return;
-          var agId = 'ag_ct_' + ctId + '_' + idx;
-          window._setDoc(window._doc(window._db,'agendamentos',agId), {
-            id: agId,
-            nome: nome,
-            fone: fone,
-            endereco: endereco,
-            data: l.data,
-            hora: '08:00',
-            servicos: servicos,
-            obs: (idx+1)+'ª aplicação — Contrato',
-            status: 'agendado',
-            contrato: ctId,
-            criadoEm: new Date().toISOString()
-          }).catch(function(){});
-        });
-      }).catch(function(e){ console.log('erro salvar contrato',e); });
-  }
-  _salvarContrato();
 
   fecharModal('modal-contrato');
 }
@@ -3365,14 +3288,29 @@ function gerarProposta(){
         </select>
       </div>
       <div>
-        <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">DIA DO VENCIMENTO DOS BOLETOS</label>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-size:13px;">Todo dia</span>
-          <input id="ct-dia-boleto" type="number" min="1" max="28" class="input" value="20" style="width:70px;">
-          <span style="font-size:13px;">de cada mês</span>
+        <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">VENCIMENTO DOS BOLETOS</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div>
+            <label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:3px;">PERIODICIDADE</label>
+            <select id="ct-periodo-boleto" class="input" onchange="atualizarBoletoContrato()" style="width:100%;">
+              <option value="mensal">Mensal</option>
+              <option value="trimestral">Trimestral</option>
+              <option value="semestral">Semestral</option>
+              <option value="anual">Anual</option>
+              <option value="avista">À vista</option>
+              <option value="personalizado">Personalizado</option>
+            </select>
+          </div>
+          <div id="ct-dia-boleto-box">
+            <label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:3px;">DIA DO VENCIMENTO</label>
+            <input id="ct-dia-boleto" type="number" min="1" max="28" class="input" value="20" style="width:100%;">
+          </div>
+        </div>
+        <div id="ct-boleto-personalizado-box" style="display:none;margin-top:8px;">
+          <label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:3px;">DESCREVA AS DATAS / CONDIÇÕES</label>
+          <textarea id="ct-boleto-personalizado" class="input" rows="2" placeholder="Ex: 50% na assinatura e 50% após o serviço..." style="width:100%;resize:vertical;"></textarea>
         </div>
       </div>
-      <div>
         <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">OBSERVAÇÕES ADICIONAIS</label>
         <textarea id="ct-obs" class="input" rows="3" placeholder="Ex: Limpeza de caixa de gordura inclusa como cortesia..." style="width:100%;resize:vertical;"></textarea>
       </div>
