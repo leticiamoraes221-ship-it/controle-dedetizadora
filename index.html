@@ -2383,7 +2383,7 @@ function atualizarBoletoContrato() {
   if(periodo === 'personalizado') {
     if(diaBox) diaBox.style.display = 'none';
     if(persBox) persBox.style.display = 'block';
-  } else if(periodo === 'avista') {
+  } else if(periodo === 'avista' || periodo === '30dias') {
     if(diaBox) diaBox.style.display = 'none';
     if(persBox) persBox.style.display = 'none';
   } else {
@@ -2432,6 +2432,8 @@ function confirmarGerarContrato() {
   var boletosStr = '';
   if(periodo === 'avista') {
     boletosStr = 'À vista, no ato da contratação.';
+  } else if(periodo === '30dias') {
+    boletosStr = '30 (trinta) dias após a realização de cada serviço.';
   } else if(periodo === 'personalizado') {
     boletosStr = boletoPersonalizado || 'Conforme negociado entre as partes.';
   } else {
@@ -2479,6 +2481,7 @@ function confirmarGerarContrato() {
     + (temAgua ? '5.2. Em caso de rescisão, o serviço de limpeza de caixa d\'água já realizado deverá ser pago integralmente de forma proporcional ao período contratado.\n' : '');
 
   var pgtoTexto = periodo === 'avista' ? 'À vista.' :
+    periodo === '30dias' ? 'Com vencimento 30 dias após a realização de cada serviço.' :
     periodo === 'personalizado' ? boletoPersonalizado :
     'Em '+parcelas+' parcelas '+periodo+'s de R$ '+valorParcela+', com vencimento todo dia '+diaBoleto+'.';
 
@@ -3293,7 +3296,8 @@ function gerarProposta(){
           <div>
             <label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:3px;">PERIODICIDADE</label>
             <select id="ct-periodo-boleto" class="input" onchange="atualizarBoletoContrato()" style="width:100%;">
-              <option value="mensal">Mensal</option>
+              <option value="30dias">30 dias após o serviço</option>
+<option value="mensal">Mensal</option>
               <option value="trimestral">Trimestral</option>
               <option value="semestral">Semestral</option>
               <option value="anual">Anual</option>
