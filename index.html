@@ -321,7 +321,7 @@
     <button class="btn btn-outline" onclick="limparForm()">Limpar</button>
     <button class="btn btn-gold" onclick="abrirCertificado()">📄 Gerar Laudo / Certificado</button>
     <button class="btn btn-primary" onclick="salvarOrcamento()">💾 Salvar Orçamento</button>
-    <button class="btn btn-success" onclick="gerarReciboAtual()" style="background:#059669;border-color:#059669;">🧾 Gerar Recibo</button>
+
     <button class="btn btn-success" onclick="gerarReciboAtual()" style="background:#059669;">🧾 Gerar Recibo</button>
     <button class="btn btn-outline" onclick="gerarContrato()" style="border-color:#1a3c6e;color:#1a3c6e;">📄 Gerar Contrato</button>
   </div>
@@ -1040,6 +1040,21 @@ function numeroPorExtenso(n) {
   return ext[n] || String(n);
 }
 
+function autoSalvarCliente(dados) {
+  // Salva ou atualiza cliente no Firebase se tiver nome
+  if(!dados.nome || !window._firebaseLoaded || !window._setDoc) return;
+  var clientes = window.clientes || [];
+  var existente = clientes.find(function(c){
+    return c.nome.toLowerCase().trim() === dados.nome.toLowerCase().trim();
+  });
+  if(existente) return; // já existe, não duplicar
+  var id = 'auto_' + Date.now().toString();
+  var cli = Object.assign({ id: id, criadoEm: new Date().toISOString() }, dados);
+  window._setDoc(window._doc(window._db,'clientes',id), cli)
+    .then(function(){ mostrarToast('Cliente salvo automaticamente! ✓'); })
+    .catch(function(e){ console.log('autoSalvar:', e); });
+}
+
 function proximoNumOrc() {
   if (!orcamentos.length) return '001';
   var nums = orcamentos.map(function(o){
@@ -1448,6 +1463,7 @@ function imprimirCert(){
   var certDiv = document.getElementById('cert-printable');
   if (!certDiv) { alert('Gere o certificado primeiro.'); return; }
   var conteudo = certDiv.outerHTML;
+  var linhasCrono = window._cronogramaLinhas || [];
   var emp = JSON.parse(localStorage.getItem('empresa_emissora')||'{}');
   var nomeEmp = emp.empresa || 'Controle Dedetizadora Ltda.';
   
@@ -1805,6 +1821,8 @@ function gerarCronogramaPDF() {
     +'</div>');
   win.document.close();
   win.focus();
+  // Auto-salvar cliente da proposta
+  autoSalvarCliente({nome:nome, cnpj:cnpj, fone:fone, email:email, endereco:end});
 }
 
 function adicionarProdutoPadrao(){
@@ -2413,8 +2431,6 @@ function confirmarGerarContrato() {
   var inicio   = document.getElementById('ct-inicio').value;
   var vigencia = document.getElementById('ct-vigencia').value;
   var obs      = document.getElementById('ct-obs').value;
-  var periodo  = document.getElementById('ct-periodo-boleto') ? document.getElementById('ct-periodo-boleto').value : 'mensal';
-  var diaBoleto = parseInt(document.getElementById('ct-dia-boleto') ? document.getElementById('ct-dia-boleto').value||'20' : '20');
   var boletoPersonalizado = document.getElementById('ct-boleto-personalizado') ? document.getElementById('ct-boleto-personalizado').value : '';
 
   var emp = JSON.parse(localStorage.getItem('empresa_emissora')||'{}');
@@ -2429,24 +2445,7 @@ function confirmarGerarContrato() {
   var dataFimStr = dataFim.toLocaleDateString('pt-BR', {day:'2-digit',month:'long',year:'numeric'});
 
   // Gerar datas dos boletos conforme periodicidade
-  var boletosStr = '';
-  if(periodo === 'avista') {
-    boletosStr = 'À vista, no ato da contratação.';
-  } else if(periodo === '30dias') {
-    boletosStr = '30 (trinta) dias após a realização de cada serviço.';
-  } else if(periodo === 'personalizado') {
-    boletosStr = boletoPersonalizado || 'Conforme negociado entre as partes.';
-  } else {
-    var intervalo = periodo === 'mensal' ? 1 : periodo === 'trimestral' ? 3 : periodo === 'semestral' ? 6 : 12;
-    var boletos = [];
-    for(var b=0; b*intervalo < parseInt(vigencia||12); b++){
-      var dtBol = new Date(dataInicio);
-      dtBol.setMonth(dtBol.getMonth() + (b * intervalo));
-      dtBol.setDate(diaBoleto);
-      boletos.push('<b>'+dtBol.toLocaleDateString('pt-BR')+'</b>');
-    }
-    boletosStr = boletos.join(', ') + '.';
-  }
+  var boletosStr = boletoPersonalizado || 'Conforme negociado entre as partes.';
 
   // Serviços
   var itemServicos = '';
@@ -2480,10 +2479,7 @@ function confirmarGerarContrato() {
   var clausulaRescisao = '5.1. O contrato poderá ser rescindido por mútuo acordo ou por iniciativa de qualquer das partes, a qualquer tempo, antes do término do prazo estipulado na Cláusula Terceira, mediante comunicação escrita com antecedência mínima de três meses.\n'
     + (temAgua ? '5.2. Em caso de rescisão, o serviço de limpeza de caixa d\'água já realizado deverá ser pago integralmente de forma proporcional ao período contratado.\n' : '');
 
-  var pgtoTexto = periodo === 'avista' ? 'À vista.' :
-    periodo === '30dias' ? 'Com vencimento 30 dias após a realização de cada serviço.' :
-    periodo === 'personalizado' ? boletoPersonalizado :
-    'Em '+parcelas+' parcelas '+periodo+'s de R$ '+valorParcela+', com vencimento todo dia '+diaBoleto+'.';
+  var pgtoTexto = boletoPersonalizado || 'Conforme negociado entre as partes.';
 
   // Montar texto completo editável
   var textoContrato =
@@ -2503,6 +2499,8 @@ function confirmarGerarContrato() {
 +'2.2. O atraso no pagamento acarretará multa de 2% sobre o valor em atraso, acrescido de juros de 1% ao mês.\n\n'
 +'CLÁUSULA TERCEIRA - DO PRAZO\n\n'
 +'3.1. O presente contrato terá validade a partir de '+dataHoje+', encerrando-se automaticamente em '+dataFimStr+'.\n\n'
++(linhasCrono.length ? '3.2. Com execução dos serviços nas seguintes datas: '+linhasCrono.map(function(l){return l.data ? (function(d){var p=d.split('-');return p[2]+'/'+p[1]+'/'+p[0];})(l.data) : ''}).filter(Boolean).join(', ')+'.\n\n' : '')
++(!linhasCrono.length ? '3.2. Para eventual renovação deste contrato, deverá haver negociação expressa entre ambas as partes, com formalização por escrito, antes do término da vigência contratual.\n\n' : '3.3. Para eventual renovação deste contrato, deverá haver negociação expressa entre ambas as partes, com formalização por escrito, antes do término da vigência contratual.\n\n')
 +'3.2. Para eventual renovação deste contrato, deverá haver negociação expressa entre ambas as partes, com formalização por escrito, antes do término da vigência contratual.\n\n'
 +'CLÁUSULA QUARTA - DOS DIAS E HORÁRIOS DE EXECUÇÃO DOS SERVIÇOS\n\n'
 +'4.1. As datas e horários para a execução dos serviços deverão ser previamente acordadas entre as partes, respeitando a conveniência e rotina da CONTRATANTE.\n\n'
@@ -2552,6 +2550,8 @@ function confirmarGerarContrato() {
   win.document.close();
   win.focus();
 
+  // Auto-salvar cliente
+  autoSalvarCliente({nome:nome, cnpj:cnpj, fone:fone, email:email, endereco:endereco});
   fecharModal('modal-contrato');
 }
 
@@ -3292,27 +3292,9 @@ function gerarProposta(){
       </div>
       <div>
         <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">VENCIMENTO DOS BOLETOS</label>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-          <div>
-            <label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:3px;">PERIODICIDADE</label>
-            <select id="ct-periodo-boleto" class="input" onchange="atualizarBoletoContrato()" style="width:100%;">
-              <option value="30dias">30 dias após o serviço</option>
-<option value="mensal">Mensal</option>
-              <option value="trimestral">Trimestral</option>
-              <option value="semestral">Semestral</option>
-              <option value="anual">Anual</option>
-              <option value="avista">À vista</option>
-              <option value="personalizado">Personalizado</option>
-            </select>
-          </div>
-          <div id="ct-dia-boleto-box">
-            <label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:3px;">DIA DO VENCIMENTO</label>
-            <input id="ct-dia-boleto" type="number" min="1" max="28" class="input" value="20" style="width:100%;">
-          </div>
-        </div>
-        <div id="ct-boleto-personalizado-box" style="display:none;margin-top:8px;">
-          <label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:3px;">DESCREVA AS DATAS / CONDIÇÕES</label>
-          <textarea id="ct-boleto-personalizado" class="input" rows="2" placeholder="Ex: 50% na assinatura e 50% após o serviço..." style="width:100%;resize:vertical;"></textarea>
+        <div>
+          <label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:3px;">DATAS / CONDIÇÕES DE PAGAMENTO</label>
+          <textarea id="ct-boleto-personalizado" class="input" rows="3" placeholder="Ex: 30 dias após o serviço&#10;Ex: 20/07/2026, 20/08/2026, 20/09/2026&#10;Ex: À vista no ato da contratação" style="width:100%;resize:vertical;font-size:12px;"></textarea>
         </div>
       </div>
         <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">OBSERVAÇÕES ADICIONAIS</label>
