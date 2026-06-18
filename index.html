@@ -714,6 +714,18 @@
   </div>
 </section>
 
+<!-- ══ MODAL PRONTUÁRIO ══ -->
+<div class="modal-overlay" id="modal-prontuario">
+  <div class="modal" style="max-width:780px;max-height:90vh;overflow-y:auto;">
+    <div class="modal-header" style="background:#1a3c6e;color:#fff;">
+      <span class="modal-title" id="pront-titulo">📁 Prontuário do Cliente</span>
+      <button class="modal-close" onclick="fecharModal('modal-prontuario')" style="color:#fff;">✕</button>
+    </div>
+    <div class="modal-body" id="pront-body" style="padding:20px;">
+    </div>
+  </div>
+</div>
+
 <!-- ══ MODAL CERTIFICADO ══ -->
 <div class="modal-overlay" id="modal-cert">
   <div class="modal">
@@ -814,6 +826,13 @@
     </div>
     <div class="modal-body">
       <div class="grid-2">
+        <div class="span-2">
+          <label>Tipo de Cliente</label>
+          <div style="display:flex;gap:16px;margin-top:4px;">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;"><input type="radio" name="cli-tipo-pessoa" value="PF" checked> 🏠 Pessoa Física (Residencial)</label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;"><input type="radio" name="cli-tipo-pessoa" value="PJ"> 🏢 Pessoa Jurídica (Condomínio/Empresa)</label>
+          </div>
+        </div>
         <div class="span-2"><label>Nome / Razão Social</label><input id="cli-nome" placeholder="Nome completo ou razão social"></div>
         <div class="span-2"><label>Endereço</label><input id="cli-endereco" placeholder="Rua, número..."></div>
         <div><label>Bairro</label><input id="cli-bairro" placeholder="Bairro"></div>
@@ -826,6 +845,15 @@
         <div class="span-2"><label>Observações</label><textarea id="cli-obs" style="min-height:60px;" placeholder="Observações sobre o cliente..."></textarea></div>
         <div><label>Último Serviço Realizado</label><input type="date" id="cli-ultimo-servico"></div>
         <div><label>Próximo Vencimento</label><input type="date" id="cli-vencimento"></div>
+        <div><label>Dia do Boleto (PJ)</label><input type="number" id="cli-dia-boleto" placeholder="Ex: 20" min="1" max="28"></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+          <input type="checkbox" id="cli-emite-laudo" style="width:16px;height:16px;">
+          <label for="cli-emite-laudo" style="font-size:13px;cursor:pointer;">Emite Laudo</label>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+          <input type="checkbox" id="cli-alerta-boleto" style="width:16px;height:16px;">
+          <label for="cli-alerta-boleto" style="font-size:13px;cursor:pointer;">Alertar para emitir boleto no Sicoob</label>
+        </div>
       </div>
       <input type="hidden" id="cli-id">
       <div class="btn-row" style="margin-top:16px;">
@@ -1886,6 +1914,10 @@ async function salvarCliente() {
     cnpj: document.getElementById('cli-cnpj').value,
     tipo: document.getElementById('cli-tipo').value,
     obs: document.getElementById('cli-obs').value,
+    tipoPessoa: document.querySelector('input[name="cli-tipo-pessoa"]:checked') ? document.querySelector('input[name="cli-tipo-pessoa"]:checked').value : 'PF',
+    diaBoleto: document.getElementById('cli-dia-boleto').value || '',
+    emiteLaudo: document.getElementById('cli-emite-laudo').checked,
+    alertaBoleto: document.getElementById('cli-alerta-boleto').checked,
     ultimoServico: document.getElementById('cli-ultimo-servico').value,
     vencimento: document.getElementById('cli-vencimento').value,
     atualizadoEm: new Date().toISOString()
@@ -1985,12 +2017,18 @@ function renderClientes(lista) {
       else if (dias <= 30) badge = '<span class="badge badge-gold">Vence em '+dias+'d</span>';
       else badge = '<span class="badge badge-green">Vence '+fmtData(c.vencimento)+'</span>';
     }
+    var tipoBadge = c.tipoPessoa === 'PJ'
+      ? '<span style="background:#dbeafe;color:#1d4ed8;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;margin-right:4px;">🏢 PJ</span>'
+      : '<span style="background:#f0fdf4;color:#15803d;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;margin-right:4px;">🏠 PF</span>';
+    var laudoBadge = c.emiteLaudo ? '<span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;margin-right:4px;">📋 Laudo</span>' : '';
+    var boletoBadge = c.alertaBoleto ? '<span style="background:#ede9fe;color:#7c3aed;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;">💰 Boleto</span>' : '';
     return '<div class="cli-card" data-cid="'+c.id+'">'
       +'<div>'
-      +'<div class="cli-nome">'+(c.nome||'—')+' '+badge+'</div>'
+      +'<div class="cli-nome">'+(c.nome||'—')+' '+tipoBadge+laudoBadge+boletoBadge+badge+'</div>'
       +'<div class="cli-info">'+(c.fone ? c.fone+'  ' : '')+(c.tipo ? c.tipo+'  ' : '')+(c.endereco ? c.endereco+(c.bairro?', '+c.bairro:'') : '')+'</div>'
       +'</div>'
       +'<div class="cli-actions">'
+      +'<button class="btn btn-outline cli-btn-pront" data-cid="'+c.id+'" style="padding:6px 12px;font-size:11px;background:#1a3c6e;color:#fff;border-color:#1a3c6e;">📁 Prontuário</button>'
       +'<button class="btn btn-primary cli-btn-usar" data-cid="'+c.id+'" style="padding:6px 12px;font-size:11px;">Usar</button>'
       +'<button class="btn btn-outline cli-btn-hist" data-cid="'+c.id+'" style="padding:6px 12px;font-size:11px;">Histórico</button>'
       +'<button class="btn btn-gold cli-btn-edit" data-cid="'+c.id+'" style="padding:6px 12px;font-size:11px;">✏️</button>'
@@ -1999,6 +2037,7 @@ function renderClientes(lista) {
       +'</div>';
   }).join('');
   container.innerHTML = html;
+  container.querySelectorAll('.cli-btn-pront').forEach(function(b){ b.addEventListener('click', function(){ abrirProntuario(this.dataset.cid); }); });
   container.querySelectorAll('.cli-btn-usar').forEach(function(b){ b.addEventListener('click', function(){ usarClienteNoOrcamento(this.getAttribute('data-cid')); }); });
   container.querySelectorAll('.cli-btn-hist').forEach(function(b){ b.addEventListener('click', function(){ verHistoricoCliente(this.getAttribute('data-cid')); }); });
   container.querySelectorAll('.cli-btn-edit').forEach(function(b){ b.addEventListener('click', function(){ abrirModalCliente(this.getAttribute('data-cid')); }); });
@@ -3162,6 +3201,163 @@ function gerarProposta(){
   win.document.write(html);
   win.document.close();
   win.focus();
+}
+
+
+// ══ PRONTUÁRIO DO CLIENTE ══
+function abrirProntuario(cid) {
+  var c = (window.clientes||[]).find(function(x){ return x.id===cid; });
+  if(!c) return;
+
+  document.getElementById('pront-titulo').textContent = '📁 ' + c.nome;
+
+  var hoje = new Date(); hoje.setHours(0,0,0,0);
+
+  // Vencimento
+  var diasVenc = null;
+  var vencBadge = '';
+  if(c.vencimento) {
+    diasVenc = Math.ceil((new Date(c.vencimento+'T12:00:00') - hoje)/(1000*60*60*24));
+    vencBadge = diasVenc < 0
+      ? '<span style="background:#fee2e2;color:#dc2626;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;">Vencido há '+Math.abs(diasVenc)+'d</span>'
+      : diasVenc <= 30
+      ? '<span style="background:#fef3c7;color:#d97706;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;">Vence em '+diasVenc+'d</span>'
+      : '<span style="background:#d1fae5;color:#059669;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;">Vence em '+diasVenc+'d</span>';
+  }
+
+  // Orçamentos do cliente
+  var orcsCli = (window.orcamentos||[]).filter(function(o){ return (o.nome||'').toLowerCase().includes((c.nome||'').toLowerCase()); });
+
+  // Contratos do cliente
+  var contratosCli = (window._contratos||[]).filter(function(ct){ return (ct.nome||'').toLowerCase().includes((c.nome||'').toLowerCase()); });
+
+  // Alertas de boleto
+  var boletoBadge = '';
+  if(c.alertaBoleto && c.diaBoleto) {
+    var diaAtual = hoje.getDate();
+    var diasBoleto = parseInt(c.diaBoleto) - diaAtual;
+    if(diasBoleto >= 0 && diasBoleto <= 5) {
+      boletoBadge = '<div style="background:#ede9fe;border-left:4px solid #7c3aed;padding:10px 14px;border-radius:8px;margin-bottom:12px;">'
+        + '💰 <b>Emita o boleto no Sicoob!</b> Vence dia <b>'+c.diaBoleto+'</b> (em '+diasBoleto+' dia(s))'
+        + '</div>';
+    }
+  }
+
+  var html = ''
+    // Dados cadastrais
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;background:#f8fafc;border-radius:10px;padding:14px;margin-bottom:16px;">'
+    + '<div><b style="color:#64748b;font-size:11px;">TIPO</b><br>' + (c.tipoPessoa==='PJ'?'🏢 Pessoa Jurídica':'🏠 Pessoa Física') + '</div>'
+    + '<div><b style="color:#64748b;font-size:11px;">PRÓXIMO VENCIMENTO</b><br>' + (c.vencimento ? fmtDataBR(c.vencimento)+' '+vencBadge : '—') + '</div>'
+    + '<div><b style="color:#64748b;font-size:11px;">TELEFONE</b><br>' + (c.fone||'—') + '</div>'
+    + '<div><b style="color:#64748b;font-size:11px;">E-MAIL</b><br>' + (c.email||'—') + '</div>'
+    + '<div><b style="color:#64748b;font-size:11px;">CNPJ/CPF</b><br>' + (c.cnpj||'—') + '</div>'
+    + '<div><b style="color:#64748b;font-size:11px;">TIPO COMÉRCIO</b><br>' + (c.tipo||'—') + '</div>'
+    + '<div style="grid-column:1/-1;"><b style="color:#64748b;font-size:11px;">ENDEREÇO</b><br>' + ([c.endereco,c.bairro,c.cidade].filter(Boolean).join(', ')||'—') + '</div>'
+    + (c.obs ? '<div style="grid-column:1/-1;"><b style="color:#64748b;font-size:11px;">OBS</b><br>' + c.obs + '</div>' : '')
+    + (c.emiteLaudo ? '<div><b style="color:#64748b;font-size:11px;">LAUDO</b><br>✅ Emite laudo</div>' : '')
+    + (c.alertaBoleto ? '<div><b style="color:#64748b;font-size:11px;">BOLETO</b><br>💰 Alerta ativo — dia ' + (c.diaBoleto||'?') + '</div>' : '')
+    + '</div>'
+
+    // Alerta boleto
+    + boletoBadge
+
+    // Contratos
+    + '<div style="margin-bottom:16px;">'
+    + '<div style="font-weight:800;font-size:13px;color:#1a3c6e;margin-bottom:8px;">📄 Contratos ('+contratosCli.length+')</div>'
+    + (contratosCli.length ? contratosCli.map(function(ct){
+        var diasCt = ct.vigenciaFim ? Math.ceil((new Date(ct.vigenciaFim+'T12:00:00')-hoje)/(1000*60*60*24)) : null;
+        var stBadge = diasCt===null?'' : diasCt<0
+          ? '<span style="background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:20px;font-size:11px;">Vencido</span>'
+          : '<span style="background:#d1fae5;color:#059669;padding:2px 8px;border-radius:20px;font-size:11px;">Vigente — '+diasCt+'d</span>';
+        return '<div style="border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">'
+          + '<div><div style="font-weight:700;font-size:13px;">'+ct.servicos+'</div>'
+          + '<div style="font-size:12px;color:#64748b;">R$ '+ct.valor+' · '+ct.parcelas+'x · Início: '+(ct.inicio?fmtDataBR(ct.inicio):'—')+'</div></div>'
+          + '<div style="display:flex;gap:6px;align-items:center;">'+stBadge
+          + '<button onclick="reimprirContrato(\''+ct.id+'\')" style="padding:4px 10px;background:#1a3c6e;color:#fff;border:none;border-radius:6px;font-size:11px;cursor:pointer;">🖨️</button>'
+          + '</div></div>';
+      }).join('') : '<div style="color:#94a3b8;font-size:13px;">Nenhum contrato cadastrado</div>')
+    + '</div>'
+
+    // Orçamentos
+    + '<div style="margin-bottom:16px;">'
+    + '<div style="font-weight:800;font-size:13px;color:#1a3c6e;margin-bottom:8px;">📋 Orçamentos ('+orcsCli.length+')</div>'
+    + (orcsCli.length ? orcsCli.slice(0,5).map(function(o){
+        return '<div style="border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">'
+          + '<div><div style="font-weight:700;font-size:13px;">Nº'+o.num+' — '+fmtDataBR(o.data)+'</div>'
+          + '<div style="font-size:12px;color:#64748b;">'+o.servicos+' · R$ '+o.valor+'</div></div>'
+          + '</div>';
+      }).join('') : '<div style="color:#94a3b8;font-size:13px;">Nenhum orçamento</div>')
+    + '</div>'
+
+    // Ações rápidas
+    + '<div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid #e2e8f0;padding-top:14px;">'
+    + '<button onclick="usarClienteNoOrcamento(\''+c.id+'\');fecharModal(\'modal-prontuario\')" class="btn btn-primary" style="font-size:12px;padding:8px 14px;">+ Novo Orçamento</button>'
+    + '<button onclick="fecharModal(\'modal-prontuario\');setTimeout(function(){abrirModalCliente(\''+c.id+'\')},200)" class="btn btn-outline" style="font-size:12px;padding:8px 14px;">✏️ Editar Cliente</button>'
+    + '</div>';
+
+  document.getElementById('pront-body').innerHTML = html;
+  document.getElementById('modal-prontuario').classList.add('open');
+}
+
+// ══ ALERTAS INTELIGENTES MELHORADOS ══
+function verificarVencimentos() {
+  var container = document.getElementById('alertas-vencimento');
+  if (!container) return;
+  var hoje = new Date(); hoje.setHours(0,0,0,0);
+  var diaAtual = hoje.getDate();
+
+  var alertas = [];
+
+  // Alertas de clientes (vencimento de serviço)
+  (window.clientes||[]).forEach(function(c){
+    if(!c.vencimento) return;
+    var dias = Math.ceil((new Date(c.vencimento+'T12:00:00')-hoje)/(1000*60*60*24));
+    if(dias <= 30) alertas.push({ tipo:'servico', subtipo: c.tipoPessoa||'PF', nome:c.nome, dias:dias, data:c.vencimento, id:c.id });
+
+    // Alerta de boleto (PJ)
+    if(c.alertaBoleto && c.diaBoleto) {
+      var diasBol = parseInt(c.diaBoleto) - diaAtual;
+      if(diasBol >= 0 && diasBol <= 5) {
+        alertas.push({ tipo:'boleto', nome:c.nome, dias:diasBol, diaBoleto:c.diaBoleto, id:c.id });
+      }
+    }
+  });
+
+  // Alertas de contratos
+  (window._contratos||[]).forEach(function(ct){
+    if(!ct.vigenciaFim) return;
+    var dias = Math.ceil((new Date(ct.vigenciaFim+'T12:00:00')-hoje)/(1000*60*60*24));
+    if(dias <= 60) alertas.push({ tipo:'contrato', nome:ct.nome, dias:dias, data:ct.vigenciaFim, id:ct.id });
+  });
+
+  if(!alertas.length){ container.innerHTML=''; return; }
+
+  alertas.sort(function(a,b){ return a.dias - b.dias; });
+
+  var html = '<div style="font-family:Syne,sans-serif;font-weight:800;font-size:14px;margin-bottom:10px;color:#d97706;">⚠️ Alertas ('+alertas.length+')</div>';
+  html += alertas.map(function(item){
+    var vencido = item.dias < 0;
+    var urgente = item.dias >= 0 && item.dias <= 7;
+    var cor = item.tipo==='boleto' ? '#f5f3ff' : vencido ? '#fee2e2' : urgente ? '#fef3c7' : '#f0fdf4';
+    var corBorda = item.tipo==='boleto' ? '#7c3aed' : vencido ? '#dc2626' : urgente ? '#d97706' : '#059669';
+    var icone = item.tipo==='boleto' ? '💰' : item.tipo==='contrato' ? '📄' : item.subtipo==='PJ' ? '🏢' : '🏠';
+    var label = item.tipo==='boleto' ? '[Boleto Sicoob]' : item.tipo==='contrato' ? '[Contrato]' : item.subtipo==='PJ' ? '[Condomínio/Empresa]' : '[Residencial]';
+    var diasTxt = item.tipo==='boleto'
+      ? 'Emitir boleto — vence dia '+item.diaBoleto+(item.dias===0?' (HOJE)':' (em '+item.dias+'d)')
+      : vencido ? 'Vencido há '+Math.abs(item.dias)+' dias'
+      : item.dias===0 ? 'Vence HOJE!'
+      : 'Vence em '+item.dias+' dia(s) — '+fmtDataBR(item.data);
+
+    return '<div style="background:'+cor+';border-left:4px solid '+corBorda+';border-radius:8px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;">'
+      + '<div>'
+      + '<div style="font-weight:700;font-size:13px;">'+icone+' '+item.nome+' <span style="font-size:11px;color:#64748b;font-weight:400;">'+label+'</span></div>'
+      + '<div style="font-size:12px;color:#374151;margin-top:2px;">'+diasTxt+'</div>'
+      + '</div>'
+      + '<button onclick="abrirProntuario(\''+item.id+'\')" style="padding:5px 12px;background:#1a3c6e;color:#fff;border:none;border-radius:6px;font-size:11px;cursor:pointer;white-space:nowrap;">Ver</button>'
+      + '</div>';
+  }).join('') + '<div style="margin-bottom:16px;"></div>';
+
+  container.innerHTML = html;
 }
 
 </script>
