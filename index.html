@@ -155,6 +155,7 @@
 <header>
   <div class="logo">Controle <span>Dedetizadora</span> <span id="sync-indicator" style="font-size:10px;font-weight:400;opacity:.7;margin-left:8px;"><span class="sync-dot"></span>Online</span></div>
   <div class="tabs">
+    <button class="tab-btn" data-tab="dashboard">📊 Dashboard</button>
     <button class="tab-btn active" data-tab="orcamento">Orçamento</button>
     <button class="tab-btn" data-tab="historico">Histórico</button>
     <button class="tab-btn" data-tab="agenda">📅 Agenda</button>
@@ -168,6 +169,78 @@
 <div class="container">
 
 <!-- ══ ORÇAMENTO ══ -->
+<!-- ══ DASHBOARD ══ -->
+<section class="section" id="sec-dashboard">
+  <div id="dash-container">
+    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;margin-bottom:4px;">📊 Dashboard</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:20px;" id="dash-mes-label">Carregando...</div>
+
+    <!-- Cards de resumo -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px;">
+      <div class="card" style="padding:18px;text-align:center;border-top:4px solid #2563eb;">
+        <div style="font-size:28px;font-weight:900;color:#2563eb;" id="dash-total-clientes">—</div>
+        <div style="font-size:12px;color:#64748b;margin-top:4px;">Clientes Ativos</div>
+      </div>
+      <div class="card" style="padding:18px;text-align:center;border-top:4px solid #059669;">
+        <div style="font-size:28px;font-weight:900;color:#059669;" id="dash-servicos-mes">—</div>
+        <div style="font-size:12px;color:#64748b;margin-top:4px;">Serviços este mês</div>
+      </div>
+      <div class="card" style="padding:18px;text-align:center;border-top:4px solid #d97706;">
+        <div style="font-size:22px;font-weight:900;color:#d97706;" id="dash-faturamento">—</div>
+        <div style="font-size:12px;color:#64748b;margin-top:4px;">Faturamento previsto</div>
+      </div>
+      <div class="card" style="padding:18px;text-align:center;border-top:4px solid #dc2626;">
+        <div style="font-size:28px;font-weight:900;color:#dc2626;" id="dash-vencidos">—</div>
+        <div style="font-size:12px;color:#64748b;margin-top:4px;">Vencimentos atrasados</div>
+      </div>
+      <div class="card" style="padding:18px;text-align:center;border-top:4px solid #7c3aed;">
+        <div style="font-size:28px;font-weight:900;color:#7c3aed;" id="dash-boletos-emitir">—</div>
+        <div style="font-size:12px;color:#64748b;margin-top:4px;">Boletos a emitir</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;">
+
+      <!-- Próximos serviços -->
+      <div class="card">
+        <div class="card-header">📅 Próximos Serviços (30 dias)</div>
+        <div class="card-body" id="dash-proximos-servicos">
+          <div style="color:#94a3b8;font-size:13px;">Carregando...</div>
+        </div>
+      </div>
+
+      <!-- Boletos a emitir este mês -->
+      <div class="card">
+        <div class="card-header">💰 Boletos a Emitir no Sicoob</div>
+        <div class="card-body" id="dash-boletos-lista">
+          <div style="color:#94a3b8;font-size:13px;">Carregando...</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+
+      <!-- PF vs PJ -->
+      <div class="card">
+        <div class="card-header">👥 Clientes por Tipo</div>
+        <div class="card-body" id="dash-tipos">
+          <div style="color:#94a3b8;font-size:13px;">Carregando...</div>
+        </div>
+      </div>
+
+      <!-- Contratos para renovar -->
+      <div class="card">
+        <div class="card-header">📄 Contratos para Renovar (60 dias)</div>
+        <div class="card-body" id="dash-renovacoes">
+          <div style="color:#94a3b8;font-size:13px;">Carregando...</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
 <section class="section active" id="sec-orcamento">
 
   <div class="card">
@@ -1319,6 +1392,7 @@ function limparForm(){
 }
 
 function showTab(tab){
+  if(tab === 'dashboard') setTimeout(initDashboard, 100);
   document.querySelectorAll('.section').forEach(function(s){ s.classList.remove('active'); });
   document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
   var sec = document.getElementById('sec-'+tab);
@@ -2037,7 +2111,7 @@ function renderClientes(lista) {
       +'</div>';
   }).join('');
   container.innerHTML = html;
-  container.querySelectorAll('.cli-btn-pront').forEach(function(b){ b.addEventListener('click', function(){ abrirProntuario(this.dataset.cid); }); });
+  container.querySelectorAll('.cli-btn-pront').forEach(function(b){ b.onclick = function(){ abrirProntuario(this.getAttribute('data-cid')); }; });
   container.querySelectorAll('.cli-btn-usar').forEach(function(b){ b.addEventListener('click', function(){ usarClienteNoOrcamento(this.getAttribute('data-cid')); }); });
   container.querySelectorAll('.cli-btn-hist').forEach(function(b){ b.addEventListener('click', function(){ verHistoricoCliente(this.getAttribute('data-cid')); }); });
   container.querySelectorAll('.cli-btn-edit').forEach(function(b){ b.addEventListener('click', function(){ abrirModalCliente(this.getAttribute('data-cid')); }); });
@@ -3358,6 +3432,144 @@ function verificarVencimentos() {
   }).join('') + '<div style="margin-bottom:16px;"></div>';
 
   container.innerHTML = html;
+}
+
+
+// ══ DASHBOARD ══
+function initDashboard() {
+  var hoje = new Date();
+  hoje.setHours(0,0,0,0);
+  var meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  var label = document.getElementById('dash-mes-label');
+  if(label) label.textContent = meses[hoje.getMonth()] + ' de ' + hoje.getFullYear();
+
+  var clientes = window.clientes || [];
+  var contratos = window._contratos || [];
+  var orcamentos = window.orcamentos || [];
+
+  // Total clientes
+  var elTotalCli = document.getElementById('dash-total-clientes');
+  if(elTotalCli) elTotalCli.textContent = clientes.length;
+
+  // PF vs PJ
+  var pf = clientes.filter(function(c){ return (c.tipoPessoa||'PF') === 'PF'; }).length;
+  var pj = clientes.filter(function(c){ return c.tipoPessoa === 'PJ'; }).length;
+  var elTipos = document.getElementById('dash-tipos');
+  if(elTipos) {
+    elTipos.innerHTML = '<div style="display:flex;gap:20px;justify-content:center;padding:10px 0;">'
+      + '<div style="text-align:center;"><div style="font-size:32px;font-weight:900;color:#059669;">'+pf+'</div><div style="font-size:12px;color:#64748b;">🏠 Residenciais (PF)</div></div>'
+      + '<div style="text-align:center;"><div style="font-size:32px;font-weight:900;color:#2563eb;">'+pj+'</div><div style="font-size:12px;color:#64748b;">🏢 Empresas/Condomínios (PJ)</div></div>'
+      + '</div>';
+  }
+
+  // Serviços este mês (orçamentos com data no mês atual)
+  var inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+  var fimMes = new Date(hoje.getFullYear(), hoje.getMonth()+1, 0);
+  var servicosMes = orcamentos.filter(function(o){
+    if(!o.data) return false;
+    var d = new Date(o.data+'T12:00:00');
+    return d >= inicioMes && d <= fimMes;
+  });
+  var elServ = document.getElementById('dash-servicos-mes');
+  if(elServ) elServ.textContent = servicosMes.length;
+
+  // Faturamento previsto (soma dos orçamentos do mês)
+  var fat = servicosMes.reduce(function(acc, o){
+    var v = parseFloat((o.valor||'0').replace(/\./g,'').replace(',','.')) || 0;
+    return acc + v;
+  }, 0);
+  var elFat = document.getElementById('dash-faturamento');
+  if(elFat) elFat.textContent = 'R$ ' + fat.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+  // Vencimentos atrasados
+  var vencidos = clientes.filter(function(c){
+    if(!c.vencimento) return false;
+    return Math.ceil((new Date(c.vencimento+'T12:00:00')-hoje)/(1000*60*60*24)) < 0;
+  }).length;
+  var elVenc = document.getElementById('dash-vencidos');
+  if(elVenc) elVenc.textContent = vencidos;
+
+  // Boletos a emitir (PJ com alerta ativo nos próximos 10 dias)
+  var diaAtual = hoje.getDate();
+  var boletosEmitir = clientes.filter(function(c){
+    if(!c.alertaBoleto || !c.diaBoleto || c.tipoPessoa !== 'PJ') return false;
+    var dias = parseInt(c.diaBoleto) - diaAtual;
+    return dias >= 0 && dias <= 10;
+  });
+  var elBol = document.getElementById('dash-boletos-emitir');
+  if(elBol) elBol.textContent = boletosEmitir.length;
+
+  // Lista boletos
+  var elBolLista = document.getElementById('dash-boletos-lista');
+  if(elBolLista) {
+    if(!boletosEmitir.length) {
+      elBolLista.innerHTML = '<div style="color:#94a3b8;font-size:13px;">Nenhum boleto para emitir nos próximos 10 dias</div>';
+    } else {
+      elBolLista.innerHTML = boletosEmitir.map(function(c){
+        var dias = parseInt(c.diaBoleto) - diaAtual;
+        var urgente = dias <= 2;
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f1f5f9;">'
+          + '<div>'
+          + '<div style="font-weight:700;font-size:13px;">'+c.nome+'</div>'
+          + '<div style="font-size:12px;color:#64748b;">Vence dia '+c.diaBoleto+(dias===0?' — HOJE':dias===1?' — AMANHÃ':' — em '+dias+'d')+'</div>'
+          + '</div>'
+          + '<span style="background:'+(urgente?'#fee2e2':'#ede9fe')+';color:'+(urgente?'#dc2626':'#7c3aed')+';padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;">'+(urgente?'URGENTE':'Emitir')+'</span>'
+          + '</div>';
+      }).join('');
+    }
+  }
+
+  // Próximos serviços (30 dias)
+  var proximos = clientes.filter(function(c){
+    if(!c.vencimento) return false;
+    var dias = Math.ceil((new Date(c.vencimento+'T12:00:00')-hoje)/(1000*60*60*24));
+    return dias >= 0 && dias <= 30;
+  }).sort(function(a,b){ return a.vencimento.localeCompare(b.vencimento); });
+
+  var elProx = document.getElementById('dash-proximos-servicos');
+  if(elProx) {
+    if(!proximos.length) {
+      elProx.innerHTML = '<div style="color:#94a3b8;font-size:13px;">Nenhum serviço nos próximos 30 dias</div>';
+    } else {
+      elProx.innerHTML = proximos.map(function(c){
+        var dias = Math.ceil((new Date(c.vencimento+'T12:00:00')-hoje)/(1000*60*60*24));
+        var cor = dias <= 7 ? '#dc2626' : dias <= 15 ? '#d97706' : '#059669';
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f1f5f9;">'
+          + '<div>'
+          + '<div style="font-weight:700;font-size:13px;">'+(c.tipoPessoa==='PJ'?'🏢 ':'🏠 ')+c.nome+'</div>'
+          + '<div style="font-size:12px;color:#64748b;">'+fmtDataBR(c.vencimento)+'</div>'
+          + '</div>'
+          + '<span style="background:#f8fafc;color:'+cor+';padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;">'+dias+'d</span>'
+          + '</div>';
+      }).join('');
+    }
+  }
+
+  // Contratos para renovar (60 dias)
+  var renovacoes = contratos.filter(function(ct){
+    if(!ct.vigenciaFim) return false;
+    var dias = Math.ceil((new Date(ct.vigenciaFim+'T12:00:00')-hoje)/(1000*60*60*24));
+    return dias >= 0 && dias <= 60;
+  }).sort(function(a,b){ return (a.vigenciaFim||'').localeCompare(b.vigenciaFim||''); });
+
+  var elRen = document.getElementById('dash-renovacoes');
+  if(elRen) {
+    if(!renovacoes.length) {
+      elRen.innerHTML = '<div style="color:#94a3b8;font-size:13px;">Nenhum contrato para renovar nos próximos 60 dias</div>';
+    } else {
+      elRen.innerHTML = renovacoes.map(function(ct){
+        var dias = Math.ceil((new Date(ct.vigenciaFim+'T12:00:00')-hoje)/(1000*60*60*24));
+        var urgente = dias <= 30;
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f1f5f9;">'
+          + '<div>'
+          + '<div style="font-weight:700;font-size:13px;">'+ct.nome+'</div>'
+          + '<div style="font-size:12px;color:#64748b;">Vence '+fmtDataBR(ct.vigenciaFim)+'</div>'
+          + '</div>'
+          + '<span style="background:'+(urgente?'#fef3c7':'#f0fdf4')+';color:'+(urgente?'#d97706':'#059669')+';padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;">'+dias+'d</span>'
+          + '</div>';
+      }).join('');
+    }
+  }
 }
 
 </script>
