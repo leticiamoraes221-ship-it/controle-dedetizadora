@@ -2220,6 +2220,7 @@ function filtrarClientes() {
 }
 
 function renderClientes(lista) {
+  var clientes = window.clientes || [];
   var arr = (lista || clientes).slice().sort(function(a,b){
     return (a.nome||'').localeCompare(b.nome||'', 'pt-BR');
   });
@@ -3450,17 +3451,11 @@ function gerarProposta(){
 
 // ══ PRONTUÁRIO DO CLIENTE ══
 function abrirProntuario(cid) {
-  var lista = window.clientes || (typeof clientes !== 'undefined' ? clientes : []);
+  var lista = window.clientes || [];
   var c = lista.find(function(x){ return String(x.id) === String(cid); });
-
   if(!c) {
-    mostrarToast('Carregando dados...');
-    setTimeout(function(){
-      var lista2 = window.clientes || [];
-      var c2 = lista2.find(function(x){ return String(x.id) === String(cid); });
-      if(c2) _renderProntuario(c2);
-      else mostrarToast('Cliente não encontrado.');
-    }, 1500);
+    mostrarToast('Aguarde, carregando cliente...');
+    setTimeout(function(){ abrirProntuario(cid); }, 2000);
     return;
   }
   _renderProntuario(c);
