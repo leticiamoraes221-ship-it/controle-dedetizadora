@@ -2263,7 +2263,7 @@ function renderClientes(lista) {
       if(c.emiteLaudo) badges += '<span style="background:#f0fdf4;color:#059669;padding:1px 6px;border-radius:10px;font-size:10px;font-weight:700;">Laudo</span> ';
       if(vencTxt) badges += '<span style="background:#fff;color:'+vencCor+';border:1px solid '+vencCor+';padding:1px 6px;border-radius:10px;font-size:10px;font-weight:700;">'+vencTxt+'</span>';
 
-      html += '<div onclick="abrirProntuario(\''+c.id+'\')" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:10px;cursor:pointer;transition:background .15s;margin-bottom:3px;" onmouseover="this.style.background=\'#f0f9ff\'" onmouseout="this.style.background=\'transparent\'">'
+      html += '<div class="cli-item-alfa" data-cid="'+c.id+'" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:10px;cursor:pointer;transition:background .15s;margin-bottom:3px;">'
         + '<div style="display:flex;align-items:center;gap:10px;">'
         + '<div style="width:36px;height:36px;border-radius:50%;background:#1a3c6e;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex-shrink:0;">'+(c.nome||'?')[0].toUpperCase()+'</div>'
         + '<div>'
@@ -2281,6 +2281,11 @@ function renderClientes(lista) {
   });
 
   container.innerHTML = html;
+  container.querySelectorAll('.cli-item-alfa').forEach(function(el){
+    el.addEventListener('click', function(){
+      abrirProntuario(this.getAttribute('data-cid'));
+    });
+  });
   verificarVencimentos();
 }
 
@@ -3623,11 +3628,16 @@ function verificarVencimentos() {
       + '<div style="font-weight:700;font-size:13px;">'+icone+' '+item.nome+' <span style="font-size:11px;color:#64748b;font-weight:400;">'+label+'</span></div>'
       + '<div style="font-size:12px;color:#374151;margin-top:2px;">'+diasTxt+'</div>'
       + '</div>'
-      + '<button onclick="abrirProntuario(\''+item.id+'\')" style="padding:5px 12px;background:#1a3c6e;color:#fff;border:none;border-radius:6px;font-size:11px;cursor:pointer;white-space:nowrap;">Ver</button>'
+      + '<button class="alerta-ver-btn" data-id="'+item.id+'" style="padding:5px 12px;background:#1a3c6e;color:#fff;border:none;border-radius:6px;font-size:11px;cursor:pointer;white-space:nowrap;">Ver</button>'
       + '</div>';
   }).join('') + '<div style="margin-bottom:16px;"></div>';
 
   container.innerHTML = html;
+  container.querySelectorAll('.alerta-ver-btn').forEach(function(b){
+    b.addEventListener('click', function(){
+      abrirProntuario(this.getAttribute('data-id'));
+    });
+  });
 }
 
 
