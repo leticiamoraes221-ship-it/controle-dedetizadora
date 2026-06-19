@@ -916,6 +916,13 @@
         <div><label>E-mail</label><input id="cli-email" placeholder="email@exemplo.com"></div>
         <div><label>CNPJ / CPF</label><input id="cli-cnpj" placeholder="000.000.000-00"></div>
         <div><label>Tipo de Comércio</label><input id="cli-tipo" placeholder="Ex: Residência, Restaurante..."></div>
+        <div>
+          <label>Nota Fiscal Mensal</label>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:6px;">
+            <input type="checkbox" id="cli-nota-fiscal" style="width:16px;height:16px;">
+            <label for="cli-nota-fiscal" style="font-size:13px;cursor:pointer;">Emite nota fiscal mensal</label>
+          </div>
+        </div>
         <div class="span-2"><label>Observações</label><textarea id="cli-obs" style="min-height:60px;" placeholder="Observações sobre o cliente..."></textarea></div>
         <div><label>Último Serviço Realizado</label><input type="date" id="cli-ultimo-servico"></div>
         <div><label>Próximo Vencimento</label><input type="date" id="cli-vencimento"></div>
@@ -2060,6 +2067,13 @@ function abrirModalCliente(id) {
       document.getElementById('cli-ultimo-servico').value = c.ultimoServico||'';
       document.getElementById('cli-vencimento').value = c.vencimento||'';
       document.getElementById('cli-id').value = c.id;
+      // Novos campos
+      var diaEl = document.getElementById('cli-dia-boleto'); if(diaEl) diaEl.value = c.diaBoleto||'';
+      var emLEl = document.getElementById('cli-emite-laudo'); if(emLEl) emLEl.checked = !!c.emiteLaudo;
+      var abEl = document.getElementById('cli-alerta-boleto'); if(abEl) abEl.checked = !!c.alertaBoleto;
+      var nfEl = document.getElementById('cli-nota-fiscal'); if(nfEl) nfEl.checked = !!c.notaFiscal;
+      var tpEls = document.querySelectorAll('input[name="cli-tipo-pessoa"]');
+      tpEls.forEach(function(r){ r.checked = r.value === (c.tipoPessoa||'PF'); });
     }
   }
   document.getElementById('modal-cliente').classList.add('open');
@@ -2084,6 +2098,7 @@ async function salvarCliente() {
     tipoPessoa: document.querySelector('input[name="cli-tipo-pessoa"]:checked') ? document.querySelector('input[name="cli-tipo-pessoa"]:checked').value : 'PF',
     diaBoleto: document.getElementById('cli-dia-boleto').value || '',
     emiteLaudo: document.getElementById('cli-emite-laudo').checked,
+    notaFiscal: document.getElementById('cli-nota-fiscal') ? document.getElementById('cli-nota-fiscal').checked : false,
     alertaBoleto: document.getElementById('cli-alerta-boleto').checked,
     ultimoServico: document.getElementById('cli-ultimo-servico').value,
     vencimento: document.getElementById('cli-vencimento').value,
@@ -2188,10 +2203,11 @@ function renderClientes(lista) {
       ? '<span style="background:#dbeafe;color:#1d4ed8;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;margin-right:4px;">🏢 PJ</span>'
       : '<span style="background:#f0fdf4;color:#15803d;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;margin-right:4px;">🏠 PF</span>';
     var laudoBadge = c.emiteLaudo ? '<span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;margin-right:4px;">📋 Laudo</span>' : '';
+    var nfBadge = c.notaFiscal ? '<span style="background:#dbeafe;color:#1d4ed8;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;margin-right:4px;">🧾 NF</span>' : '';
     var boletoBadge = c.alertaBoleto ? '<span style="background:#ede9fe;color:#7c3aed;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;">💰 Boleto</span>' : '';
     return '<div class="cli-card" data-cid="'+c.id+'">'
       +'<div>'
-      +'<div class="cli-nome">'+(c.nome||'—')+' '+tipoBadge+laudoBadge+boletoBadge+badge+'</div>'
+      +'<div class="cli-nome">'+(c.nome||'—')+' '+tipoBadge+laudoBadge+nfBadge+boletoBadge+badge+'</div>'
       +'<div class="cli-info">'+(c.fone ? c.fone+'  ' : '')+(c.tipo ? c.tipo+'  ' : '')+(c.endereco ? c.endereco+(c.bairro?', '+c.bairro:'') : '')+'</div>'
       +'</div>'
       +'<div class="cli-actions">'
@@ -3373,10 +3389,18 @@ function gerarProposta(){
 
 // ══ PRONTUÁRIO DO CLIENTE ══
 function abrirProntuario(cid) {
-  var clientes = window.clientes || [];
-  var c = clientes.find(function(x){ return x.id === cid; });
+  // Buscar em window.clientes e também na var local 'clientes'
+  var lista = window.clientes || (typeof clientes !== 'undefined' ? clientes : []);
+  var c = lista.find(function(x){ return x.id === cid; });
   if(!c) {
-    alert('Cliente não encontrado. Tente novamente.');
+    // Tentar buscar por nome via data-cid (fallback)
+    mostrarToast('Abrindo prontuário...');
+    setTimeout(function(){
+      var lista2 = window.clientes || [];
+      var c2 = lista2.find(function(x){ return x.id === cid; });
+      if(c2) abrirProntuario(cid);
+      else mostrarToast('Cliente não encontrado. Tente novamente.');
+    }, 1000);
     return;
   }
 
@@ -3420,6 +3444,7 @@ function abrirProntuario(cid) {
     + '<div style="grid-column:1/-1;"><div style="font-size:11px;font-weight:700;color:#64748b;">ENDEREÇO</div><div style="font-size:13px;margin-top:2px;">'+([c.endereco,c.bairro,c.cidade].filter(Boolean).join(', ')||'—')+'</div></div>'
     + (c.obs ? '<div style="grid-column:1/-1;"><div style="font-size:11px;font-weight:700;color:#64748b;">OBS</div><div style="font-size:13px;margin-top:2px;">'+c.obs+'</div></div>' : '')
     + (c.emiteLaudo ? '<div><div style="font-size:11px;font-weight:700;color:#64748b;">LAUDO</div><div style="font-size:13px;margin-top:2px;">✅ Emite laudo</div></div>' : '')
+    + (c.notaFiscal ? '<div><div style="font-size:11px;font-weight:700;color:#64748b;">NOTA FISCAL</div><div style="font-size:13px;margin-top:2px;">🧾 Emite NF mensal</div></div>' : '')
     + (c.alertaBoleto ? '<div><div style="font-size:11px;font-weight:700;color:#64748b;">BOLETO SICOOB</div><div style="font-size:13px;margin-top:2px;">💰 Alerta ativo — dia '+c.diaBoleto+'</div></div>' : '')
     + '</div>'
 
