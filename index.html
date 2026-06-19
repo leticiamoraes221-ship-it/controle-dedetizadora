@@ -2182,49 +2182,67 @@ function filtrarClientes() {
 }
 
 function renderClientes(lista) {
-  var arr = lista || clientes;
+  var arr = (lista || clientes).slice().sort(function(a,b){
+    return (a.nome||'').localeCompare(b.nome||'', 'pt-BR');
+  });
   var container = document.getElementById('clientes-lista');
   if (!container) return;
   if (!arr.length) {
-    container.innerHTML = '<div class="empty"><div class="empty-icon">&#x1F465;</div><div style="font-size:15px;">Nenhum cliente ainda.</div></div>';
+    container.innerHTML = '<div class="empty"><div class="empty-icon">👥</div><div style="font-size:15px;">Nenhum cliente cadastrado</div></div>';
     return;
   }
-  var hoje = new Date();
-  var html = arr.map(function(c){
-    var vencDate = c.vencimento ? new Date(c.vencimento+'T12:00:00') : null;
-    var dias = vencDate ? Math.ceil((vencDate-hoje)/(1000*60*60*24)) : null;
-    var badge = '';
-    if (dias !== null) {
-      if (dias < 0) badge = '<span class="badge" style="background:#fee2e2;color:#dc2626;">VENCIDO</span>';
-      else if (dias <= 30) badge = '<span class="badge badge-gold">Vence em '+dias+'d</span>';
-      else badge = '<span class="badge badge-green">Vence '+fmtData(c.vencimento)+'</span>';
-    }
-    var tipoBadge = c.tipoPessoa === 'PJ'
-      ? '<span style="background:#dbeafe;color:#1d4ed8;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;margin-right:4px;">🏢 PJ</span>'
-      : '<span style="background:#f0fdf4;color:#15803d;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;margin-right:4px;">🏠 PF</span>';
-    var laudoBadge = c.emiteLaudo ? '<span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;margin-right:4px;">📋 Laudo</span>' : '';
-    var nfBadge = c.notaFiscal ? '<span style="background:#dbeafe;color:#1d4ed8;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;margin-right:4px;">🧾 NF</span>' : '';
-    var boletoBadge = c.alertaBoleto ? '<span style="background:#ede9fe;color:#7c3aed;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;">💰 Boleto</span>' : '';
-    return '<div class="cli-card" data-cid="'+c.id+'">'
-      +'<div>'
-      +'<div class="cli-nome">'+(c.nome||'—')+' '+tipoBadge+laudoBadge+nfBadge+boletoBadge+badge+'</div>'
-      +'<div class="cli-info">'+(c.fone ? c.fone+'  ' : '')+(c.tipo ? c.tipo+'  ' : '')+(c.endereco ? c.endereco+(c.bairro?', '+c.bairro:'') : '')+'</div>'
-      +'</div>'
-      +'<div class="cli-actions">'
-      +'<button class="btn btn-outline cli-btn-pront" data-cid="'+c.id+'" style="padding:6px 12px;font-size:11px;background:#1a3c6e;color:#fff;border-color:#1a3c6e;">📁 Prontuário</button>'
-      +'<button class="btn btn-primary cli-btn-usar" data-cid="'+c.id+'" style="padding:6px 12px;font-size:11px;">Usar</button>'
-      +'<button class="btn btn-outline cli-btn-hist" data-cid="'+c.id+'" style="padding:6px 12px;font-size:11px;">Histórico</button>'
-      +'<button class="btn btn-gold cli-btn-edit" data-cid="'+c.id+'" style="padding:6px 12px;font-size:11px;">✏️</button>'
-      +'<button class="btn cli-btn-del" data-cid="'+c.id+'" style="padding:6px 12px;font-size:11px;background:#fee2e2;color:#dc2626;border:none;border-radius:8px;">✕</button>'
-      +'</div>'
-      +'</div>';
-  }).join('');
+
+  var hoje = new Date(); hoje.setHours(0,0,0,0);
+
+  // Agrupar por letra inicial
+  var grupos = {};
+  arr.forEach(function(c){
+    var letra = (c.nome||'?')[0].toUpperCase();
+    if(!grupos[letra]) grupos[letra] = [];
+    grupos[letra].push(c);
+  });
+
+  var letras = Object.keys(grupos).sort();
+  var html = '';
+
+  letras.forEach(function(letra){
+    html += '<div style="margin-bottom:4px;">'
+      + '<div style="font-family:Syne,sans-serif;font-weight:800;font-size:13px;color:#1a3c6e;padding:8px 4px 4px;border-bottom:2px solid #e2e8f0;margin-bottom:4px;">' + letra + '</div>';
+
+    grupos[letra].forEach(function(c){
+      var dias = c.vencimento ? Math.ceil((new Date(c.vencimento+'T12:00:00')-hoje)/(1000*60*60*24)) : null;
+      var vencCor = '';
+      var vencTxt = '';
+      if(dias !== null){
+        if(dias < 0){ vencCor='#dc2626'; vencTxt='Vencido'; }
+        else if(dias <= 30){ vencCor='#d97706'; vencTxt='Vence em '+dias+'d'; }
+        else { vencCor='#059669'; vencTxt=''; }
+      }
+
+      var badges = '';
+      if(c.tipoPessoa==='PJ') badges += '<span style="background:#dbeafe;color:#1d4ed8;padding:1px 6px;border-radius:10px;font-size:10px;font-weight:700;">PJ</span> ';
+      if(c.notaFiscal) badges += '<span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:10px;font-size:10px;font-weight:700;">NF</span> ';
+      if(c.emiteLaudo) badges += '<span style="background:#f0fdf4;color:#059669;padding:1px 6px;border-radius:10px;font-size:10px;font-weight:700;">Laudo</span> ';
+      if(vencTxt) badges += '<span style="background:#fff;color:'+vencCor+';border:1px solid '+vencCor+';padding:1px 6px;border-radius:10px;font-size:10px;font-weight:700;">'+vencTxt+'</span>';
+
+      html += '<div onclick="abrirProntuario(\''+c.id+'\')" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:10px;cursor:pointer;transition:background .15s;margin-bottom:3px;" onmouseover="this.style.background=\'#f0f9ff\'" onmouseout="this.style.background=\'transparent\'">'
+        + '<div style="display:flex;align-items:center;gap:10px;">'
+        + '<div style="width:36px;height:36px;border-radius:50%;background:#1a3c6e;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex-shrink:0;">'+(c.nome||'?')[0].toUpperCase()+'</div>'
+        + '<div>'
+        + '<div style="font-weight:700;font-size:14px;color:#0f172a;">'+(c.nome||'—')+'</div>'
+        + '<div style="font-size:12px;color:#64748b;margin-top:2px;">'+(c.fone||'')+(c.tipo?' · '+c.tipo:'')+'</div>'
+        + '</div></div>'
+        + '<div style="display:flex;align-items:center;gap:6px;">'
+        + badges
+        + '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#94a3b8" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>'
+        + '</div>'
+        + '</div>';
+    });
+
+    html += '</div>';
+  });
+
   container.innerHTML = html;
-  container.querySelectorAll('.cli-btn-pront').forEach(function(b){ b.onclick = function(){ abrirProntuario(this.getAttribute('data-cid')); }; });
-  container.querySelectorAll('.cli-btn-usar').forEach(function(b){ b.addEventListener('click', function(){ usarClienteNoOrcamento(this.getAttribute('data-cid')); }); });
-  container.querySelectorAll('.cli-btn-hist').forEach(function(b){ b.addEventListener('click', function(){ verHistoricoCliente(this.getAttribute('data-cid')); }); });
-  container.querySelectorAll('.cli-btn-edit').forEach(function(b){ b.addEventListener('click', function(){ abrirModalCliente(this.getAttribute('data-cid')); }); });
-  container.querySelectorAll('.cli-btn-del').forEach(function(b){ b.addEventListener('click', function(){ excluirCliente(this.getAttribute('data-cid')); }); });
   verificarVencimentos();
 }
 
