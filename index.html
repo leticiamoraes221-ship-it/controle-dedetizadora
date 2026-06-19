@@ -3451,11 +3451,25 @@ function gerarProposta(){
 
 // ══ PRONTUÁRIO DO CLIENTE ══
 function abrirProntuario(cid) {
+  // Tentar em window.clientes primeiro
   var lista = window.clientes || [];
   var c = lista.find(function(x){ return String(x.id) === String(cid); });
+  
+  // Tentar na var local 'clientes' (pode ser diferente)
+  if(!c && typeof clientes !== 'undefined') {
+    c = clientes.find(function(x){ return String(x.id) === String(cid); });
+  }
+  
   if(!c) {
-    mostrarToast('Aguarde, carregando cliente...');
-    setTimeout(function(){ abrirProntuario(cid); }, 2000);
+    // Último recurso: buscar pelo nome armazenado no elemento
+    var el = document.querySelector('[data-cid="'+cid+'"]');
+    var nomeEl = el ? el.querySelector('[style*="font-weight:700"]') : null;
+    var nome = nomeEl ? nomeEl.textContent.trim() : '';
+    if(nome) {
+      var porNome = lista.find(function(x){ return (x.nome||'').trim() === nome; });
+      if(porNome) { _renderProntuario(porNome); return; }
+    }
+    mostrarToast('Cliente não encontrado. Tente novamente.');
     return;
   }
   _renderProntuario(c);
