@@ -1219,6 +1219,14 @@
     });
   } catch(e) { console.log('lancamentos listener:', e); }
 
+  // Orçamentos no Firebase
+  try {
+    onSnapshot(query(collection(db,'orcamentos_fb'), orderBy('criadoEm','desc')), (snap) => {
+      window._orcamentos_fb = snap.docs.map(d => ({id:d.id,...d.data()}));
+      if(typeof renderHistorico==='function') renderHistorico();
+    });
+  } catch(e) { console.log('orcamentos listener:', e); }
+
   window._firebaseLoaded = true;
   console.log('Firebase conectado ✓');
 </script>
@@ -1473,6 +1481,17 @@ function salvarOrcamento(){
     }
   }
 
+  // Salvar também no Firebase
+  if(window._firebaseLoaded && window._setDoc) {
+    var orcId = 'orc_' + Date.now().toString();
+    var orcFb = Object.assign({}, d, {
+      id: orcId,
+      criadoEm: new Date().toISOString()
+    });
+    window._setDoc(window._doc(window._db,'orcamentos_fb',orcId), orcFb)
+      .catch(function(e){ console.log('erro salvar orc firebase:', e); });
+  }
+
   mostrarToast('Orçamento salvo! ✓');
   var numEl = document.getElementById('num');
   if(numEl) numEl.value = proximoNumOrc();
@@ -1518,10 +1537,21 @@ function fmtData(d){
 
 function renderHistorico(){
   const c=document.getElementById('historico-container');
-  if(!orcamentos.length){
+  // Combinar localStorage + Firebase, sem duplicatas
+  var fbOrcs = window._orcamentos_fb || [];
+  var localOrcs = orcamentos || [];
+  // Firebase tem prioridade; adicionar locais que não estão no Firebase
+  var fbNums = new Set(fbOrcs.map(function(o){ return o.num+'_'+o.data; }));
+  var extras = localOrcs.filter(function(o){ return !fbNums.has(o.num+'_'+o.data); });
+  var todos = fbOrcs.concat(extras).sort(function(a,b){
+    return (b.criadoEm||b.data||'').localeCompare(a.criadoEm||a.data||'');
+  });
+  // Atualizar window.orcamentos para uso no prontuário
+  window.orcamentos = todos;
+  if(!todos.length){
     c.innerHTML=`<div class="empty"><div class="empty-icon">📋</div><div style="font-size:15px;">Nenhum orçamento salvo ainda.</div></div>`; return;
   }
-  c.innerHTML=`<div class="historico-list">${orcamentos.map((o,i)=>`
+  c.innerHTML=`<div class="historico-list">${todos.map((o,i)=>`
     <div class="hist-card">
       <div>
         <div class="hist-nome">${o.nome||'Sem nome'}</div>
@@ -1542,8 +1572,16 @@ function renderHistorico(){
 
 function excluirOrcamento(i){
   if(!confirm('Excluir este orçamento?')) return;
-  orcamentos.splice(i,1);
-  localStorage.setItem('orcamentos_v2',JSON.stringify(orcamentos));
+  var todos = window.orcamentos || [];
+  var orc = todos[i];
+  // Remover do Firebase se tiver id
+  if(orc && orc.id && orc.id.startsWith('orc_') && window._deleteDoc) {
+    window._deleteDoc(window._doc(window._db,'orcamentos_fb',orc.id))
+      .catch(function(e){ console.log(e); });
+  }
+  // Remover do localStorage
+  var idx = orcamentos.findIndex(function(o){ return o.num===orc.num&&o.data===orc.data; });
+  if(idx >= 0) { orcamentos.splice(idx,1); localStorage.setItem('orcamentos_v2',JSON.stringify(orcamentos)); }
   renderHistorico();
 }
 
@@ -3407,98 +3445,127 @@ function gerarProposta(){
 
 // ══ PRONTUÁRIO DO CLIENTE ══
 function abrirProntuario(cid) {
-  // Buscar em window.clientes e também na var local 'clientes'
   var lista = window.clientes || (typeof clientes !== 'undefined' ? clientes : []);
-  var c = lista.find(function(x){ return x.id === cid; });
+  var c = lista.find(function(x){ return String(x.id) === String(cid); });
+
   if(!c) {
-    // Tentar buscar por nome via data-cid (fallback)
-    mostrarToast('Abrindo prontuário...');
+    mostrarToast('Carregando dados...');
     setTimeout(function(){
       var lista2 = window.clientes || [];
-      var c2 = lista2.find(function(x){ return x.id === cid; });
-      if(c2) abrirProntuario(cid);
-      else mostrarToast('Cliente não encontrado. Tente novamente.');
-    }, 1000);
+      var c2 = lista2.find(function(x){ return String(x.id) === String(cid); });
+      if(c2) _renderProntuario(c2);
+      else mostrarToast('Cliente não encontrado.');
+    }, 1500);
     return;
   }
+  _renderProntuario(c);
+}
 
-  document.getElementById('pront-titulo').textContent = '📁 ' + c.nome;
+function _renderProntuario(c) {
+  var modal = document.getElementById('modal-prontuario');
+  var titulo = document.getElementById('pront-titulo');
+  var body = document.getElementById('pront-body');
+  if(!modal || !titulo || !body) return;
+
+  titulo.textContent = '📁 ' + c.nome;
 
   var hoje = new Date(); hoje.setHours(0,0,0,0);
-  var diasVenc = null;
+
+  // Vencimento badge
   var vencBadge = '';
   if(c.vencimento) {
-    diasVenc = Math.ceil((new Date(c.vencimento+'T12:00:00') - hoje) / (1000*60*60*24));
-    if(diasVenc < 0) vencBadge = '<span style="background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;">Vencido</span>';
-    else if(diasVenc <= 30) vencBadge = '<span style="background:#fef3c7;color:#d97706;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;">Vence em '+diasVenc+'d</span>';
-    else vencBadge = '<span style="background:#d1fae5;color:#059669;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;">'+diasVenc+'d</span>';
+    var dias = Math.ceil((new Date(c.vencimento+'T12:00:00') - hoje)/(1000*60*60*24));
+    if(dias < 0) vencBadge = '<span style="background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;">Vencido há '+Math.abs(dias)+'d</span>';
+    else if(dias <= 30) vencBadge = '<span style="background:#fef3c7;color:#d97706;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;">Vence em '+dias+'d</span>';
+    else vencBadge = '<span style="background:#d1fae5;color:#059669;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;">Vigente</span>';
   }
 
-  var orcsCli = (window.orcamentos||[]).filter(function(o){
-    return (o.nome||'').toLowerCase().includes((c.nome||'').toLowerCase().substring(0,6));
-  });
-  var contratosCli = (window._contratos||[]).filter(function(ct){
-    return (ct.nome||'').toLowerCase().includes((c.nome||'').toLowerCase().substring(0,6));
+  // Orçamentos do cliente (Firebase + local)
+  var todosOrcs = window.orcamentos || orcamentos || [];
+  var orcsCli = todosOrcs.filter(function(o){
+    var nomeOrc = (o.nome||'').toLowerCase().trim();
+    var nomeCli = (c.nome||'').toLowerCase().trim();
+    return nomeOrc === nomeCli || nomeOrc.includes(nomeCli.substring(0,8)) || nomeCli.includes(nomeOrc.substring(0,8));
   });
 
-  var diaAtual = hoje.getDate();
+  // Contratos do cliente
+  var contratosCli = (window._contratos||[]).filter(function(ct){
+    var nomeCt = (ct.nome||'').toLowerCase().trim();
+    var nomeCli = (c.nome||'').toLowerCase().trim();
+    return nomeCt === nomeCli || nomeCt.includes(nomeCli.substring(0,8));
+  });
+
+  // Alerta boleto
   var boletoBadge = '';
   if(c.alertaBoleto && c.diaBoleto) {
+    var diaAtual = hoje.getDate();
     var diasBol = parseInt(c.diaBoleto) - diaAtual;
     if(diasBol >= 0 && diasBol <= 5) {
-      boletoBadge = '<div style="background:#ede9fe;border-left:4px solid #7c3aed;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:13px;">'
-        + '💰 <b>Emita o boleto no Sicoob!</b> Vence dia <b>'+c.diaBoleto+'</b> (em '+diasBol+' dia(s))</div>';
+      boletoBadge = '<div style="background:#ede9fe;border-left:4px solid #7c3aed;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:13px;">💰 <b>Emita o boleto no Sicoob!</b> Vence dia <b>'+c.diaBoleto+'</b></div>';
     }
   }
 
+  var info = function(label, val) {
+    if(!val) return '';
+    return '<div><div style="font-size:11px;font-weight:700;color:#64748b;">'+label+'</div><div style="font-size:13px;margin-top:2px;">'+val+'</div></div>';
+  };
+
   var html = boletoBadge
-    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;background:#f8fafc;border-radius:10px;padding:14px;margin-bottom:16px;">'
-    + '<div><div style="font-size:11px;font-weight:700;color:#64748b;">TIPO</div><div style="font-size:13px;margin-top:2px;">'+(c.tipoPessoa==='PJ'?'🏢 Pessoa Jurídica':'🏠 Pessoa Física')+'</div></div>'
-    + '<div><div style="font-size:11px;font-weight:700;color:#64748b;">PRÓXIMO VENCIMENTO</div><div style="font-size:13px;margin-top:2px;">'+(c.vencimento ? fmtDataBR(c.vencimento)+' '+vencBadge : '—')+'</div></div>'
-    + '<div><div style="font-size:11px;font-weight:700;color:#64748b;">TELEFONE</div><div style="font-size:13px;margin-top:2px;">'+(c.fone||'—')+'</div></div>'
-    + '<div><div style="font-size:11px;font-weight:700;color:#64748b;">E-MAIL</div><div style="font-size:13px;margin-top:2px;">'+(c.email||'—')+'</div></div>'
-    + '<div><div style="font-size:11px;font-weight:700;color:#64748b;">CNPJ/CPF</div><div style="font-size:13px;margin-top:2px;">'+(c.cnpj||'—')+'</div></div>'
-    + '<div><div style="font-size:11px;font-weight:700;color:#64748b;">TIPO COMÉRCIO</div><div style="font-size:13px;margin-top:2px;">'+(c.tipo||'—')+'</div></div>'
-    + '<div style="grid-column:1/-1;"><div style="font-size:11px;font-weight:700;color:#64748b;">ENDEREÇO</div><div style="font-size:13px;margin-top:2px;">'+([c.endereco,c.bairro,c.cidade].filter(Boolean).join(', ')||'—')+'</div></div>'
-    + (c.obs ? '<div style="grid-column:1/-1;"><div style="font-size:11px;font-weight:700;color:#64748b;">OBS</div><div style="font-size:13px;margin-top:2px;">'+c.obs+'</div></div>' : '')
-    + (c.emiteLaudo ? '<div><div style="font-size:11px;font-weight:700;color:#64748b;">LAUDO</div><div style="font-size:13px;margin-top:2px;">✅ Emite laudo</div></div>' : '')
-    + (c.notaFiscal ? '<div><div style="font-size:11px;font-weight:700;color:#64748b;">NOTA FISCAL</div><div style="font-size:13px;margin-top:2px;">🧾 Emite NF mensal</div></div>' : '')
-    + (c.alertaBoleto ? '<div><div style="font-size:11px;font-weight:700;color:#64748b;">BOLETO SICOOB</div><div style="font-size:13px;margin-top:2px;">💰 Alerta ativo — dia '+c.diaBoleto+'</div></div>' : '')
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;background:#f8fafc;border-radius:10px;padding:14px;margin-bottom:16px;">'
+    + info('TIPO', c.tipoPessoa==='PJ'?'🏢 Pessoa Jurídica':'🏠 Pessoa Física')
+    + info('VENCIMENTO', c.vencimento ? fmtDataBR(c.vencimento)+' '+vencBadge : null)
+    + info('TELEFONE', c.fone)
+    + info('E-MAIL', c.email)
+    + info('CNPJ/CPF', c.cnpj)
+    + info('TIPO COMÉRCIO', c.tipo)
+    + (c.endereco ? '<div style="grid-column:1/-1;">'+info('ENDEREÇO', [c.endereco,c.bairro,c.cidade].filter(Boolean).join(', '))+'</div>' : '')
+    + (c.obs ? '<div style="grid-column:1/-1;">'+info('OBS', c.obs)+'</div>' : '')
+    + (c.emiteLaudo ? info('LAUDO','✅ Emite laudo') : '')
+    + (c.notaFiscal ? info('NOTA FISCAL','🧾 Emite NF mensal') : '')
+    + (c.alertaBoleto ? info('BOLETO','💰 Dia '+c.diaBoleto) : '')
     + '</div>'
 
-    + '<div style="font-weight:800;font-size:13px;color:#1a3c6e;margin-bottom:8px;">📄 Contratos ('+contratosCli.length+')</div>'
+    // Contratos
+    + '<div style="font-weight:800;font-size:13px;color:#1a3c6e;margin:0 0 8px;">📄 Contratos ('+contratosCli.length+')</div>'
     + '<div style="margin-bottom:16px;">'
     + (contratosCli.length ? contratosCli.map(function(ct){
         var diasCt = ct.vigenciaFim ? Math.ceil((new Date(ct.vigenciaFim+'T12:00:00')-hoje)/(1000*60*60*24)) : null;
         var stBadge = diasCt===null?'' : diasCt<0
           ? '<span style="background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:20px;font-size:11px;">Vencido</span>'
-          : '<span style="background:#d1fae5;color:#059669;padding:2px 8px;border-radius:20px;font-size:11px;">'+diasCt+'d restantes</span>';
-        return '<div style="border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin-bottom:6px;">'
-          + '<div style="display:flex;justify-content:space-between;align-items:center;">'
-          + '<div><div style="font-weight:700;font-size:13px;">'+ct.servicos+'</div>'
-          + '<div style="font-size:12px;color:#64748b;">R$ '+ct.valor+' · '+ct.parcelas+'x · Início: '+(ct.inicio?fmtDataBR(ct.inicio):'—')+'</div></div>'
-          + '<div style="display:flex;gap:6px;align-items:center;">'+stBadge+'</div></div></div>';
-      }).join('') : '<div style="color:#94a3b8;font-size:13px;padding:8px 0;">Nenhum contrato cadastrado</div>')
-    + '</div>'
-
-    + '<div style="font-weight:800;font-size:13px;color:#1a3c6e;margin-bottom:8px;">📋 Últimos Orçamentos ('+orcsCli.length+')</div>'
-    + '<div style="margin-bottom:16px;">'
-    + (orcsCli.length ? orcsCli.slice(0,5).map(function(o){
-        return '<div style="border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin-bottom:6px;display:flex;justify-content:space-between;">'
-          + '<div><div style="font-weight:700;font-size:13px;">Nº'+o.num+' — '+fmtDataBR(o.data)+'</div>'
-          + '<div style="font-size:12px;color:#64748b;">'+(o.servicos||'')+'</div></div>'
-          + '<div style="font-weight:700;font-size:13px;color:#059669;">R$ '+(o.valor||'0,00')+'</div>'
+          : '<span style="background:#d1fae5;color:#059669;padding:2px 8px;border-radius:20px;font-size:11px;">'+diasCt+'d</span>';
+        return '<div style="border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">'
+          + '<div><div style="font-weight:700;font-size:13px;">'+(ct.servicos||'')+'</div>'
+          + '<div style="font-size:12px;color:#64748b;">R$ '+ct.valor+' · '+(ct.inicio?fmtDataBR(ct.inicio):'')+'</div></div>'
+          + '<div style="display:flex;gap:6px;align-items:center;">'+stBadge
+          + '<button onclick="reimprirContrato(\''+ct.id+'\')" style="padding:4px 10px;background:#1a3c6e;color:#fff;border:none;border-radius:6px;font-size:11px;cursor:pointer;">🖨️</button></div>'
           + '</div>';
-      }).join('') : '<div style="color:#94a3b8;font-size:13px;padding:8px 0;">Nenhum orçamento</div>')
+      }).join('') : '<div style="color:#94a3b8;font-size:13px;padding:6px 0;">Nenhum contrato</div>')
     + '</div>'
 
+    // Orçamentos
+    + '<div style="font-weight:800;font-size:13px;color:#1a3c6e;margin:0 0 8px;">📋 Orçamentos ('+orcsCli.length+')</div>'
+    + '<div style="margin-bottom:16px;">'
+    + (orcsCli.length ? orcsCli.slice(0,5).map(function(o,i){
+        var idx = todosOrcs.indexOf(o);
+        return '<div style="border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">'
+          + '<div><div style="font-weight:700;font-size:13px;">Nº'+(o.num||'—')+' — '+fmtDataBR(o.data)+'</div>'
+          + '<div style="font-size:12px;color:#64748b;">'+(o.servicos?o.servicos.map(function(s){return s.nome;}).join(', '):'')+'</div></div>'
+          + '<div style="display:flex;gap:6px;align-items:center;">'
+          + '<span style="font-weight:700;color:#059669;">R$ '+(o.valor||'0,00')+'</span>'
+          + (idx>=0?'<button onclick="gerarCertHistorico('+idx+')" style="padding:4px 10px;background:#d97706;color:#fff;border:none;border-radius:6px;font-size:11px;cursor:pointer;">📋 Laudo</button>':'')
+          + '</div>'
+          + '</div>';
+      }).join('') : '<div style="color:#94a3b8;font-size:13px;padding:6px 0;">Nenhum orçamento</div>')
+    + '</div>'
+
+    // Ações
     + '<div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid #e2e8f0;padding-top:14px;">'
     + '<button onclick="usarClienteNoOrcamento(\''+c.id+'\');fecharModal(\'modal-prontuario\')" class="btn btn-primary" style="font-size:12px;">+ Novo Orçamento</button>'
     + '<button onclick="fecharModal(\'modal-prontuario\');setTimeout(function(){abrirModalCliente(\''+c.id+'\')},300)" class="btn btn-outline" style="font-size:12px;">✏️ Editar</button>'
     + '</div>';
 
-  document.getElementById('pront-body').innerHTML = html;
-  document.getElementById('modal-prontuario').classList.add('open');
+  body.innerHTML = html;
+  modal.classList.add('open');
 }
 
 
