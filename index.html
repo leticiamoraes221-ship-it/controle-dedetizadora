@@ -800,6 +800,72 @@
   </div>
 </div>
 
+<!-- ══ MODAL LAUDO RÁPIDO ══ -->
+<div class="modal-overlay" id="modal-laudo-rapido">
+  <div class="modal" style="max-width:600px;max-height:90vh;overflow-y:auto;">
+    <div class="modal-header">
+      <span class="modal-title">📋 Emitir Laudo</span>
+      <button class="modal-close" onclick="fecharModal('modal-laudo-rapido')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;gap:12px;">
+        <input type="hidden" id="lr-cliente-id">
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">CLIENTE</label>
+          <input id="lr-nome" class="input" readonly style="background:#f8fafc;width:100%;">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div>
+            <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">DATA DO SERVIÇO</label>
+            <input id="lr-data" type="date" class="input" style="width:100%;">
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">HORA</label>
+            <input id="lr-hora" type="time" class="input" style="width:100%;">
+          </div>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">SERVIÇOS REALIZADOS</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;"><input type="checkbox" id="lr-srv-dede"> Desinsetização</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;"><input type="checkbox" id="lr-srv-desa"> Desratização</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;"><input type="checkbox" id="lr-srv-agua"> Caixa D'Água</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;"><input type="checkbox" id="lr-srv-gordura"> Caixa de Gordura</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;"><input type="checkbox" id="lr-srv-cupim"> Descupinização</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;"><input type="checkbox" id="lr-srv-sanit"> Sanitização</label>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;" id="lr-agua-campos" style="display:none;">
+          <div>
+            <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">💧 DATA REALIZAÇÃO CAIXA D'ÁGUA</label>
+            <input id="lr-agua-data" type="date" class="input" style="width:100%;">
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">VALIDADE (180 dias)</label>
+            <input id="lr-agua-validade" type="date" class="input" readonly style="width:100%;background:#f8fafc;">
+          </div>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">DESCRIÇÃO DO SERVIÇO</label>
+          <textarea id="lr-descricao" class="input" rows="3" style="width:100%;resize:vertical;" placeholder="Descreva os serviços realizados..."></textarea>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">PRODUTOS UTILIZADOS</label>
+          <textarea id="lr-produtos" class="input" rows="2" style="width:100%;resize:vertical;" placeholder="Ex: Bifentol 200 SC — 50ml&#10;Maki Bloco — 01 isca"></textarea>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">GARANTIA (dias)</label>
+          <input id="lr-garantia" class="input" value="90" style="width:100%;" placeholder="Ex: 90">
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:16px;">
+        <button class="btn btn-primary" onclick="gerarLaudoRapido()" style="flex:1;">📋 Gerar Laudo</button>
+        <button class="btn btn-outline" onclick="fecharModal('modal-laudo-rapido')" style="color:#dc2626;border-color:#dc2626;">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ══ MODAL CERTIFICADO ══ -->
 <div class="modal-overlay" id="modal-cert">
   <div class="modal">
@@ -1227,6 +1293,13 @@
     });
   } catch(e) { console.log('orcamentos listener:', e); }
 
+  // Histórico global (todos os aparelhos)
+  try {
+    onSnapshot(query(collection(db,'historico_fb'), orderBy('criadoEm','desc')), (snap) => {
+      window._historico_fb = snap.docs.map(d => ({...d.data(), id: d.id}));
+    });
+  } catch(e) { console.log('historico listener:', e); }
+
   window._firebaseLoaded = true;
   console.log('Firebase conectado ✓');
 </script>
@@ -1492,6 +1565,16 @@ function salvarOrcamento(){
       .catch(function(e){ console.log('erro salvar orc firebase:', e); });
   }
 
+  // Salvar no Firebase para acesso em todos os aparelhos
+  if(window._firebaseLoaded && window._setDoc && window._db) {
+    var orcId = 'orc_' + Date.now().toString();
+    var orcFb = JSON.parse(JSON.stringify(d));
+    orcFb.id = orcId;
+    orcFb.criadoEm = new Date().toISOString();
+    window._setDoc(window._doc(window._db,'historico_fb',orcId), orcFb)
+      .catch(function(e){ console.log('erro salvar historico firebase:', e); });
+  }
+
   mostrarToast('Orçamento salvo! ✓');
   var numEl = document.getElementById('num');
   if(numEl) numEl.value = proximoNumOrc();
@@ -1619,7 +1702,8 @@ function renderCertificado(d){
   const empresa = d.empresa||'Controle Dedetizadora Ltda';
 
   const validadeLinhas = d.servicos.length
-    ? d.servicos.map(s=>`<div class="cert-valid-line"><b>${s.nome.toUpperCase()}</b> – ${s.tipo} – <b>${fmtData(s.validade)!=='—'?fmtData(s.validade):s.garantia||'—'}</b></div>`).join('')
+    ? d.servicos.map(s=>{var v=fmtData(s.validade)!=='—'?fmtData(s.validade):s.garantia||'—';var extra=s.id==='cxdagua'&&d.dataServico?' (realizado em '+fmtData(d.dataServico)+')':'';
+return `<div class="cert-valid-line"><b>${s.nome.toUpperCase()}</b> – ${s.tipo} – <b>${v}</b>${extra}</div>`;}).join('')
     : '<div style="color:#888;font-size:9pt;">Nenhum serviço selecionado.</div>';
 
   const prodHTML = d.produtos&&d.produtos.length
@@ -3588,6 +3672,7 @@ function _renderProntuario(c) {
     + '<div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid #e2e8f0;padding-top:14px;">'
     + '<button onclick="usarClienteNoOrcamento(\''+c.id+'\');fecharModal(\'modal-prontuario\')" class="btn btn-primary" style="font-size:12px;">+ Novo Orçamento</button>'
     + '<button onclick="fecharModal(\'modal-prontuario\');setTimeout(function(){abrirModalCliente(\''+c.id+'\')},300)" class="btn btn-outline" style="font-size:12px;">✏️ Editar</button>'
+    + '<button onclick="abrirLaudoRapido(\''+c.id+'\')" class="btn" style="font-size:12px;background:#d97706;color:#fff;border:none;border-radius:8px;padding:8px 14px;cursor:pointer;">📋 Emitir Laudo</button>'
     + '</div>';
 
   body.innerHTML = html;
@@ -3922,6 +4007,168 @@ function renderLancamentos() {
       + '<button onclick="excluirLancamento(\''+l.id+'\')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:16px;padding:4px;">🗑️</button>'
       + '</div>';
   }).join('') + '</div>';
+}
+
+
+// ══ LAUDO RÁPIDO DO PRONTUÁRIO ══
+function abrirLaudoRapido(cid) {
+  var lista = window.clientes || (typeof clientes !== 'undefined' ? clientes : []);
+  var c = lista.find(function(x){ return String(x.id) === String(cid); });
+  if(!c) return;
+
+  fecharModal('modal-prontuario');
+  setTimeout(function(){
+    document.getElementById('lr-cliente-id').value = cid;
+    document.getElementById('lr-nome').value = c.nome || '';
+    var hoje = new Date().toISOString().split('T')[0];
+    document.getElementById('lr-data').value = hoje;
+    document.getElementById('lr-hora').value = '';
+    document.getElementById('lr-agua-data').value = hoje;
+    // Calcular 180 dias
+    var val180 = new Date(hoje + 'T12:00:00');
+    val180.setDate(val180.getDate() + 180);
+    document.getElementById('lr-agua-validade').value = val180.toISOString().split('T')[0];
+    document.getElementById('lr-descricao').value = '';
+    document.getElementById('lr-produtos').value = '';
+    document.getElementById('lr-garantia').value = '90';
+    // Limpar checkboxes
+    ['lr-srv-dede','lr-srv-desa','lr-srv-agua','lr-srv-gordura','lr-srv-cupim','lr-srv-sanit'].forEach(function(id){
+      var el = document.getElementById(id);
+      if(el) el.checked = false;
+    });
+    // Listener da caixa d'água para calcular 180 dias
+    var aguaCheck = document.getElementById('lr-srv-agua');
+    var aguaCampos = document.getElementById('lr-agua-campos');
+    var aguaDataEl = document.getElementById('lr-agua-data');
+    var aguaValEl = document.getElementById('lr-agua-validade');
+    if(aguaCheck) {
+      aguaCheck.onchange = function(){
+        aguaCampos.style.display = this.checked ? 'grid' : 'none';
+      };
+    }
+    if(aguaDataEl) {
+      aguaDataEl.oninput = function(){
+        if(this.value) {
+          var d = new Date(this.value + 'T12:00:00');
+          d.setDate(d.getDate() + 180);
+          aguaValEl.value = d.toISOString().split('T')[0];
+        }
+      };
+    }
+    document.getElementById('modal-laudo-rapido').classList.add('open');
+  }, 300);
+}
+
+function gerarLaudoRapido() {
+  var cid = document.getElementById('lr-cliente-id').value;
+  var lista = window.clientes || (typeof clientes !== 'undefined' ? clientes : []);
+  var c = lista.find(function(x){ return String(x.id) === String(cid); }) || {};
+
+  var nome = document.getElementById('lr-nome').value;
+  var data = document.getElementById('lr-data').value;
+  var hora = document.getElementById('lr-hora').value;
+  var descricao = document.getElementById('lr-descricao').value;
+  var produtosTexto = document.getElementById('lr-produtos').value;
+  var garantiaDias = parseInt(document.getElementById('lr-garantia').value || '90');
+  var aguaData = document.getElementById('lr-agua-data').value;
+  var aguaValidade = document.getElementById('lr-agua-validade').value;
+
+  if(!nome || !data) { alert('Informe o cliente e a data do serviço.'); return; }
+
+  // Montar serviços
+  var srvMap = {
+    'lr-srv-dede': {id:'dedetizacao', nome:'Aranhas, Baratas e Formigas', tipo:'DESINSETIZAÇÃO'},
+    'lr-srv-desa': {id:'desratizacao', nome:'Camundongos, Ratazanas e Ratos', tipo:'DESRATIZAÇÃO'},
+    'lr-srv-agua': {id:'cxdagua', nome:'Caixa D\'Água', tipo:'LIMPEZA E HIGIENIZAÇÃO DE CAIXA D\'ÁGUA'},
+    'lr-srv-gordura': {id:'cxgordura', nome:'Caixa de Gordura', tipo:'LIMPEZA DE CAIXA DE GORDURA'},
+    'lr-srv-cupim': {id:'descupinizacao', nome:'Cupins', tipo:'DESCUPINIZAÇÃO'},
+    'lr-srv-sanit': {id:'sanitizacao', nome:'Ambientes', tipo:'SANITIZAÇÃO'}
+  };
+
+  var servicos = [];
+  Object.keys(srvMap).forEach(function(id){
+    var el = document.getElementById(id);
+    if(el && el.checked) {
+      var srv = Object.assign({}, srvMap[id]);
+      // Para caixa d'água: validade fixa de 180 dias a partir da data de realização
+      if(srv.id === 'cxdagua' && aguaData) {
+        srv.validade = aguaValidade; // 180 dias fixos
+        srv.dataRealizacao = aguaData;
+        srv.garantia = '180 dias';
+      } else {
+        // Calcular validade normal
+        var val = new Date(data + 'T12:00:00');
+        val.setDate(val.getDate() + garantiaDias);
+        srv.validade = val.toISOString().split('T')[0];
+        srv.garantia = garantiaDias + ' dias';
+      }
+      servicos.push(srv);
+    }
+  });
+
+  if(!servicos.length) { alert('Selecione pelo menos um serviço.'); return; }
+
+  // Montar produtos
+  var produtos = [];
+  if(produtosTexto) {
+    produtosTexto.split('\n').forEach(function(linha){
+      if(linha.trim()) produtos.push({nome: linha.trim(), grupo: '', qtd: '', ant: ''});
+    });
+  }
+
+  // Obter dados da empresa
+  var emp = JSON.parse(localStorage.getItem('empresa_emissora') || '{}');
+
+  // Montar objeto de dados para renderCertificado
+  var d = {
+    nome: nome,
+    cnpjCliente: c.cnpj || '',
+    fone: c.fone || '',
+    email: c.email || '',
+    endereco: c.endereco || '',
+    bairro: c.bairro || '',
+    cidade: c.cidade || '',
+    tipoComercio: c.tipo || '',
+    data: data,
+    dataServico: data,
+    hora: hora,
+    servicos: servicos,
+    produtos: produtos,
+    descricaoServicos: descricao,
+    responsavel: emp.resp || 'Lucas Pessoa Oliveira',
+    crt: emp.crt || 'CRQ-2ª Região- nº 024021977',
+    cnpjEmpresa: emp.cnpjEmpresa || '14.175.886/0001-19',
+    alvaraSanitario: emp.alvaraSanitario || '',
+    alvaraFunc: emp.alvaraFunc || '',
+    empresa: emp.empresa || 'Controle Dedetizadora Ltda.',
+    num: 'LR-' + Date.now().toString().slice(-6),
+    pagamento: [],
+    recibo: '',
+    notafiscal: '',
+    valor: ''
+  };
+
+  // Salvar laudo no Firebase vinculado ao cliente
+  if(window._firebaseLoaded && window._setDoc && window._db) {
+    var laudoId = 'laudo_' + Date.now().toString();
+    window._setDoc(window._doc(window._db,'laudos',laudoId), {
+      id: laudoId,
+      clienteId: cid,
+      clienteNome: nome,
+      data: data,
+      servicos: servicos.map(function(s){ return s.nome; }).join(', '),
+      aguaData: aguaData || null,
+      aguaValidade: aguaValidade || null,
+      criadoEm: new Date().toISOString()
+    }).then(function(){ mostrarToast('Laudo salvo no sistema! ✓'); })
+    .catch(function(e){ console.log('erro salvar laudo:', e); });
+  }
+
+  fecharModal('modal-laudo-rapido');
+
+  // Renderizar e abrir o modal do certificado
+  renderCertificado(d);
+  document.getElementById('modal-cert').classList.add('open');
 }
 
 </script>
