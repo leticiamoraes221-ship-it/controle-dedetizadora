@@ -1774,10 +1774,7 @@ return `<div class="cert-valid-line"><b>${s.nome.toUpperCase()}</b> – ${s.tipo
       </div>
     </div>
 
-    <div style="margin-top:12px;border-top:1px solid #ccc;padding-top:6px;font-size:8.5pt;color:#666;display:flex;justify-content:space-between;">
-      <span>Emitido em ${fmtData(d.data)} · Orçamento Nº ${d.num}</span>
-      <span>Pgto: ${d.pagamento.join('/')||'—'} · Recibo: ${d.recibo||'—'} · NF: ${d.notafiscal||'—'} · R$ ${d.valor||'—'}</span>
-    </div>
+
   </div>`;
 
   document.getElementById('cert-content').innerHTML=html;
@@ -3259,7 +3256,7 @@ function gerarAviso(){
     +'*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;box-sizing:border-box;margin:0;padding:0;}'
     +'@page{size:A4;margin:0;}'
     +'body{font-family:Arial,sans-serif;color:#000;background:#fff;width:210mm;min-height:297mm;}'
-    +'.pagina{width:210mm;min-height:297mm;display:flex;flex-direction:column;}'
+    +'.pagina{width:210mm;min-height:297mm;height:297mm;display:flex;flex-direction:column;justify-content:space-between;}'
     +'.no-print{text-align:center;padding:12px;background:#f1f5f9;}'
     +'@media print{.no-print{display:none!important;}}'
     +'</style></head><body>'
@@ -3345,7 +3342,7 @@ function gerarAviso(){
     +'<div style="font-size:32pt;font-weight:900;text-transform:uppercase;">'+cond+'</div>'
     +(end?'<div style="font-size:10pt;opacity:.85;">📍 '+end+'</div>':'')
     +'</div>'
-    +'<div style="padding:16px 28px;">'
+    +'<div style="padding:16px 28px;flex:1;display:flex;flex-direction:column;justify-content:space-between;">'
     +'<p style="font-size:12pt;font-weight:900;color:'+verde+';margin-bottom:6px;">SR (A). MORADOR (A)</p>'
     +'<hr style="border:none;border-top:2px solid '+verde+';margin-bottom:14px;">'
     +'<div style="text-align:center;margin:14px 0;">'
