@@ -3069,8 +3069,9 @@ function gerarRecibo(d, parcela) {
       var pTot = document.getElementById('rec-parc-tot');
       if (pNum && pTot) parcSel = pNum.value + 'ª parcela de ' + pTot.value;
     }
-    modal.remove();
-    imprimirRecibo(d, parcSel, emp, nomeEmp, cnpjEmp, respEmp, crtEmp, endEmp, foneEmp, hoje, servicos, valor, nome, cpfcnpj, endereco);
+    var servicosEditado = document.getElementById('rec-servico-desc') ? document.getElementById('rec-servico-desc').value || servicos : servicos;
+    var servicosEditado = document.getElementById('rec-servico-desc') ? document.getElementById('rec-servico-desc').value || servicos : servicos;
+    imprimirRecibo(d, parcSel, emp, nomeEmp, cnpjEmp, respEmp, crtEmp, endEmp, foneEmp, hoje, servicosEditado, valor, nome, cpfcnpj, endereco);
   });
 }
 
@@ -3255,12 +3256,17 @@ function gerarAviso(){
     +'<style>'
     +'*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;box-sizing:border-box;margin:0;padding:0;}'
     +'@page{size:A4;margin:0;}'
-    +'body{font-family:Arial,sans-serif;color:#000;background:#fff;width:210mm;min-height:297mm;}'
-    +'.pagina{width:210mm;min-height:297mm;height:297mm;display:flex;flex-direction:column;justify-content:space-between;}'
+    +'body{font-family:Arial,sans-serif;color:#000;background:#fff;margin:0;padding:0;}'
+    +'@media print{html,body{width:210mm;height:297mm;margin:0;padding:0;}}'
+    +'.pagina{width:210mm;height:297mm;display:flex;flex-direction:column;overflow:hidden;}'
     +'.no-print{text-align:center;padding:12px;background:#f1f5f9;}'
     +'@media print{.no-print{display:none!important;}}'
     +'</style></head><body>'
-    +'<div class="no-print"><button onclick="window.print()" style="padding:10px 28px;background:'+verde+';color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;">🖨️ Imprimir</button></div>'
+    +'<div class="no-print" style="display:flex;gap:10px;justify-content:center;padding:12px;background:#f1f5f9;">'
+    +'<button onclick="window.print()" style="padding:10px 24px;background:'+verde+';color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;">🖨️ Imprimir / PDF</button>'
+    +'<button onclick="salvarPNG()" style="padding:10px 24px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;">🖼️ Salvar PNG</button>'
+    +'</div>'
+    +'<script>function salvarPNG(){ var el=document.querySelector(".pagina"); if(!el){alert("Erro");return;} var s=new XMLSerializer(); var str=s.serializeToString(document.documentElement); var canvas=document.createElement("canvas"); canvas.width=794;canvas.height=1123; var ctx=canvas.getContext("2d"); var img=new Image(); var blob=new Blob([str],{type:"image/svg+xml"}); var url=URL.createObjectURL(blob); img.onload=function(){ctx.drawImage(img,0,0);var a=document.createElement("a");a.download="aviso.png";a.href=canvas.toDataURL("image/png");a.click();URL.revokeObjectURL(url);}; img.src=url; }<\/script>'
     +'<div class="pagina">';
 
   if(tipo === 'dedetizacao'){
