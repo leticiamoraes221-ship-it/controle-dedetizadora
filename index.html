@@ -2946,8 +2946,36 @@ function confirmarGerarContrato() {
 +'_____________________________________________________________';
 
   // Abrir janela com textarea editável
-  var win = window.open('','_blank');
-  if(!win){ alert('Por favor, permita popups para este site e tente novamente.'); return; }
+  // Mostrar contrato num overlay na mesma página (sem popup)
+  var overlayId = 'overlay-contrato-editor';
+  var existing = document.getElementById(overlayId);
+  if(existing) existing.remove();
+  var overlay = document.createElement('div');
+  overlay.id = overlayId;
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#f1f5f9;overflow-y:auto;';
+  overlay.innerHTML = '<div style="background:#1a3c6e;color:#fff;padding:12px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;">'
+    + '<span style="flex:1;font-size:14px;font-weight:700;">📄 Revise e edite o contrato antes de imprimir</span>'
+    + '<button onclick="window.print()" style="padding:8px 20px;background:#059669;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:700;">🖨️ Imprimir / PDF</button>'
+    + '<button onclick="document.getElementById(\'overlay-contrato-editor\').remove()" style="padding:8px 20px;background:#dc2626;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:700;">✕ Fechar</button>'
+    + '</div>'
+    + '<div style="max-width:800px;margin:24px auto;background:#fff;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.1);overflow:hidden;">'
+    + '<div style="background:#1a3c6e;color:#fff;padding:14px 20px;font-size:13px;font-weight:700;">✏️ Clique no texto abaixo para editar</div>'
+    + '<div id="contrato-texto-editor" contenteditable="true" style="width:100%;min-height:600px;border:none;padding:30px 36px;font-family:Arial,sans-serif;font-size:11pt;line-height:1.8;outline:none;white-space:pre-wrap;">'
+    + textoContrato.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')
+    + '</div></div>';
+  document.body.appendChild(overlay);
+
+  // Adicionar CSS de impressão
+  var styleEl = document.createElement('style');
+  styleEl.id = 'print-contrato-style';
+  styleEl.textContent = '@media print { body > *:not(#overlay-contrato-editor) { display:none!important; } #overlay-contrato-editor { position:static!important; } #overlay-contrato-editor > div:first-child { display:none!important; } }';
+  document.head.appendChild(styleEl);
+
+  var fakeWin = { document: { open:function(){}, write:function(){}, close:function(){} }, focus:function(){} };
+  var win = fakeWin; // dummy para não quebrar o código abaixo
+  if(false) { // bloco morto - mantido para compatibilidade
+  var _dummyOpen = window.open('','_blank');
+  if(!_dummyOpen) { }
   win.document.open();
   win.document.write('<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Contrato — '+nome+'</title>'
     +'<style>'
@@ -2979,8 +3007,7 @@ function confirmarGerarContrato() {
     +'<div id="contrato-texto" contenteditable="true">'+textoContrato.replace(/\n/g,"<br>")+'</div>'
     +'</div>'
     +'</body></html>');
-  win.document.close();
-  win.focus();
+  } // fim bloco morto
 
   // Auto-salvar cliente
   autoSalvarCliente({nome:nome, cnpj:cnpj, fone:fone, email:email, endereco:endereco});
@@ -3808,13 +3835,17 @@ function preencherEmpresa(tipo) {
     }
   };
   var d = dados[tipo];
-  if(!d) return;
-  ['empresa','cnpjEmpresa','responsavel','crt','alvaraSanitario','alvaraFunc'].forEach(function(id){
+  if(!d) { console.log('tipo não encontrado:', tipo); return; }
+  var campos = ['empresa','cnpjEmpresa','responsavel','crt','alvaraSanitario','alvaraFunc'];
+  var ok = 0;
+  campos.forEach(function(id){
     var el = document.getElementById(id);
-    if(el) el.value = d[id] || '';
+    if(el) { el.value = d[id] || ''; ok++; }
+    else console.log('Campo não encontrado:', id);
   });
+  console.log('preencherEmpresa: preencheu', ok, 'de', campos.length, 'campos');
   salvarEmpresa();
-  mostrarToast('Empresa alterada: ' + d.empresa + ' ✓');
+  mostrarToast('Empresa: ' + d.empresa + ' ✓');
 }
 
 // ══ ALERTAS INTELIGENTES MELHORADOS ══
