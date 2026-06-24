@@ -2848,6 +2848,12 @@ function atualizarServicosContrato() {
   });
 }
 
+function abrirModalContrato() {
+  var modal = document.getElementById('modal-contrato');
+  if(!modal) { alert('Modal de contrato não encontrado.'); return; }
+  modal.classList.add('open');
+}
+
 function confirmarGerarContrato() {
   var nome     = document.getElementById('ct-nome').value || '___________________________';
   var cnpj     = document.getElementById('ct-cnpj').value || '___________________________';
