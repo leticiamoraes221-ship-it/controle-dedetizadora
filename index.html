@@ -149,6 +149,28 @@
 
 
 
+<script>
+// Funções críticas carregadas no head
+function abrirModalContrato() {
+  var modal = document.getElementById('modal-contrato');
+  if(!modal){ setTimeout(abrirModalContrato, 300); return; }
+  modal.classList.add('open');
+}
+function preencherEmpresa(tipo) {
+  var empresas = {
+    joao: { empresa:'João Batista Morais', cnpjEmpresa:'13.895.557/0001-80', responsavel:'João Batista Morais', crt:'', alvaraSanitario:'63/2021', alvaraFunc:'1/2.251.3.7677' },
+    controle: { empresa:'Controle Dedetizadora Ltda. - ME', cnpjEmpresa:'14.175.886/0001-19', responsavel:'Lucas Pessoa Oliveira', crt:'CRQ-2ª Região- nº 024021977', alvaraSanitario:'63/2021', alvaraFunc:'1/2.251.3.7677' }
+  };
+  var d = empresas[tipo];
+  if(!d) return;
+  ['empresa','cnpjEmpresa','responsavel','crt','alvaraSanitario','alvaraFunc'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el) el.value = d[id] || '';
+  });
+  localStorage.setItem('empresa_emissora', JSON.stringify(d));
+  setTimeout(function(){ if(typeof mostrarToast==='function') mostrarToast('Empresa: '+d.empresa+' ✓'); }, 100);
+}
+</script>
 </head>
 <body>
 
