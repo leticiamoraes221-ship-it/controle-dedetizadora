@@ -147,24 +147,22 @@
   .alerta-venc-data{font-size:11px;color:var(--muted);margin-top:2px;}
 </style>
 
-
-
-
+<script>
 function preencherEmpresa(tipo) {
   var empresas = {
-    joao: { empresa:'João Batista Morais', cnpjEmpresa:'13.895.557/0001-80', responsavel:'João Batista Morais', crt:'', alvaraSanitario:'63/2021', alvaraFunc:'1/2.251.3.7677' },
-    controle: { empresa:'Controle Dedetizadora Ltda. - ME', cnpjEmpresa:'14.175.886/0001-19', responsavel:'Lucas Pessoa Oliveira', crt:'CRQ-2ª Região- nº 024021977', alvaraSanitario:'63/2021', alvaraFunc:'1/2.251.3.7677' }
+    joao: { empresa:"Joao Batista Morais", cnpjEmpresa:"13.895.557/0001-80", responsavel:"Joao Batista Morais", crt:"", alvaraSanitario:"63/2021", alvaraFunc:"1/2.251.3.7677" },
+    controle: { empresa:"Controle Dedetizadora Ltda. - ME", cnpjEmpresa:"14.175.886/0001-19", responsavel:"Lucas Pessoa Oliveira", crt:"CRQ-2a Regiao- no 024021977", alvaraSanitario:"63/2021", alvaraFunc:"1/2.251.3.7677" }
   };
   var d = empresas[tipo];
   if(!d) return;
-  ['empresa','cnpjEmpresa','responsavel','crt','alvaraSanitario','alvaraFunc'].forEach(function(id){
+  ["empresa","cnpjEmpresa","responsavel","crt","alvaraSanitario","alvaraFunc"].forEach(function(id){
     var el = document.getElementById(id);
-    if(el) el.value = d[id] || '';
+    if(el) el.value = d[id] || "";
   });
-  localStorage.setItem('empresa_emissora', JSON.stringify(d));
-  setTimeout(function(){ if(typeof mostrarToast==='function') mostrarToast('Empresa: '+d.empresa+' ✓'); }, 100);
+  localStorage.setItem("empresa_emissora", JSON.stringify(d));
+  setTimeout(function(){ if(typeof mostrarToast==="function") mostrarToast("Empresa: "+d.empresa+" ok"); }, 100);
 }
-
+</script>
 </head>
 <body>
 
