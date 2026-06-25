@@ -2880,15 +2880,30 @@ function gerarContrato() {
 
 function calcularParcelasContrato() {
   var valStr = (document.getElementById('ct-valor').value||'0').trim();
-  // Remover pontos de milhar e trocar vírgula por ponto
-  valStr = valStr.replace(/\./g,'').replace(',','.');
-  var total = parseFloat(valStr) || 0;
+  // Suporta formatos: 1600 / 1600,00 / 1.600,00 / 1600.00
+  var valLimpo = valStr;
+  // Se tem vírgula, trata como decimal brasileiro
+  if(valLimpo.indexOf(',') >= 0) {
+    valLimpo = valLimpo.replace(/\./g,'').replace(',','.');
+  }
+  var total = parseFloat(valLimpo) || 0;
   var parcelas = parseInt(document.getElementById('ct-parcelas').value||'3') || 1;
   if (total > 0 && parcelas > 0) {
     var parc = (total / parcelas).toFixed(2).replace('.',',');
     document.getElementById('ct-valor-parcela').value = parc;
   } else {
     document.getElementById('ct-valor-parcela').value = '0,00';
+  }
+}
+
+function formatarValorContrato() {
+  var el = document.getElementById('ct-valor');
+  if(!el || !el.value) return;
+  var v = el.value.trim().replace(/\./g,'').replace(',','.');
+  var num = parseFloat(v);
+  if(!isNaN(num)) {
+    el.value = num.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+    calcularParcelasContrato();
   }
 }
 
@@ -4619,7 +4634,7 @@ function calcOp(a, b, op) {
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
         <div>
           <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">VALOR TOTAL (R$)</label>
-          <input id="ct-valor" class="input" placeholder="0,00" oninput="calcularParcelasContrato()">
+          <input id="ct-valor" class="input" placeholder="Ex: 1.600,00" oninput="calcularParcelasContrato()" onblur="formatarValorContrato()">
         </div>
         <div>
           <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">Nº PARCELAS</label>
