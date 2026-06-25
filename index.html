@@ -1922,6 +1922,12 @@ function imprimirCert(){
   doc.write('<'+'body>');
   doc.write(conteudo);
   doc.write('<div class="no-print" style="text-align:center;padding:20px;display:flex;gap:12px;justify-content:center;">');
+  // Definir nome do arquivo como Laudo_RazaoSocial_Mes_Ano
+  var nomeCliente = (certDiv.querySelector('.cert-nome') ? certDiv.querySelector('.cert-nome').textContent : 'Cliente').replace(/[^a-zA-Z0-9À-ÿ ]/g,'').trim().replace(/ /g,'_');
+  var dataHoje = new Date();
+  var meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  var nomeArquivo = 'Laudo_' + nomeCliente + '_' + meses[dataHoje.getMonth()] + '_' + dataHoje.getFullYear();
+  doc.write('<title>'+nomeArquivo+'</title>');
   doc.write('<button onclick="window.print()" style="padding:10px 28px;background:#1a3c6e;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;">Imprimir</button>');
   doc.write('<button onclick="document.querySelectorAll(\'.no-print\').forEach(function(e){e.style.display=\'none\'});window.print();" style="padding:10px 28px;background:#059669;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;">Salvar PDF</button>');
   doc.write('</div>');
@@ -3408,151 +3414,138 @@ function gerarAviso(){
   if(dataVal){ var p=dataVal.split('-'); dataFmt=p[2]+'/'+p[1]+'/'+p[0]; }
 
   var verde = '#1a4a1a';
-  var verdeM = '#2d7a2d';
-  var verm  = '#cc0000';
+  var verdeM = '#2d6b2d';
+  var verm   = '#cc0000';
 
-  var html = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Aviso</title>'
-    +'<style>'
-    +'*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;box-sizing:border-box;margin:0;padding:0;}'
-    +'@page{size:A4;margin:0;}'
-    +'body{font-family:Arial,sans-serif;color:#000;background:#fff;width:210mm;min-height:297mm;}'
-    +'.pagina{width:210mm;min-height:297mm;height:297mm;display:flex;flex-direction:column;justify-content:space-between;}'
-    +'.no-print{text-align:center;padding:12px;background:#f1f5f9;}'
-    +'@media print{.no-print{display:none!important;}}'
-    +'</style></head><body>'
-    +'<div class="no-print"><button onclick="window.print()" style="padding:10px 28px;background:'+verde+';color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;">🖨️ Imprimir</button></div>'
-    +'<div class="pagina">';
+  var conteudo = '';
 
   if(tipo === 'dedetizacao'){
-    html += ''
-    // Cabeçalho verde
-    +'<div style="background:'+verde+';color:#fff;padding:18px 28px 14px;text-align:center;">'
-    +'<div style="font-size:10pt;font-weight:600;letter-spacing:3px;text-transform:uppercase;opacity:.8;margin-bottom:4px;">COMUNICADO DE</div>'
-    +'<div style="font-size:42pt;font-weight:900;letter-spacing:-1px;line-height:1;text-transform:uppercase;">DEDETIZAÇÃO</div>'
-    +'</div>'
-
-    // Nome condomínio
-    +'<div style="padding:16px 28px 0;">'
-    +'<div style="font-size:28pt;font-weight:900;color:'+verde+';text-transform:uppercase;line-height:1.1;margin-bottom:4px;">'+cond+'</div>'
-    +(end?'<div style="font-size:10pt;color:#555;margin-bottom:10px;">📍 '+end+'</div>':'')
-    +'<hr style="border:none;border-top:2px solid '+verde+';margin-bottom:12px;">'
-
-    // SR MORADOR
-    +'<div style="font-size:13pt;font-weight:900;color:'+verde+';margin-bottom:6px;">PREZADO(A) MORADOR(A),</div>'
-    +'<div style="font-size:10.5pt;margin-bottom:14px;">Informamos que será realizada a <b>dedetização</b> das áreas comuns do condomínio:</div>'
-
-    // Data e hora em blocos
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">'
-    +'<div style="border:2px solid '+verde+';border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:12px;">'
-    +'<div style="font-size:28pt;">📅</div>'
-    +'<div><div style="font-size:9pt;font-weight:700;color:#555;letter-spacing:1px;">DATA:</div>'
-    +'<div style="font-size:18pt;font-weight:900;color:'+verm+';">'+dataFmt+'</div>'
-    +(diaSem?'<div style="font-size:10pt;font-weight:700;">('+diaSem.toUpperCase()+')</div>':'')
-    +'</div></div>'
-    +'<div style="border:2px solid '+verde+';border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:12px;">'
-    +'<div style="font-size:28pt;">🕐</div>'
-    +'<div><div style="font-size:9pt;font-weight:700;color:#555;letter-spacing:1px;">HORÁRIO:</div>'
-    +(hIni&&hFim?'<div style="font-size:18pt;font-weight:900;">DAS '+hIni+'h<br>ÀS '+hFim+'h</div>':'<div style="font-size:14pt;font-weight:900;">A combinar</div>')
-    +'</div></div>'
-    +'</div>'
-
-    // Importante
-    +'<div style="border:2px solid '+verdeM+';border-radius:10px;overflow:hidden;margin-bottom:12px;">'
-    +'<div style="background:'+verdeM+';color:#fff;text-align:center;padding:6px;font-size:11pt;font-weight:800;letter-spacing:2px;">IMPORTANTE</div>'
-    +'<div style="padding:12px 16px;">'
-    +'<ul style="list-style:none;font-size:10pt;line-height:2;">'
-    +'<li>● Evite permanecer nas áreas comuns durante a aplicação.</li>'
-    +'<li>● Pessoas e animais domésticos deverão aguardar <b>4 horas</b> após o término do serviço.</li>'
-    +'<li>● A passagem rápida pelo local será permitida.</li>'
-    +'<li>● O produto utilizado possui baixa toxicidade, porém pode causar reações alérgicas em pessoas sensíveis.</li>'
-    +'</ul>'
-    +'</div></div>'
-
-    // Atenção caixas de gordura
-    +'<div style="border:2px solid '+verm+';border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:14px;margin-bottom:12px;">'
-    +'<div style="background:'+verm+';color:#fff;border-radius:8px;padding:8px 12px;font-size:20pt;flex-shrink:0;">⚠️</div>'
-    +'<div><div style="color:'+verm+';font-size:11pt;font-weight:900;">NÃO ESTACIONE VEÍCULOS</div>'
-    +'<div style="font-size:11pt;font-weight:800;">PRÓXIMOS ÀS CAIXAS DE GORDURA.</div></div>'
-    +'</div>'
-
+    conteudo = ''
+    // Nome condomínio com borda
+    + '<div style="border:2px solid '+verdeM+';border-radius:10px;padding:10px 16px;margin:10px 0;text-align:center;">'
+    + '<div style="font-size:22pt;font-weight:900;color:'+verdeM+';text-transform:uppercase;line-height:1.1;">'+cond+'</div>'
+    + (end?'<div style="font-size:9pt;color:#555;margin-top:4px;">📍 '+end+'</div>':'')
+    + '</div>'
+    // PREZADO MORADOR
+    + '<div style="font-size:13pt;font-weight:900;margin:8px 0 4px;">PREZADO(A) MORADOR(A),</div>'
+    + '<div style="font-size:10pt;margin-bottom:10px;">Informamos que será realizada a <b>dedetização</b> das áreas comuns do condomínio.</div>'
+    // Data e hora
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">'
+    + '<div style="border:2px solid #ccc;border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px;">'
+    + '<div style="font-size:22pt;">📅</div>'
+    + '<div><div style="font-size:8.5pt;font-weight:700;color:#555;letter-spacing:1px;">DATA</div>'
+    + '<div style="font-size:16pt;font-weight:900;color:'+verm+';">'+dataFmt+'</div>'
+    + (diaSem?'<div style="font-size:9pt;font-weight:700;">('+diaSem.toUpperCase()+')</div>':'')
+    + '</div></div>'
+    + '<div style="border:2px solid #ccc;border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px;">'
+    + '<div style="font-size:22pt;">🕐</div>'
+    + '<div><div style="font-size:8.5pt;font-weight:700;color:#555;letter-spacing:1px;">HORÁRIO</div>'
+    + (hIni&&hFim?'<div style="font-size:14pt;font-weight:900;">'+hIni+' às '+hFim+'</div>':'<div style="font-size:12pt;font-weight:900;">A combinar</div>')
+    + '</div></div></div>'
+    // IMPORTANTE
+    + '<div style="border:2px solid '+verdeM+';border-radius:8px;overflow:hidden;margin-bottom:10px;">'
+    + '<div style="background:'+verdeM+';color:#fff;text-align:center;padding:5px;font-size:10pt;font-weight:800;letter-spacing:2px;">IMPORTANTE</div>'
+    + '<div style="padding:10px 14px;">'
+    + '<div style="font-size:9.5pt;line-height:1.9;">'
+    + '<div>✅ Evite permanecer nas áreas comuns durante a aplicação.</div>'
+    + '<div>✅ Pessoas e animais domésticos deverão aguardar <b>4 horas</b> após o término do serviço.</div>'
+    + '<div>✅ A passagem rápida pelo local será permitida.</div>'
+    + '<div>✅ O produto utilizado possui baixa toxicidade, porém pode causar reações alérgicas em pessoas sensíveis.</div>'
+    + '</div></div></div>'
+    // ATENÇÃO
+    + '<div style="border:2px solid '+verm+';border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:12px;margin-bottom:10px;">'
+    + '<div style="background:'+verm+';color:#fff;border-radius:6px;padding:8px 10px;font-size:18pt;flex-shrink:0;">⚠️</div>'
+    + '<div><div style="color:'+verm+';font-size:10pt;font-weight:900;">NÃO ESTACIONE VEÍCULOS</div>'
+    + '<div style="font-size:10pt;font-weight:800;">PRÓXIMOS ÀS CAIXAS DE GORDURA.</div></div>'
+    + '</div>'
     // Mensagem
-    +'<div style="text-align:center;font-size:10pt;margin-bottom:12px;padding:0 8px;">'
-    +'A Controle Dedetizadora trabalha para garantir mais <b>segurança, saúde</b> e <b>qualidade de vida</b> para todos os moradores.'
-    +'</div>'
-
+    + '<div style="text-align:center;font-size:9.5pt;margin-bottom:10px;padding:0 8px;">'
+    + 'A Controle Dedetizadora trabalha para garantir mais <b>segurança, saúde</b> e <b>qualidade de vida</b> para todos os moradores.'
+    + '</div>'
     // Emergência
-    +'<div style="background:'+verde+';color:#fff;border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:14px;margin-bottom:12px;">'
-    +'<div style="font-size:24pt;">📞</div>'
-    +'<div style="font-size:14pt;font-weight:900;">EMERGÊNCIA: &nbsp;(34) 99104-7014</div>'
-    +'</div>'
-
+    + '<div style="background:'+verde+';color:#fff;border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:12px;margin-bottom:10px;">'
+    + '<div style="font-size:20pt;">📞</div>'
+    + '<div style="font-size:14pt;font-weight:900;letter-spacing:1px;">EMERGÊNCIA: &nbsp;(34) 99104-7014</div>'
+    + '</div>'
     // Rodapé
-    +'<div style="border-top:2px solid '+verde+';padding:10px 0;display:flex;align-items:center;gap:16px;">'
-    +'<div style="font-size:10pt;font-weight:900;color:'+verde+';">CONTROLE<br>DEDETIZADORA<br><span style="font-weight:400;font-size:8.5pt;color:#555;">Desde 2002 cuidando do que é seu.</span></div>'
-    +'<div style="width:1px;height:50px;background:#ccc;"></div>'
-    +'<div style="font-size:9pt;color:#333;line-height:1.8;">'
-    +'🌐 www.controlededetizadora.com.br<br>'
-    +'📞 Fones: 99104-7014 (Tim) / 99799-4442<br>'
-    +'✉️ controle@controlededetizadora.com.br'
-    +'</div></div>'
-    +'</div>';
+    + '<div style="border-top:2px solid '+verde+';padding-top:8px;display:flex;align-items:center;gap:12px;">'
+    + '<div style="font-size:9.5pt;font-weight:900;color:'+verde+';">CONTROLE<br>DEDETIZADORA<br><span style="font-weight:400;font-size:8pt;color:#555;">Desde 2002 cuidando do que é seu.</span></div>'
+    + '<div style="width:1px;height:40px;background:#ccc;"></div>'
+    + '<div style="font-size:8.5pt;color:#333;line-height:1.7;">🌐 www.controlededetizadora.com.br<br>📞 99104-7014 (Tim) / 99799-4442<br>✉️ controle@controlededetizadora.com.br</div>'
+    + '</div>';
 
   } else if(tipo === 'caixa_nao_falta'){
-    html += '<div style="background:'+verde+';color:#fff;padding:20px 30px 14px;text-align:center;">'
-    +'<div style="font-size:32pt;font-weight:900;text-transform:uppercase;">'+cond+'</div>'
-    +(end?'<div style="font-size:10pt;opacity:.85;">📍 '+end+'</div>':'')
-    +'</div>'
-    +'<div style="padding:16px 28px;flex:1;display:flex;flex-direction:column;justify-content:space-between;">'
-    +'<p style="font-size:12pt;font-weight:900;color:'+verde+';margin-bottom:6px;">SR (A). MORADOR (A)</p>'
-    +'<hr style="border:none;border-top:2px solid '+verde+';margin-bottom:14px;">'
-    +'<div style="text-align:center;margin:14px 0;">'
-    +'<span style="font-size:11pt;">No dia </span><span style="font-size:20pt;font-weight:900;color:'+verm+';">'+dataFmt+'</span>'
-    +(diaSem?'<span style="font-size:11pt;"> ('+diaSem.toLowerCase()+')</span>':'')
-    +'</div>'
-    +(hIni&&hFim?'<div style="display:flex;align-items:center;justify-content:center;gap:16px;margin:14px 0;">'
-    +'<span style="font-size:12pt;font-weight:700;">DAS</span>'
-    +'<div style="background:'+verde+';color:#fff;border-radius:8px;padding:8px 20px;font-size:20pt;font-weight:900;">'+hIni+'h</div>'
-    +'<span style="font-size:12pt;font-weight:700;">ÀS</span>'
-    +'<div style="background:'+verde+';color:#fff;border-radius:8px;padding:8px 20px;font-size:20pt;font-weight:900;">'+hFim+'h</div>'
+    conteudo = '<div style="border:2px solid '+verdeM+';border-radius:10px;padding:10px 16px;margin:10px 0;text-align:center;">'
+    + '<div style="font-size:22pt;font-weight:900;color:'+verdeM+';text-transform:uppercase;">'+cond+'</div>'
+    + (end?'<div style="font-size:9pt;color:#555;margin-top:4px;">📍 '+end+'</div>':'')
+    + '</div>'
+    + '<div style="font-size:13pt;font-weight:900;margin:8px 0 4px;">SR (A). MORADOR (A)</div>'
+    + '<div style="text-align:center;margin:10px 0;font-size:10pt;">No dia <span style="font-size:18pt;font-weight:900;color:'+verm+';">'+dataFmt+'</span>'+(diaSem?' ('+diaSem+')':'')+'</div>'
+    + (hIni&&hFim?'<div style="display:flex;align-items:center;justify-content:center;gap:12px;margin:10px 0;">'
+    +'<span style="font-size:11pt;font-weight:700;">DAS</span>'
+    +'<div style="background:'+verde+';color:#fff;border-radius:8px;padding:8px 18px;font-size:18pt;font-weight:900;">'+hIni+'h</div>'
+    +'<span style="font-size:11pt;font-weight:700;">ÀS</span>'
+    +'<div style="background:'+verde+';color:#fff;border-radius:8px;padding:8px 18px;font-size:18pt;font-weight:900;">'+hFim+'h</div>'
     +'</div>':'')
-    +'<h1 style="font-size:22pt;font-weight:900;line-height:1.2;margin:14px 0;">REALIZAREMOS A <span style="color:'+verdeM+';">HIGIENIZAÇÃO</span><br>DAS CAIXAS DE ÁGUA DO SEU CONDOMÍNIO.</h1>'
-    +'<h2 style="font-size:26pt;font-weight:900;font-style:italic;text-decoration:underline;color:'+verm+';text-align:center;margin:14px 0;">NÃO FALTARÁ ÁGUA.</h2>'
-    +'<div style="display:flex;border-top:2px solid '+verde+';margin-top:16px;padding-top:12px;gap:16px;align-items:center;">'
-    +'<div style="flex:1;font-size:10pt;">A Controle Dedetizadora tem o compromisso de oferecer segurança, bem-estar e qualidade de vida.<br><i>Agradecemos a confiança!</i></div>'
-    +'<div style="background:'+verde+';color:#fff;padding:10px 16px;text-align:center;border-radius:8px;min-width:120px;">'
-    +'<div style="font-size:9pt;font-weight:700;">EMERGÊNCIA</div><div style="font-size:16pt;font-weight:900;">99104-7014</div>'
-    +'</div></div></div>';
+    + '<h2 style="font-size:18pt;font-weight:900;color:'+verde+';text-align:center;margin:10px 0;">HIGIENIZAÇÃO DAS CAIXAS DE ÁGUA</h2>'
+    + '<h2 style="font-size:22pt;font-weight:900;font-style:italic;text-decoration:underline;color:'+verm+';text-align:center;margin:10px 0;">NÃO FALTARÁ ÁGUA.</h2>'
+    + '<div style="display:flex;border-top:2px solid '+verde+';margin-top:12px;padding-top:10px;gap:12px;align-items:center;">'
+    + '<div style="flex:1;font-size:9.5pt;">A Controle Dedetizadora tem o compromisso de oferecer segurança e qualidade de vida.<br><i>Agradecemos a confiança!</i></div>'
+    + '<div style="background:'+verde+';color:#fff;padding:10px 14px;text-align:center;border-radius:8px;min-width:110px;"><div style="font-size:8pt;font-weight:700;">EMERGÊNCIA</div><div style="font-size:14pt;font-weight:900;">99104-7014</div></div>'
+    + '</div>';
 
   } else {
-    html += '<div style="background:'+verde+';color:#fff;padding:20px 30px 14px;text-align:center;">'
-    +'<div style="font-size:32pt;font-weight:900;text-transform:uppercase;">'+cond+'</div>'
-    +(end?'<div style="font-size:10pt;opacity:.85;">📍 '+end+'</div>':'')
-    +'</div>'
-    +'<div style="padding:16px 28px;">'
-    +'<p style="font-size:12pt;font-weight:900;color:'+verde+';margin-bottom:6px;">SR (A). MORADOR (A)</p>'
-    +'<hr style="border:none;border-top:2px solid '+verde+';margin-bottom:14px;">'
-    +'<div style="text-align:center;margin:14px 0;">'
-    +'<span style="font-size:11pt;">No dia </span><span style="font-size:20pt;font-weight:900;color:'+verm+';">'+dataFmt+'</span>'
-    +(diaSem?'<span style="font-size:11pt;"> ('+diaSem.toUpperCase()+')</span>':'')
-    +'</div>'
-    +(hIni&&hFim?'<div style="display:flex;align-items:center;justify-content:center;gap:16px;margin:14px 0;">'
-    +'<span style="font-size:12pt;font-weight:700;">DAS</span>'
-    +'<div style="background:'+verde+';color:#fff;border-radius:8px;padding:8px 20px;font-size:20pt;font-weight:900;">'+hIni+'h</div>'
-    +'<span style="font-size:12pt;font-weight:700;">ÀS</span>'
-    +'<div style="background:'+verde+';color:#fff;border-radius:8px;padding:8px 20px;font-size:20pt;font-weight:900;">'+hFim+'h</div>'
+    conteudo = '<div style="border:2px solid '+verdeM+';border-radius:10px;padding:10px 16px;margin:10px 0;text-align:center;">'
+    + '<div style="font-size:22pt;font-weight:900;color:'+verdeM+';text-transform:uppercase;">'+cond+'</div>'
+    + (end?'<div style="font-size:9pt;color:#555;margin-top:4px;">📍 '+end+'</div>':'')
+    + '</div>'
+    + '<div style="font-size:13pt;font-weight:900;margin:8px 0 4px;">SR (A). MORADOR (A)</div>'
+    + '<div style="text-align:center;margin:10px 0;font-size:10pt;">No dia <span style="font-size:18pt;font-weight:900;color:'+verm+';">'+dataFmt+'</span>'+(diaSem?' ('+diaSem+')':'')+'</div>'
+    + (hIni&&hFim?'<div style="display:flex;align-items:center;justify-content:center;gap:12px;margin:10px 0;">'
+    +'<span style="font-size:11pt;font-weight:700;">DAS</span>'
+    +'<div style="background:'+verde+';color:#fff;border-radius:8px;padding:8px 18px;font-size:18pt;font-weight:900;">'+hIni+'h</div>'
+    +'<span style="font-size:11pt;font-weight:700;">ÀS</span>'
+    +'<div style="background:'+verde+';color:#fff;border-radius:8px;padding:8px 18px;font-size:18pt;font-weight:900;">'+hFim+'h</div>'
     +'</div>':'')
-    +'<h1 style="font-size:22pt;font-weight:900;line-height:1.2;margin:14px 0;">REALIZAREMOS A <span style="color:'+verdeM+';">LIMPEZA</span><br>DOS RESERVATÓRIOS DE ÁGUA DO SEU CONDOMÍNIO.</h1>'
-    +(fIni&&fFim?'<h2 style="font-size:24pt;font-weight:900;font-style:italic;text-decoration:underline;color:'+verm+';text-align:center;margin:14px 0;">FALTARÁ ÁGUA DAS '+fIni+' ÀS '+fFim+'.</h2>':'')
-    +'<p style="font-size:11pt;font-weight:800;text-align:center;margin:10px 0;">NÃO USE A DESCARGA, NÃO ABRA AS TORNEIRAS, NÃO USE OS FILTROS E NÃO LIGUE MÁQUINAS DE LAVAR.</p>'
-    +'<p style="font-size:11pt;font-weight:800;color:'+verm+';text-decoration:underline;text-align:center;">NÃO NOS RESPONSABILIZAMOS POR APARELHOS DANIFICADOS.</p>'
-    +'<div style="display:flex;border-top:2px solid '+verde+';margin-top:16px;padding-top:12px;gap:16px;align-items:center;">'
-    +'<div style="flex:1;font-size:10pt;">A Controle Dedetizadora tem como objetivo a satisfação e a qualidade de vida de seus clientes.<br><i>Agradecemos a preferência!</i></div>'
-    +'<div style="background:'+verde+';color:#fff;padding:10px 16px;text-align:center;border-radius:8px;min-width:120px;">'
-    +'<div style="font-size:9pt;font-weight:700;">EMERGÊNCIA</div><div style="font-size:16pt;font-weight:900;">99104-7014</div>'
-    +'</div></div></div>';
+    + '<h2 style="font-size:18pt;font-weight:900;color:'+verde+';text-align:center;margin:10px 0;">LIMPEZA DOS RESERVATÓRIOS DE ÁGUA</h2>'
+    + (fIni&&fFim?'<h2 style="font-size:20pt;font-weight:900;font-style:italic;text-decoration:underline;color:'+verm+';text-align:center;margin:10px 0;">FALTARÁ ÁGUA DAS '+fIni+' ÀS '+fFim+'.</h2>':'')
+    + '<p style="font-size:10pt;font-weight:800;text-align:center;margin:8px 0;">NÃO USE A DESCARGA, TORNEIRAS, FILTROS OU MÁQUINAS DE LAVAR.</p>'
+    + '<p style="font-size:10pt;font-weight:800;color:'+verm+';text-decoration:underline;text-align:center;">NÃO NOS RESPONSABILIZAMOS POR APARELHOS DANIFICADOS.</p>'
+    + '<div style="display:flex;border-top:2px solid '+verde+';margin-top:12px;padding-top:10px;gap:12px;align-items:center;">'
+    + '<div style="flex:1;font-size:9.5pt;">A Controle Dedetizadora tem como objetivo a satisfação e qualidade de vida.<br><i>Agradecemos a preferência!</i></div>'
+    + '<div style="background:'+verde+';color:#fff;padding:10px 14px;text-align:center;border-radius:8px;min-width:110px;"><div style="font-size:8pt;font-weight:700;">EMERGÊNCIA</div><div style="font-size:14pt;font-weight:900;">99104-7014</div></div>'
+    + '</div>';
   }
 
-  html += '</div></body></html>';
+  var html = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Aviso - '+cond+'</title>'
+    +'<style>'
+    +'*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;box-sizing:border-box;margin:0;padding:0;}'
+    +'@page{size:A4;margin:12mm 14mm;}'
+    +'body{font-family:Arial,sans-serif;color:#000;background:#fff;}'
+    +'.no-print{text-align:center;padding:10px;background:#f1f5f9;margin-bottom:8px;}'
+    +'@media print{.no-print{display:none!important;}}'
+    +'</style></head><body>'
+    +'<div class="no-print">'
+    +'<button onclick="window.print()" style="padding:8px 22px;background:'+verde+';color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;margin-right:8px;">🖨️ Imprimir / PDF</button>'
+    +'<button onclick="salvarAviso()" style="padding:8px 22px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;">🖼️ Salvar PNG</button>'
+    +'</div>'
+    // Cabeçalho verde
+    +'<div style="background:'+verde+';color:#fff;padding:14px 20px;text-align:center;margin-bottom:10px;">'
+    +'<div style="font-size:11pt;font-weight:600;letter-spacing:3px;text-transform:uppercase;opacity:.85;">COMUNICADO DE</div>'
+    +'<div style="font-size:36pt;font-weight:900;letter-spacing:-1px;line-height:1;text-transform:uppercase;">DEDETIZAÇÃO</div>'
+    +'</div>'
+    + conteudo
+    +'<script>function salvarAviso(){'
+    +'document.querySelector(".no-print").style.display="none";'
+    +'var h=document.documentElement.outerHTML;'
+    +'var b=new Blob([h],{type:"text/html"});'
+    +'var u=URL.createObjectURL(b);'
+    +'var a=document.createElement("a");'
+    +'a.href=u;a.download="Aviso_'+cond.replace(/[^a-zA-Z0-9]/g,"_")+'.html";a.click();'
+    +'URL.revokeObjectURL(u);'
+    +'document.querySelector(".no-print").style.display="";'
+    +'}<\/script>'
+    +'</body></html>';
 
   var oldOv = document.getElementById('overlay-aviso-print');
   if(oldOv) oldOv.remove();
@@ -3562,9 +3555,9 @@ function gerarAviso(){
   var tb = document.createElement('div');
   tb.className = 'no-print';
   tb.style.cssText = 'background:#1a4a1a;color:#fff;padding:10px 20px;display:flex;align-items:center;gap:10px;position:sticky;top:0;';
-  tb.innerHTML = '<span style="flex:1;font-weight:700;font-size:14px;">📢 Aviso de Dedetização</span>'
+  tb.innerHTML = '<span style="flex:1;font-weight:700;font-size:14px;">📢 Aviso — '+cond+'</span>'
     + '<button id="btn-print-aviso" style="padding:7px 18px;background:#059669;color:#fff;border:none;border-radius:7px;cursor:pointer;font-weight:700;">🖨️ Imprimir / PDF</button>'
-    + '<button onclick="document.getElementById(\'overlay-aviso-print\').remove();" style="padding:7px 18px;background:#dc2626;color:#fff;border:none;border-radius:7px;cursor:pointer;font-weight:700;">✕ Fechar</button>';
+    + '<button onclick="var o=document.getElementById(\'overlay-aviso-print\');if(o)o.remove();" style="padding:7px 18px;background:#dc2626;color:#fff;border:none;border-radius:7px;cursor:pointer;font-weight:700;">✕ Fechar</button>';
   ov.appendChild(tb);
   var fr = document.createElement('iframe');
   fr.style.cssText = 'width:100%;height:calc(100vh - 52px);border:none;';
