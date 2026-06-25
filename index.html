@@ -1123,6 +1123,11 @@ function preencherEmpresa(tipo) {
 <!-- ══ FINANCEIRO ══ -->
 <section class="section" id="sec-financeiro">
   <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;margin-bottom:4px;">💵 Financeiro</div>
+  <div style="display:flex;gap:8px;margin-bottom:16px;">
+    <button onclick="showFinTab('lancamentos')" id="fin-tab-lanc" class="btn btn-primary" style="font-size:12px;">💰 Lançamentos</button>
+    <button onclick="showFinTab('boletos')" id="fin-tab-bol" class="btn btn-outline" style="font-size:12px;">🧾 Boletos Emitidos</button>
+    <button onclick="showFinTab('calc')" id="fin-tab-calc" class="btn btn-outline" style="font-size:12px;">🧮 Calculadora</button>
+  </div>
   <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">Controle de pagamentos recebidos e pendentes</div>
 
   <!-- Resumo -->
@@ -1201,6 +1206,80 @@ function preencherEmpresa(tipo) {
   </div>
 
   <div id="fin-lista"></div>
+
+  <!-- BOLETOS -->
+  <div id="fin-sec-boletos" style="display:none;">
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header">+ Registrar Boleto Emitido</div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;">
+          <div>
+            <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">CLIENTE</label>
+            <input id="bol-cliente" class="input" placeholder="Nome do cliente" style="width:100%;">
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">VALOR (R$)</label>
+            <input id="bol-valor" class="input" placeholder="0,00" style="width:100%;">
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">DATA EMISSÃO</label>
+            <input id="bol-emissao" type="date" class="input" style="width:100%;">
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">DATA VENCIMENTO</label>
+            <input id="bol-vencimento" type="date" class="input" style="width:100%;">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px;">
+          <div>
+            <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">STATUS</label>
+            <select id="bol-status" class="input" style="width:100%;">
+              <option value="emitido">📤 Emitido</option>
+              <option value="pago">✅ Pago</option>
+              <option value="vencido">🔴 Vencido</option>
+              <option value="cancelado">❌ Cancelado</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">DESCRIÇÃO</label>
+            <input id="bol-desc" class="input" placeholder="Ex: Parcela 1/3 — Desinsetização" style="width:100%;">
+          </div>
+        </div>
+        <button class="btn btn-primary" style="margin-top:14px;" onclick="salvarBoleto()">💾 Registrar Boleto</button>
+      </div>
+    </div>
+    <div id="bol-lista"></div>
+  </div>
+
+  <!-- CALCULADORA -->
+  <div id="fin-sec-calc" style="display:none;">
+    <div class="card" style="max-width:400px;">
+      <div class="card-header">🧮 Calculadora</div>
+      <div class="card-body">
+        <div id="calc-display" style="background:#0f172a;color:#fff;font-size:28px;font-weight:700;padding:16px;border-radius:8px;text-align:right;min-height:60px;margin-bottom:12px;word-break:break-all;">0</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+          <button onclick="calcBtn('C')" style="padding:14px;background:#dc2626;color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;grid-column:span 2;">C</button>
+          <button onclick="calcBtn('⌫')" style="padding:14px;background:#64748b;color:#fff;border:none;border-radius:8px;font-size:16px;cursor:pointer;">⌫</button>
+          <button onclick="calcBtn('/')" style="padding:14px;background:#d97706;color:#fff;border:none;border-radius:8px;font-size:18px;font-weight:700;cursor:pointer;">÷</button>
+          <button onclick="calcBtn('7')" style="padding:14px;background:#1e293b;color:#fff;border:none;border-radius:8px;font-size:18px;cursor:pointer;">7</button>
+          <button onclick="calcBtn('8')" style="padding:14px;background:#1e293b;color:#fff;border:none;border-radius:8px;font-size:18px;cursor:pointer;">8</button>
+          <button onclick="calcBtn('9')" style="padding:14px;background:#1e293b;color:#fff;border:none;border-radius:8px;font-size:18px;cursor:pointer;">9</button>
+          <button onclick="calcBtn('*')" style="padding:14px;background:#d97706;color:#fff;border:none;border-radius:8px;font-size:18px;font-weight:700;cursor:pointer;">×</button>
+          <button onclick="calcBtn('4')" style="padding:14px;background:#1e293b;color:#fff;border:none;border-radius:8px;font-size:18px;cursor:pointer;">4</button>
+          <button onclick="calcBtn('5')" style="padding:14px;background:#1e293b;color:#fff;border:none;border-radius:8px;font-size:18px;cursor:pointer;">5</button>
+          <button onclick="calcBtn('6')" style="padding:14px;background:#1e293b;color:#fff;border:none;border-radius:8px;font-size:18px;cursor:pointer;">6</button>
+          <button onclick="calcBtn('-')" style="padding:14px;background:#d97706;color:#fff;border:none;border-radius:8px;font-size:18px;font-weight:700;cursor:pointer;">−</button>
+          <button onclick="calcBtn('1')" style="padding:14px;background:#1e293b;color:#fff;border:none;border-radius:8px;font-size:18px;cursor:pointer;">1</button>
+          <button onclick="calcBtn('2')" style="padding:14px;background:#1e293b;color:#fff;border:none;border-radius:8px;font-size:18px;cursor:pointer;">2</button>
+          <button onclick="calcBtn('3')" style="padding:14px;background:#1e293b;color:#fff;border:none;border-radius:8px;font-size:18px;cursor:pointer;">3</button>
+          <button onclick="calcBtn('+')" style="padding:14px;background:#d97706;color:#fff;border:none;border-radius:8px;font-size:18px;font-weight:700;cursor:pointer;">+</button>
+          <button onclick="calcBtn('0')" style="padding:14px;background:#1e293b;color:#fff;border:none;border-radius:8px;font-size:18px;cursor:pointer;grid-column:span 2;">0</button>
+          <button onclick="calcBtn('.')" style="padding:14px;background:#1e293b;color:#fff;border:none;border-radius:8px;font-size:18px;cursor:pointer;">.</button>
+          <button onclick="calcBtn('=')" style="padding:14px;background:#059669;color:#fff;border:none;border-radius:8px;font-size:18px;font-weight:700;cursor:pointer;">=</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </section>
 
 <!-- Firebase -->
@@ -1313,6 +1392,14 @@ function preencherEmpresa(tipo) {
       window._historico_fb = snap.docs.map(d => ({...d.data(), id: d.id}));
     });
   } catch(e) { console.log('historico listener:', e); }
+
+  // Boletos Sicoob
+  try {
+    onSnapshot(query(collection(db,'boletos'), orderBy('criadoEm','desc')), (snap) => {
+      window._boletos = snap.docs.map(d => ({id:d.id,...d.data()}));
+      if(typeof renderBoletos==='function' && document.getElementById('bol-lista')) renderBoletos();
+    });
+  } catch(e) { console.log('boletos listener:', e); }
 
   window._firebaseLoaded = true;
   console.log('Firebase conectado ✓');
@@ -2557,6 +2644,9 @@ function renderContratosTab() {
       + '</div>'
       + '</div>';
   }).join('') + '</div>';
+  container.querySelectorAll('.bol-del-btn').forEach(function(b){
+    b.addEventListener('click', function(){ excluirBoleto(this.getAttribute('data-id')); });
+  });
 }
 
 function excluirContrato(ctId) {
@@ -3731,9 +3821,15 @@ function _renderProntuario(c) {
 
   // Contratos do cliente
   var nomeCli = (c.nome||'').toLowerCase().trim();
+  var nomeCliWords = nomeCli.split(' ').filter(function(w){ return w.length > 3; });
   var contratosCli = (window._contratos||[]).filter(function(ct){
-    var nomeCt = (ct.nome||'').toLowerCase().trim();
-    return nomeCt === nomeCli || nomeCt.includes(nomeCli.substring(0,6)) || nomeCli.includes(nomeCt.substring(0,6));
+    var nomeCt = (ct.nome||ct.contratante||ct.cliente||'').toLowerCase().trim();
+    if(!nomeCt) return false;
+    if(nomeCt === nomeCli) return true;
+    if(nomeCt.includes(nomeCli.substring(0,8))) return true;
+    if(nomeCli.includes(nomeCt.substring(0,8))) return true;
+    // Buscar por palavras-chave do nome
+    return nomeCliWords.some(function(w){ return nomeCt.includes(w); });
   });
   // Incluir cronogramas do cliente
   var cronosCli = (window._cronogramas||[]).filter(function(cr){
@@ -4314,6 +4410,127 @@ function gerarLaudoRapido() {
   // Renderizar e abrir o modal do certificado
   renderCertificado(d);
   document.getElementById('modal-cert').classList.add('open');
+}
+
+
+// ══ ABAS FINANCEIRO ══
+function showFinTab(tab) {
+  var tabs = ['lancamentos','boletos','calc'];
+  tabs.forEach(function(t){
+    var sec = document.getElementById('fin-sec-' + t);
+    var btn = document.getElementById('fin-tab-' + (t==='lancamentos'?'lanc':t==='boletos'?'bol':'calc'));
+    if(sec) sec.style.display = t===tab ? 'block' : 'none';
+    if(btn){ btn.className = t===tab ? 'btn btn-primary' : 'btn btn-outline'; btn.style.fontSize='12px'; }
+  });
+  var lista = document.getElementById('fin-lista');
+  if(lista) lista.style.display = tab==='lancamentos' ? 'block' : 'none';
+  // Cards de resumo
+  var cards = document.querySelector('#sec-financeiro > div:nth-child(3)');
+  if(cards) cards.style.display = tab==='lancamentos' ? 'grid' : 'none';
+  // Form de lançamento
+  var form = document.querySelector('#sec-financeiro .card');
+  if(form) form.style.display = tab==='lancamentos' ? 'block' : 'none';
+  // Filtros
+  var filtros = document.querySelector('#fin-filtro-mes');
+  var filtroDiv = filtros ? filtros.closest('div') : null;
+  if(filtroDiv && filtroDiv.style) filtroDiv.style.display = tab==='lancamentos' ? 'flex' : 'none';
+  if(tab==='boletos') renderBoletos();
+}
+
+// ══ BOLETOS SICOOB ══
+window._boletos = window._boletos || [];
+
+function salvarBoleto() {
+  var cliente = document.getElementById('bol-cliente').value;
+  var valor   = document.getElementById('bol-valor').value;
+  var emissao = document.getElementById('bol-emissao').value;
+  var venc    = document.getElementById('bol-vencimento').value;
+  var status  = document.getElementById('bol-status').value;
+  var desc    = document.getElementById('bol-desc').value;
+  if(!cliente || !valor || !venc) { alert('Preencha cliente, valor e vencimento.'); return; }
+  if(!window._firebaseLoaded || !window._setDoc) { alert('Aguarde a conexão...'); return; }
+  var id = 'bol_' + Date.now().toString();
+  window._setDoc(window._doc(window._db,'boletos',id), {
+    id:id, cliente:cliente, valor:valor, emissao:emissao,
+    vencimento:venc, status:status, desc:desc,
+    criadoEm: new Date().toISOString()
+  }).then(function(){
+    mostrarToast('Boleto registrado! ✓');
+    document.getElementById('bol-cliente').value='';
+    document.getElementById('bol-valor').value='';
+    document.getElementById('bol-desc').value='';
+  }).catch(function(e){ alert('Erro ao salvar.'); });
+}
+
+function renderBoletos() {
+  var container = document.getElementById('bol-lista');
+  if(!container) return;
+  var boletos = window._boletos || [];
+  if(!boletos.length){
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8;">Nenhum boleto registrado</div>';
+    return;
+  }
+  var hoje = new Date(); hoje.setHours(0,0,0,0);
+  var stCor = { emitido:{bg:'#dbeafe',cor:'#2563eb',ic:'📤'}, pago:{bg:'#d1fae5',cor:'#059669',ic:'✅'}, vencido:{bg:'#fee2e2',cor:'#dc2626',ic:'🔴'}, cancelado:{bg:'#f1f5f9',cor:'#64748b',ic:'❌'} };
+  container.innerHTML = '<div style="display:grid;gap:8px;">' + boletos.map(function(b){
+    var st = stCor[b.status] || stCor.emitido;
+    var diasVenc = b.vencimento ? Math.ceil((new Date(b.vencimento+'T12:00:00')-hoje)/(1000*60*60*24)) : null;
+    var vencTxt = diasVenc===null ? '' : diasVenc<0 ? ' · Vencido há '+Math.abs(diasVenc)+'d' : diasVenc===0 ? ' · Vence HOJE!' : ' · Vence em '+diasVenc+'d';
+    return '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">'
+      + '<div style="flex:1;">'
+      + '<div style="font-weight:700;font-size:13px;">'+b.cliente+'</div>'
+      + '<div style="font-size:12px;color:#64748b;margin-top:2px;">'+(b.desc||'')+'</div>'
+      + '<div style="font-size:12px;color:#64748b;">'+(b.emissao?'Emitido: '+fmtDataBR(b.emissao)+' · ':'')+(b.vencimento?'Vence: '+fmtDataBR(b.vencimento)+vencTxt:'')+'</div>'
+      + '</div>'
+      + '<div style="text-align:right;">'
+      + '<div style="font-weight:900;font-size:14px;color:#1a3c6e;">R$ '+b.valor+'</div>'
+      + '<span style="background:'+st.bg+';color:'+st.cor+';padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;">'+st.ic+' '+b.status+'</span>'
+      + '</div>'
+      + '<button class="bol-del-btn" data-id="'+b.id+'" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:16px;">🗑️</button>'
+      + '</div>';
+  }).join('') + '</div>';
+}
+
+function excluirBoleto(id) {
+  if(!confirm('Excluir este boleto?')) return;
+  window._deleteDoc(window._doc(window._db,'boletos',id)).then(function(){ mostrarToast('Boleto excluído.'); });
+}
+
+// ══ CALCULADORA ══
+var calcState = { display: '0', operand: null, operator: null, newNum: true };
+
+function calcBtn(btn) {
+  var d = document.getElementById('calc-display');
+  if(!d) return;
+  if(btn === 'C') {
+    calcState = { display:'0', operand:null, operator:null, newNum:true };
+  } else if(btn === '⌫') {
+    calcState.display = calcState.display.length > 1 ? calcState.display.slice(0,-1) : '0';
+  } else if('0123456789.'.includes(btn)) {
+    if(calcState.newNum) { calcState.display = btn==='.'?'0.':btn; calcState.newNum=false; }
+    else { if(btn==='.' && calcState.display.includes('.')) return; calcState.display += btn; }
+  } else if('+-*/'.includes(btn)) {
+    if(calcState.operator && !calcState.newNum) {
+      var res = calcOp(parseFloat(calcState.operand), parseFloat(calcState.display), calcState.operator);
+      calcState.display = String(Math.round(res*1e10)/1e10);
+    }
+    calcState.operand = calcState.display;
+    calcState.operator = btn;
+    calcState.newNum = true;
+  } else if(btn === '=') {
+    if(calcState.operator && calcState.operand !== null) {
+      var res2 = calcOp(parseFloat(calcState.operand), parseFloat(calcState.display), calcState.operator);
+      calcState.display = String(Math.round(res2*1e10)/1e10);
+      calcState.operator = null; calcState.operand = null; calcState.newNum = true;
+    }
+  }
+  d.textContent = calcState.display;
+}
+
+function calcOp(a, b, op) {
+  if(op==='+') return a+b; if(op==='-') return a-b;
+  if(op==='*') return a*b; if(op==='/') return b!==0?a/b:0;
+  return b;
 }
 
 </script>
