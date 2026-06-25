@@ -154,22 +154,16 @@
 function abrirModalContrato() {
   var modal = document.getElementById('modal-contrato');
   if(!modal){ setTimeout(abrirModalContrato, 300); return; }
-  // Preencher com dados do orçamento atual
-  var nome  = document.getElementById('nome') ? document.getElementById('nome').value : '';
-  var cnpj  = document.getElementById('cnpjCliente') ? document.getElementById('cnpjCliente').value : '';
-  var end   = document.getElementById('endereco') ? document.getElementById('endereco').value : '';
-  var bairro= document.getElementById('bairro') ? document.getElementById('bairro').value : '';
-  var cidade= document.getElementById('cidade') ? document.getElementById('cidade').value : '';
-  var fone  = document.getElementById('fone') ? document.getElementById('fone').value : '';
-  var email = document.getElementById('email') ? document.getElementById('email').value : '';
-  var endCompleto = [end, bairro, cidade].filter(Boolean).join(', ');
+  var get = function(id){ var el=document.getElementById(id); return el?el.value:''; };
+  var nome = get('nome');
   if(nome){
-    var f = function(id, val){ var el=document.getElementById(id); if(el) el.value=val; };
-    f('ct-nome', nome);
-    f('ct-cnpj', cnpj);
-    f('ct-endereco', endCompleto);
-    f('ct-fone', fone);
-    f('ct-email', email);
+    var set = function(id,v){ var el=document.getElementById(id); if(el) el.value=v; };
+    set('ct-nome', nome);
+    set('ct-cnpj', get('cnpjCliente'));
+    set('ct-fone', get('fone'));
+    set('ct-email', get('email'));
+    var end = [get('endereco'),get('bairro'),get('cidade')].filter(Boolean).join(', ');
+    set('ct-endereco', end);
   }
   modal.classList.add('open');
 }
@@ -1886,7 +1880,6 @@ function imprimirCert(){
   doc.write('</'+'html>');
   doc.write('<script>document.getElementById("btn-save-pdf").onclick=function(){document.title="'+nomeArquivo+'";document.querySelectorAll(".no-print").forEach(function(e){e.style.display="none"});window.print();};<\/script>');
   doc.close();
-  win.focus();
 }
 
 // ══════════════════ AGENDA ══════════════════
@@ -2990,23 +2983,26 @@ function confirmarGerarContrato() {
 +'_____________________________________________________________';
 
   // Abrir janela com textarea editável
-  // Abrir contrato em overlay na mesma página
+  // Abrir em overlay sem popup
   var oldOv = document.getElementById('overlay-contrato-print');
   if(oldOv) oldOv.remove();
   var ov = document.createElement('div');
   ov.id = 'overlay-contrato-print';
   ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#f1f5f9;overflow-y:auto;';
-  document.body.appendChild(ov);
+  var tb = document.createElement('div');
+  tb.style.cssText = 'background:#1a3c6e;color:#fff;padding:10px 20px;display:flex;align-items:center;gap:10px;position:sticky;top:0;';
+  tb.innerHTML = '<span style="flex:1;font-weight:700;">📄 Contrato — '+nome+'</span>'
+    + '<button onclick="document.getElementById(\'overlay-contrato-print\').remove();window.print&&null;" style="padding:7px 18px;background:#059669;color:#fff;border:none;border-radius:7px;cursor:pointer;font-weight:700;" id="btn-print-contrato">🖨️ Imprimir</button>'
+    + '<button onclick="document.getElementById(\'overlay-contrato-print\').remove();" style="padding:7px 18px;background:#dc2626;color:#fff;border:none;border-radius:7px;cursor:pointer;font-weight:700;">✕ Fechar</button>';
+  ov.appendChild(tb);
   var fr = document.createElement('iframe');
-  fr.style.cssText = 'width:100%;height:calc(100vh - 56px);border:none;margin-top:56px;';
+  fr.id = 'iframe-contrato';
+  fr.style.cssText = 'width:100%;height:calc(100vh - 52px);border:none;background:#fff;';
   ov.appendChild(fr);
-  var toolbar = document.createElement('div');
-  toolbar.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:100000;background:#1a3c6e;color:#fff;padding:10px 20px;display:flex;align-items:center;gap:10px;height:56px;box-sizing:border-box;';
-  toolbar.innerHTML = '<span style="flex:1;font-size:14px;font-weight:700;">📄 Contrato — '+nome+'</span>'
-    + '<button onclick="fr.contentWindow.print()" style="padding:7px 18px;background:#059669;color:#fff;border:none;border-radius:7px;font-size:13px;cursor:pointer;font-weight:700;">🖨️ Imprimir / PDF</button>'
-    + '<button onclick="document.getElementById(\'overlay-contrato-print\').remove()" style="padding:7px 18px;background:#dc2626;color:#fff;border:none;border-radius:7px;font-size:13px;cursor:pointer;font-weight:700;">✕ Fechar</button>';
-  ov.appendChild(toolbar);
-  var win = { document: fr.contentDocument || fr.contentWindow.document, focus: function(){} };
+  document.body.appendChild(ov);
+  document.getElementById('btn-print-contrato').onclick = function(){ fr.contentWindow.print(); };
+  var win = fr.contentDocument || fr.contentWindow.document;
+  win = { document: win, focus: function(){} };
   win.document.open();
   win.document.write('<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Contrato — '+nome+'</title>'
     +'<style>'
@@ -3031,7 +3027,7 @@ function confirmarGerarContrato() {
     +'<div class="toolbar">'
     +'<span style="flex:1;font-size:14px;font-weight:700;">📄 Revise e edite o contrato antes de imprimir</span>'
     +'<button class="btn-print" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>'
-    +'<button class="btn-cancel" onclick="var o=document.getElementById(\'overlay-contrato-print\');if(o)o.remove();">✕ Fechar</button>'
+    +'<button class="btn-cancel" onclick="window.close()">✕ Fechar</button>'
     +'</div>'
     +'<div class="editor-container">'
     +'<div class="editor-header">✏️ Clique no texto abaixo para editar qualquer parte do contrato</div>'
@@ -3255,7 +3251,6 @@ function imprimirRecibo(d, parcSel, emp, nomeEmp, cnpjEmp, respEmp, crtEmp, endE
   doc.write('</'+'body>');
   doc.write('</'+'html>');
   doc.close();
-  win.focus();
 
   // Salvar cronograma no Firebase
   if(window._firebaseLoaded && window._cronogramaLinhas && window._cronogramaLinhas.length) {
@@ -3516,33 +3511,11 @@ function gerarAviso(){
 
   html += '</div></body></html>';
 
-  // Abrir aviso em overlay na mesma página
-  var old = document.getElementById('overlay-aviso-print');
-  if(old) old.remove();
-  var ov = document.createElement('div');
-  ov.id = 'overlay-aviso-print';
-  ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#fff;overflow-y:auto;';
-  var toolbar = document.createElement('div');
-  toolbar.className = 'no-print';
-  toolbar.style.cssText = 'background:#1a4a1a;color:#fff;padding:12px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;';
-  toolbar.innerHTML = '<span style="flex:1;font-size:14px;font-weight:700;">📢 Aviso de Dedetização</span>'
-    + '<button onclick="window.print()" style="padding:8px 20px;background:#059669;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:700;">🖨️ Imprimir / PDF</button>'
-    + '<button onclick="var o=document.getElementById(\'overlay-aviso-print\');if(o)o.remove();" style="padding:8px 20px;background:#dc2626;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:700;">✕ Fechar</button>';
-  var frame = document.createElement('iframe');
-  frame.style.cssText = 'width:100%;height:calc(100vh - 60px);border:none;';
-  ov.appendChild(toolbar);
-  ov.appendChild(frame);
-  document.body.appendChild(ov);
-  var doc = frame.contentDocument || frame.contentWindow.document;
-  doc.open();
-  doc.write(html);
-  doc.close();
-
-  // CSS de impressão
-  var st = document.getElementById('aviso-print-style') || document.createElement('style');
-  st.id = 'aviso-print-style';
-  st.textContent = '@media print{body>*:not(#overlay-aviso-print){display:none!important;}#overlay-aviso-print{position:static!important;}#overlay-aviso-print>div:first-child{display:none!important;}}';
-  document.head.appendChild(st);
+  var win = window.open('','_blank');
+  if(!win){ alert('Permita popups para este site.'); return; }
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
 }
 
 
