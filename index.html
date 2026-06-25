@@ -3821,15 +3821,11 @@ function _renderProntuario(c) {
 
   // Contratos do cliente
   var nomeCli = (c.nome||'').toLowerCase().trim();
-  var nomeCliWords = nomeCli.split(' ').filter(function(w){ return w.length > 3; });
   var contratosCli = (window._contratos||[]).filter(function(ct){
-    var nomeCt = (ct.nome||ct.contratante||ct.cliente||'').toLowerCase().trim();
-    if(!nomeCt) return false;
-    if(nomeCt === nomeCli) return true;
-    if(nomeCt.includes(nomeCli.substring(0,8))) return true;
-    if(nomeCli.includes(nomeCt.substring(0,8))) return true;
-    // Buscar por palavras-chave do nome
-    return nomeCliWords.some(function(w){ return nomeCt.includes(w); });
+    var nomeCt = (ct.nome||'').toLowerCase().trim();
+    if(!nomeCt || !nomeCli) return false;
+    // Exige que o nome seja idêntico
+    return nomeCt === nomeCli;
   });
   // Incluir cronogramas do cliente
   var cronosCli = (window._cronogramas||[]).filter(function(cr){
