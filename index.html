@@ -2778,11 +2778,16 @@ function gerarContrato() {
 }
 
 function calcularParcelasContrato() {
-  var total = parseFloat((document.getElementById('ct-valor').value||'0').replace(/\./g,'').replace(',','.'));
-  var parcelas = parseInt(document.getElementById('ct-parcelas').value||'3');
-  if (total && parcelas) {
+  var valStr = (document.getElementById('ct-valor').value||'0').trim();
+  // Remover pontos de milhar e trocar vírgula por ponto
+  valStr = valStr.replace(/\./g,'').replace(',','.');
+  var total = parseFloat(valStr) || 0;
+  var parcelas = parseInt(document.getElementById('ct-parcelas').value||'3') || 1;
+  if (total > 0 && parcelas > 0) {
     var parc = (total / parcelas).toFixed(2).replace('.',',');
     document.getElementById('ct-valor-parcela').value = parc;
+  } else {
+    document.getElementById('ct-valor-parcela').value = '0,00';
   }
 }
 
@@ -3429,12 +3434,25 @@ function gerarAviso(){
 
   html += '</div></body></html>';
 
-  var win = window.open('','_blank');
-  if(!win){ alert('Permita popups para este site.'); return; }
-  win.document.open();
-  win.document.write(html);
-  win.document.close();
-  win.focus();
+  var oldOv = document.getElementById('overlay-aviso-print');
+  if(oldOv) oldOv.remove();
+  var ov = document.createElement('div');
+  ov.id = 'overlay-aviso-print';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#fff;overflow-y:auto;';
+  var tb = document.createElement('div');
+  tb.className = 'no-print';
+  tb.style.cssText = 'background:#1a4a1a;color:#fff;padding:10px 20px;display:flex;align-items:center;gap:10px;position:sticky;top:0;';
+  tb.innerHTML = '<span style="flex:1;font-weight:700;font-size:14px;">📢 Aviso de Dedetização</span>'
+    + '<button id="btn-print-aviso" style="padding:7px 18px;background:#059669;color:#fff;border:none;border-radius:7px;cursor:pointer;font-weight:700;">🖨️ Imprimir / PDF</button>'
+    + '<button onclick="document.getElementById(\'overlay-aviso-print\').remove();" style="padding:7px 18px;background:#dc2626;color:#fff;border:none;border-radius:7px;cursor:pointer;font-weight:700;">✕ Fechar</button>';
+  ov.appendChild(tb);
+  var fr = document.createElement('iframe');
+  fr.style.cssText = 'width:100%;height:calc(100vh - 52px);border:none;';
+  ov.appendChild(fr);
+  document.body.appendChild(ov);
+  tb.querySelector('#btn-print-aviso').onclick = function(){ fr.contentWindow.print(); };
+  var doc = fr.contentDocument || fr.contentWindow.document;
+  doc.open(); doc.write(html); doc.close();
 }
 
 
