@@ -2964,6 +2964,38 @@ function confirmarGerarContrato() {
 
   // Auto-salvar cliente
   autoSalvarCliente({nome:nome, cnpj:cnpj, fone:fone, email:email, endereco:endereco});
+
+  // Salvar contrato no Firebase para aparecer no prontuário
+  if(window._firebaseLoaded && window._setDoc && window._db) {
+    var ctId = 'ct_' + Date.now().toString();
+    var servicos = (document.getElementById('ct-srv-dede') && document.getElementById('ct-srv-dede').checked ? 'Desinsetização/Desratização ' : '')
+      + (document.getElementById('ct-srv-agua') && document.getElementById('ct-srv-agua').checked ? 'Caixa D\'Água ' : '')
+      + (document.getElementById('ct-srv-gordura') && document.getElementById('ct-srv-gordura').checked ? 'Caixa de Gordura' : '');
+    var ctData = {
+      id: ctId,
+      nome: nome,
+      cnpj: cnpj,
+      fone: fone,
+      email: email,
+      endereco: endereco,
+      valor: document.getElementById('ct-valor') ? document.getElementById('ct-valor').value : '',
+      parcelas: document.getElementById('ct-parcelas') ? document.getElementById('ct-parcelas').value : '',
+      inicio: document.getElementById('ct-inicio') ? document.getElementById('ct-inicio').value : '',
+      vigencia: document.getElementById('ct-vigencia') ? document.getElementById('ct-vigencia').value : '12',
+      servicos: servicos.trim(),
+      criadoEm: new Date().toISOString()
+    };
+    // Calcular vigenciaFim
+    if(ctData.inicio && ctData.vigencia) {
+      var dtFim = new Date(ctData.inicio + 'T12:00:00');
+      dtFim.setMonth(dtFim.getMonth() + parseInt(ctData.vigencia));
+      ctData.vigenciaFim = dtFim.toISOString().split('T')[0];
+    }
+    window._setDoc(window._doc(window._db,'contratos',ctId), ctData)
+      .then(function(){ mostrarToast('Contrato salvo no sistema! ✓'); })
+      .catch(function(e){ console.log('erro salvar contrato:', e); });
+  }
+
   fecharModal('modal-contrato');
 }
 
@@ -3698,10 +3730,15 @@ function _renderProntuario(c) {
   });
 
   // Contratos do cliente
+  var nomeCli = (c.nome||'').toLowerCase().trim();
   var contratosCli = (window._contratos||[]).filter(function(ct){
     var nomeCt = (ct.nome||'').toLowerCase().trim();
-    var nomeCli = (c.nome||'').toLowerCase().trim();
-    return nomeCt === nomeCli || nomeCt.includes(nomeCli.substring(0,8));
+    return nomeCt === nomeCli || nomeCt.includes(nomeCli.substring(0,6)) || nomeCli.includes(nomeCt.substring(0,6));
+  });
+  // Incluir cronogramas do cliente
+  var cronosCli = (window._cronogramas||[]).filter(function(cr){
+    var nomeCr = (cr.nome||'').toLowerCase().trim();
+    return nomeCr === nomeCli || nomeCr.includes(nomeCli.substring(0,6));
   });
 
   // Alerta boleto
@@ -3752,6 +3789,15 @@ function _renderProntuario(c) {
     + '</div>'
 
     // Orçamentos
+    + (cronosCli.length ? '<div style="font-weight:800;font-size:13px;color:#1a3c6e;margin:0 0 8px;">📅 Cronograma de Serviços</div>'
+    + '<div style="margin-bottom:16px;">'
+    + cronosCli.slice(0,1).map(function(cr){
+        return '<div style="border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin-bottom:6px;">'
+          + '<div style="font-weight:700;font-size:13px;">'+(cr.tipo||'Cronograma')+'</div>'
+          + (cr.linhas ? cr.linhas.map(function(l,idx){ return '<div style="font-size:12px;color:#64748b;">'+( idx+1)+'ª aplicação: '+fmtDataBR(l.data)+(l.cortesia?' (cortesia)':'')+'</div>'; }).join('') : '')
+          + '</div>';
+      }).join('')
+    + '</div>' : '')
     + '<div style="font-weight:800;font-size:13px;color:#1a3c6e;margin:0 0 8px;">📋 Orçamentos ('+orcsCli.length+')</div>'
     + '<div style="margin-bottom:16px;">'
     + (orcsCli.length ? orcsCli.slice(0,5).map(function(o,i){
@@ -3771,7 +3817,7 @@ function _renderProntuario(c) {
     + '<div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid #e2e8f0;padding-top:14px;">'
     + '<button onclick="usarClienteNoOrcamento(\''+c.id+'\');fecharModal(\'modal-prontuario\')" class="btn btn-primary" style="font-size:12px;">+ Novo Orçamento</button>'
     + '<button onclick="fecharModal(\'modal-prontuario\');setTimeout(function(){abrirModalCliente(\''+c.id+'\')},300)" class="btn btn-outline" style="font-size:12px;">✏️ Editar</button>'
-    + '<button onclick="abrirLaudoRapido(\''+c.id+'\')" class="btn" style="font-size:12px;background:#d97706;color:#fff;border:none;border-radius:8px;padding:8px 14px;cursor:pointer;">📋 Emitir Laudo</button>'
+    + (c.tipoPessoa !== 'PF' || c.emiteLaudo ? '<button onclick="abrirLaudoRapido(\''+c.id+'\')" class="btn" style="font-size:12px;background:#d97706;color:#fff;border:none;border-radius:8px;padding:8px 14px;cursor:pointer;">📋 Emitir Laudo</button>' : '')
     + '</div>';
 
   body.innerHTML = html;
