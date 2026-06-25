@@ -2246,7 +2246,14 @@ function gerarCronogramaPDF() {
     +'.no-print{text-align:center;padding:16px;display:flex;gap:12px;justify-content:center;}'
     +'@media print{.no-print{display:none;}}</'+'style>'
     +'<\/head><'+'body>'
-    +'<div class="header-info">'+(d.nome?'<b>'+d.nome+'</b><br>':'')+(d.fone?'Telefone: '+d.fone+'<br>':'')+(d.endereco?d.endereco+(d.bairro?', '+d.bairro:'')+(d.cidade?', '+d.cidade:''):'')+'</div>'
+    +'<div style="border:1px solid #ccc;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:10pt;">'
+    +'<b style="font-size:12pt;">'+( d.nome||'—')+'</b><br>'
+    +(d.cnpjCliente?'CNPJ/CPF: '+d.cnpjCliente+'<br>':'')
+    +(d.fone?'Telefone: '+d.fone+'<br>':'')
+    +(d.email?'E-mail: '+d.email+'<br>':'')
+    +(d.endereco?'Endereço: '+d.endereco+(d.bairro?', '+d.bairro:'')+(d.cidade?', '+d.cidade:'')+(d.cep?' - CEP: '+d.cep:'')+'<br>':'')
+    +(d.tipoComercio?'Tipo: '+d.tipoComercio+'<br>':'')
+    +'</div>'
     +'<h2>Cronograma Dedetização</h2>'
     +'<table><thead><tr><th>APLICAÇÃO</th><th>DATA</th><th>PAGAMENTO</th></tr></thead><tbody>'+linhasHTML+'</tbody></table>'
     +'<div class="aviso"><i>O serviço de controle de pragas só tem efeito se realizado nas datas corretas.</i></div>'
@@ -3521,7 +3528,7 @@ function gerarAviso(){
     +'<style>'
     +'*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;box-sizing:border-box;margin:0;padding:0;}'
     +'@page{size:A4;margin:12mm 14mm;}'
-    +'body{font-family:Arial,sans-serif;color:#000;background:#fff;}'
+    +'body{font-family:Arial,sans-serif;color:#000;background:#fff;margin:0;padding:0;}'
     +'.no-print{text-align:center;padding:10px;background:#f1f5f9;margin-bottom:8px;}'
     +'@media print{.no-print{display:none!important;}}'
     +'</style></head><body>'
